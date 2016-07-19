@@ -79,7 +79,7 @@ namespace DX12GameProgramming
         // We cannot update a cbuffer until the GPU is done processing the commands
         // that reference it. So each frame needs their own cbuffers.
         public UploadBuffer<PassConstants> PassCB { get; }
-        public UploadBuffer<MaterialConstants> MaterialCB { get; set; }
+        public UploadBuffer<MaterialConstants> MaterialCB { get; }
         public UploadBuffer<ObjectConstants> ObjectCB { get; }
 
         // Fence value to mark commands up to this fence point.  This lets us
