@@ -59,5 +59,10 @@ Renders the shapes scene with fully textured objects.
 Introduces the blending formula and how to configure a blend state in the graphics pipeline. Renders the hills and water scene with transparent water and box texture.
 
 ## [Stencil](Stamples/Stencil)
+<img src="./Images/Stencil.jpg" height="96px" align="right">
 
-Work in progress ...
+Constructs a mirror using stencil buffer. Introduces stenciling, projecting mirrored images and shadows.
+
+## [TreeBillboards](Stamples/TreeBillboards)
+
+WIP . . .

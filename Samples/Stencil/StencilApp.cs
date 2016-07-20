@@ -726,7 +726,7 @@ namespace DX12GameProgramming
                 RasterizerState = RasterizerStateDescription.Default(),
                 BlendState = BlendStateDescription.Default(),
                 DepthStencilState = DepthStencilStateDescription.Default(),
-                SampleMask = int.MaxValue,
+                SampleMask = unchecked((int)0xFFFFFFFF),
                 PrimitiveTopologyType = PrimitiveTopologyType.Triangle,
                 RenderTargetCount = 1,
                 SampleDescription = new SampleDescription(MsaaCount, MsaaQuality),
@@ -740,7 +740,7 @@ namespace DX12GameProgramming
             // PSO for transparent objects.
             //
 
-            var transparentPsoDesc = opaquePsoDesc;
+            var transparentPsoDesc = opaquePsoDesc.Copy();
 
             var transparencyBlendDesc = new RenderTargetBlendDescription
             {
@@ -794,7 +794,7 @@ namespace DX12GameProgramming
                 BackFace = backFaceDSO
             };
 
-            GraphicsPipelineStateDescription markMirrorsPsoDesc = opaquePsoDesc;
+            GraphicsPipelineStateDescription markMirrorsPsoDesc = opaquePsoDesc.Copy();
             markMirrorsPsoDesc.BlendState = mirrorBlendState;
             markMirrorsPsoDesc.DepthStencilState = mirrorDSS;
             _psos["markStencilMirrors"] = D3DDevice.CreateGraphicsPipelineState(markMirrorsPsoDesc);
@@ -822,7 +822,7 @@ namespace DX12GameProgramming
                 BackFace = backFaceDSO
             };
 
-            GraphicsPipelineStateDescription drawReflectionsPsoDesc = opaquePsoDesc;
+            GraphicsPipelineStateDescription drawReflectionsPsoDesc = opaquePsoDesc.Copy();
             drawReflectionsPsoDesc.DepthStencilState = reflectionDSS;
             drawReflectionsPsoDesc.RasterizerState.CullMode = CullMode.Back;
             drawReflectionsPsoDesc.RasterizerState.IsFrontCounterClockwise = true;
@@ -851,7 +851,7 @@ namespace DX12GameProgramming
                 BackFace = backFaceDSO
             };
 
-            GraphicsPipelineStateDescription shadowPsoDesc = transparentPsoDesc;
+            GraphicsPipelineStateDescription shadowPsoDesc = transparentPsoDesc.Copy();
             shadowPsoDesc.DepthStencilState = shadowDSS;
             _psos["shadow"] = D3DDevice.CreateGraphicsPipelineState(shadowPsoDesc);
         }

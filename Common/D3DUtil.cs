@@ -263,6 +263,39 @@ namespace DX12GameProgramming
         }
     }
 
+    public static class D3DExtensions
+    {
+        public static GraphicsPipelineStateDescription Copy(this GraphicsPipelineStateDescription desc)
+        {
+            var newDesc = new GraphicsPipelineStateDescription
+            {
+                BlendState = desc.BlendState,
+                CachedPSO = desc.CachedPSO,
+                DepthStencilFormat = desc.DepthStencilFormat,
+                DepthStencilState = desc.DepthStencilState,
+                SampleDescription = desc.SampleDescription,
+                DomainShader = desc.DomainShader,
+                Flags = desc.Flags,
+                GeometryShader = desc.GeometryShader,
+                HullShader = desc.HullShader,
+                IBStripCutValue = desc.IBStripCutValue,
+                InputLayout = desc.InputLayout,
+                NodeMask = desc.NodeMask,
+                PixelShader = desc.PixelShader,
+                PrimitiveTopologyType = desc.PrimitiveTopologyType,
+                RasterizerState = desc.RasterizerState,
+                RenderTargetCount = desc.RenderTargetCount,
+                SampleMask = desc.SampleMask,
+                StreamOutput = desc.StreamOutput,
+                VertexShader = desc.VertexShader,
+                RootSignature = desc.RootSignature
+            };
+            for (int i = 0; i < desc.RenderTargetFormats.Length; i++)
+                newDesc.RenderTargetFormats[i] = desc.RenderTargetFormats[i];
+            return newDesc;
+        }
+    }
+
     // Required for ShaderBytecode.CompileFromFile API in order to resolve #includes in shader files.
     // Equivalent for D3D_COMPILE_STANDARD_FILE_INCLUDE.
     internal class FileIncludeHandler : CallbackBase, Include
