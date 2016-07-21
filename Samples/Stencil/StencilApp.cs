@@ -78,7 +78,6 @@ namespace DX12GameProgramming
             // Reset the command list to prep for initialization commands.
             CommandList.Reset(DirectCmdListAlloc, null);
 
-
             LoadTextures();
             BuildRootSignature();
             BuildDescriptorHeaps();
