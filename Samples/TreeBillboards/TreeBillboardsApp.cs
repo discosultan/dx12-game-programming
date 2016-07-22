@@ -528,8 +528,8 @@ namespace DX12GameProgramming
             _shaders["alphaTestedPS"] = D3DUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_0", alphaTestDefines);
 
             _shaders["treeSpriteVS"] = D3DUtil.CompileShader("Shaders\\TreeSprite.hlsl", "VS", "vs_5_0");
-            _shaders["treeSpriteGS"] = D3DUtil.CompileShader("Shaders\\TreeSprite.hlsl", "GS", "ps_5_0");
-            _shaders["treeSpritePS"] = D3DUtil.CompileShader("Shaders\\Default.TreeSprite", "PS", "ps_5_0", alphaTestDefines);
+            _shaders["treeSpriteGS"] = D3DUtil.CompileShader("Shaders\\TreeSprite.hlsl", "GS", "gs_5_0");
+            _shaders["treeSpritePS"] = D3DUtil.CompileShader("Shaders\\TreeSprite.hlsl", "PS", "ps_5_0", alphaTestDefines);
 
             _inputLayout = new InputLayoutDescription(new[]
             {
@@ -681,7 +681,7 @@ namespace DX12GameProgramming
             };
 
             var geo = MeshGeometry.New(D3DDevice, CommandList, vertices, indices, "treeSpritesGeo");
-            geo.DrawArgs["treeSpritesGeo"] = submesh;
+            geo.DrawArgs["points"] = submesh;
 
             _geometries[geo.Name] = geo;
         }
@@ -787,7 +787,7 @@ namespace DX12GameProgramming
                 Name = "water",
                 MatCBIndex = 1,
                 DiffuseSrvHeapIndex = 1,
-                DiffuseAlbedo = new Vector4(1.0f),
+                DiffuseAlbedo = new Vector4(1.0f, 1.0f, 1.0f, 0.5f),
                 FresnelR0 = new Vector3(0.1f),
                 Roughness = 0.0f
             };

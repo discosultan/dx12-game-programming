@@ -16,7 +16,7 @@
 #endif
 
 // Include structures and functions for lighting.
-#include "LightingUtil.hlsl"
+#include "Shaders\LightingUtil.hlsl"
 
 Texture2DArray gTreeMapArray : register(t0);
 

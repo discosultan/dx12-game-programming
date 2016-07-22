@@ -62,9 +62,12 @@ namespace DX12GameProgramming
                 {
                     _m4xMsaaState = value;
 
-                    // Recreate the swapchain and buffers with new multisample settings.
-                    CreateSwapChain();
-                    OnResize();
+                    if (_running)
+                    {
+                        // Recreate the swapchain and buffers with new multisample settings.
+                        CreateSwapChain();
+                        OnResize();
+                    }
                 }
             }
         }

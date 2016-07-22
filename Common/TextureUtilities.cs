@@ -9,9 +9,12 @@ using Device = SharpDX.Direct3D12.Device;
 namespace DX12GameProgramming
 {
     /// <summary>
-    /// Custom Loader for DDS files
-    /// Ref: https://github.com/RobyDX/SharpDX_D3D12HelloWorld/blob/master/D3D12HelloMesh/TextureUtilities.cs
+    /// Custom Loader for DDS files. 
     /// </summary>
+    /// <remarks>
+    /// Originally taken from https://github.com/RobyDX/SharpDX_D3D12HelloWorld/blob/master/D3D12HelloMesh/TextureUtilities.cs.
+    /// Modified to support DX10 extension.
+    /// </remarks>
     public class TextureUtilities
     {
         const int DDS_MAGIC = 0x20534444;// "DDS "
@@ -755,7 +758,7 @@ namespace DX12GameProgramming
             }
 
             // Check for DX10 extension
-            bool bDXT10Header = false;
+            DDS_HEADER_DXT10? dx10Header = null;
             if (((header.ddspf.flags & DDS_FOURCC) > 0) && (MAKEFOURCC('D', 'X', '1', '0') == header.ddspf.fourCC))
             {
                 // Must be long enough for both headers and magic value
@@ -764,12 +767,12 @@ namespace DX12GameProgramming
                     throw new Exception();
                 }
 
-                bDXT10Header = true;
+                dx10Header = ByteArrayToStructure<DDS_HEADER_DXT10>(data, 4 + ddsHeaderSize, ddsHeader10Size);
             }
 
-            int offset = 4 + ddsHeaderSize + (bDXT10Header ? ddsHeader10Size : 0);
+            int offset = 4 + ddsHeaderSize + (dx10Header.HasValue ? ddsHeader10Size : 0);
 
-            return CreateTextureFromDDS(device, header, null, data, offset, 0, out isCubeMap);
+            return CreateTextureFromDDS(device, header, dx10Header, data, offset, 0, out isCubeMap);
         }
 
         /// <summary>

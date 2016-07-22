@@ -649,7 +649,7 @@ namespace DX12GameProgramming
             // PSO for transparent objects.
             //
 
-            var transparentPsoDesc = opaquePsoDesc;
+            var transparentPsoDesc = opaquePsoDesc.Copy();
 
             var transparencyBlendDesc = new RenderTargetBlendDescription
             {
@@ -672,7 +672,7 @@ namespace DX12GameProgramming
             // PSO for alpha tested objects.
             //
 
-            var alphaTestedPsoDesc = opaquePsoDesc;
+            var alphaTestedPsoDesc = opaquePsoDesc.Copy();
             alphaTestedPsoDesc.PixelShader = _shaders["alphaTestedPS"];
 
             _psos["alphaTested"] = D3DDevice.CreateGraphicsPipelineState(alphaTestedPsoDesc);

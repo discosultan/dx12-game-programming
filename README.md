@@ -64,5 +64,6 @@ Introduces the blending formula and how to configure a blend state in the graphi
 Constructs a mirror using stencil buffer. Introduces stenciling, projecting mirrored images and shadows.
 
 ## [TreeBillboards](Stamples/TreeBillboards)
+<img src="./Images/TreeBillboards.jpg" height="96px" align="right">
 
-WIP . . .
+Renders trees as billboards. Introduces alpha to coverage.
