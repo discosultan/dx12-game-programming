@@ -407,7 +407,7 @@ namespace DX12GameProgramming
                 Name = name,
                 Filename = $"Textures\\{filename}"
             };
-            tex.Resource = TextureUtilities.CreateTextureFromDDS(D3DDevice, tex.Filename);
+            tex.Resource = TextureUtilities.CreateTextureFromDDS(Device, tex.Filename);
             _textures[tex.Name] = tex;
         }
 
@@ -435,7 +435,7 @@ namespace DX12GameProgramming
                 slotRootParameters,
                 GetStaticSamplers());
 
-            _rootSignature = D3DDevice.CreateRootSignature(rootSigDesc.Serialize());
+            _rootSignature = Device.CreateRootSignature(rootSigDesc.Serialize());
         }
 
         private void BuildDescriptorHeaps()
@@ -449,7 +449,7 @@ namespace DX12GameProgramming
                 Type = DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView,
                 Flags = DescriptorHeapFlags.ShaderVisible
             };
-            _srvDescriptorHeap = D3DDevice.CreateDescriptorHeap(srvHeapDesc);
+            _srvDescriptorHeap = Device.CreateDescriptorHeap(srvHeapDesc);
             _descriptorHeaps = new[] { _srvDescriptorHeap };
 
             //
@@ -475,19 +475,19 @@ namespace DX12GameProgramming
                 }
             };
 
-            D3DDevice.CreateShaderResourceView(grassTex, srvDesc, hDescriptor);
+            Device.CreateShaderResourceView(grassTex, srvDesc, hDescriptor);
 
             // Next descriptor.
             hDescriptor += CbvSrvUavDescriptorSize;
 
             srvDesc.Format = waterTex.Description.Format;
-            D3DDevice.CreateShaderResourceView(waterTex, srvDesc, hDescriptor);
+            Device.CreateShaderResourceView(waterTex, srvDesc, hDescriptor);
 
             // Next descriptor.
             hDescriptor += CbvSrvUavDescriptorSize;
 
             srvDesc.Format = fenceTex.Description.Format;
-            D3DDevice.CreateShaderResourceView(fenceTex, srvDesc, hDescriptor);
+            Device.CreateShaderResourceView(fenceTex, srvDesc, hDescriptor);
         }
 
         private void BuildShadersAndInputLayout()
@@ -537,7 +537,7 @@ namespace DX12GameProgramming
 
             List<short> indices = grid.GetIndices16();
 
-            var geo = MeshGeometry.New(D3DDevice, CommandList, vertices, indices.ToArray(), "landGeo");
+            var geo = MeshGeometry.New(Device, CommandList, vertices, indices.ToArray(), "landGeo");
 
             var submesh = new SubmeshGeometry
             {
@@ -577,7 +577,7 @@ namespace DX12GameProgramming
             }
 
             // Vertices are set dynamically.
-            var geo = MeshGeometry.New(D3DDevice, CommandList, indices, "waterGeo");
+            var geo = MeshGeometry.New(Device, CommandList, indices, "waterGeo");
             geo.VertexByteStride = Utilities.SizeOf<Vertex>();
             geo.VertexBufferByteSize = geo.VertexByteStride * _waves.VertexCount;
 
@@ -613,7 +613,7 @@ namespace DX12GameProgramming
 
             short[] indices = box.GetIndices16().ToArray();
 
-            var geo = MeshGeometry.New(D3DDevice, CommandList, vertices, indices, "boxGeo");
+            var geo = MeshGeometry.New(Device, CommandList, vertices, indices, "boxGeo");
 
             geo.DrawArgs["box"] = boxSubmesh;
 
@@ -643,7 +643,7 @@ namespace DX12GameProgramming
             };
             opaquePsoDesc.RenderTargetFormats[0] = BackBufferFormat;
 
-            _psos["opaque"] = D3DDevice.CreateGraphicsPipelineState(opaquePsoDesc);
+            _psos["opaque"] = Device.CreateGraphicsPipelineState(opaquePsoDesc);
 
             //
             // PSO for transparent objects.
@@ -666,7 +666,7 @@ namespace DX12GameProgramming
             };
             transparentPsoDesc.BlendState.RenderTarget[0] = transparencyBlendDesc;
 
-            _psos["transparent"] = D3DDevice.CreateGraphicsPipelineState(transparentPsoDesc);
+            _psos["transparent"] = Device.CreateGraphicsPipelineState(transparentPsoDesc);
 
             //
             // PSO for alpha tested objects.
@@ -675,14 +675,14 @@ namespace DX12GameProgramming
             var alphaTestedPsoDesc = opaquePsoDesc.Copy();
             alphaTestedPsoDesc.PixelShader = _shaders["alphaTestedPS"];
 
-            _psos["alphaTested"] = D3DDevice.CreateGraphicsPipelineState(alphaTestedPsoDesc);
+            _psos["alphaTested"] = Device.CreateGraphicsPipelineState(alphaTestedPsoDesc);
         }
 
         private void BuildFrameResources()
         {
             for (int i = 0; i < NumFrameResources; i++)
             {
-                _frameResources.Add(new FrameResource(D3DDevice, 1, _allRitems.Count, _materials.Count, _waves.VertexCount));
+                _frameResources.Add(new FrameResource(Device, 1, _allRitems.Count, _materials.Count, _waves.VertexCount));
                 _fenceEvents.Add(new AutoResetEvent(false));
             }
         }

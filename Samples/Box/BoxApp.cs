@@ -214,7 +214,7 @@ namespace DX12GameProgramming
                 Flags = DescriptorHeapFlags.ShaderVisible,
                 NodeMask = 0
             };
-            _cbvHeap = D3DDevice.CreateDescriptorHeap(cbvHeapDesc);
+            _cbvHeap = Device.CreateDescriptorHeap(cbvHeapDesc);
             _descriptorHeaps = new[] { _cbvHeap };
         }
 
@@ -222,7 +222,7 @@ namespace DX12GameProgramming
         {
             int sizeInBytes = D3DUtil.CalcConstantBufferByteSize<ObjectConstants>();
 
-            _objectCB = new UploadBuffer<ObjectConstants>(D3DDevice, 1, true);
+            _objectCB = new UploadBuffer<ObjectConstants>(Device, 1, true);
 
             var cbvDesc = new ConstantBufferViewDescription
             {
@@ -230,7 +230,7 @@ namespace DX12GameProgramming
                 SizeInBytes = sizeInBytes
             };
             CpuDescriptorHandle cbvHeapHandle = _cbvHeap.CPUDescriptorHandleForHeapStart;
-            D3DDevice.CreateConstantBufferView(cbvDesc, cbvHeapHandle);
+            Device.CreateConstantBufferView(cbvDesc, cbvHeapHandle);
         }
 
         private void BuildRootSignature()
@@ -252,7 +252,7 @@ namespace DX12GameProgramming
                 new RootParameter(ShaderVisibility.Vertex, cbvTable)
             });
 
-            _rootSignature = D3DDevice.CreateRootSignature(rootSigDesc.Serialize());
+            _rootSignature = Device.CreateRootSignature(rootSigDesc.Serialize());
         }
 
         private void BuildShadersAndInputLayout()
@@ -308,7 +308,7 @@ namespace DX12GameProgramming
                 4, 3, 7
             };            
 
-            _boxGeo = MeshGeometry.New(D3DDevice, CommandList, vertices, indices);
+            _boxGeo = MeshGeometry.New(Device, CommandList, vertices, indices);
         }
 
         private void BuildPSO()
@@ -330,7 +330,7 @@ namespace DX12GameProgramming
             };
             psoDesc.RenderTargetFormats[0] = BackBufferFormat;
 
-            _pso = D3DDevice.CreateGraphicsPipelineState(psoDesc);
+            _pso = Device.CreateGraphicsPipelineState(psoDesc);
         }        
     }
 }

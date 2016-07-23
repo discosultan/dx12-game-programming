@@ -77,7 +77,7 @@ namespace DX12GameProgramming
 
         protected GameTimer Timer { get; } = new GameTimer();
 
-        protected Device D3DDevice { get; private set; }
+        protected Device Device { get; private set; }
 
         protected Fence Fence { get; private set; }
         protected long CurrentFence { get; set; }
@@ -161,13 +161,13 @@ namespace DX12GameProgramming
                 _dsvHeap.Dispose();
                 Fence.Dispose();
                 SwapChain.Dispose();
-                D3DDevice.Dispose();
+                Device.Dispose();
             }
         }
 
         protected virtual void OnResize()
         {
-            Debug.Assert(D3DDevice != null);
+            Debug.Assert(Device != null);
             Debug.Assert(SwapChain != null);
             Debug.Assert(DirectCmdListAlloc != null);
 
@@ -193,7 +193,7 @@ namespace DX12GameProgramming
             {
                 Resource backBuffer = SwapChain.GetBackBuffer<Resource>(i);
                 _swapChainBuffers[i] = backBuffer;
-                D3DDevice.CreateRenderTargetView(backBuffer, null, rtvHeapHandle);
+                Device.CreateRenderTargetView(backBuffer, null, rtvHeapHandle);
                 rtvHeapHandle += RtvDescriptorSize;
             }
 
@@ -225,7 +225,7 @@ namespace DX12GameProgramming
                     Stencil = 0
                 }
             };
-            DepthStencilBuffer = D3DDevice.CreateCommittedResource(
+            DepthStencilBuffer = Device.CreateCommittedResource(
                 new HeapProperties(HeapType.Default),
                 HeapFlags.None,
                 depthStencilDesc,
@@ -234,7 +234,7 @@ namespace DX12GameProgramming
 
             // Create descriptor to mip level 0 of entire resource using the format of the resource.
             CpuDescriptorHandle dsvHeapHandle = _dsvHeap.CPUDescriptorHandleForHeapStart;
-            D3DDevice.CreateDepthStencilView(DepthStencilBuffer, null, dsvHeapHandle);
+            Device.CreateDepthStencilView(DepthStencilBuffer, null, dsvHeapHandle);
 
             // Transition the resource from its initial state to be used as a depth buffer.
             CommandList.ResourceBarrierTransition(DepthStencilBuffer, ResourceStates.Common, ResourceStates.DepthWrite);
@@ -399,21 +399,21 @@ namespace DX12GameProgramming
                 // Try to create hardware device.
                 // Pass NULL to use the default adapter which is the first adapter that is enumerated by Factory.Adapters.
                 // Ref: https://msdn.microsoft.com/en-us/library/windows/desktop/dn770336(v=vs.85).aspx            
-                D3DDevice = new Device(null, FeatureLevel.Level_11_0);
+                Device = new Device(null, FeatureLevel.Level_11_0);
             }
             catch (SharpDXException)
             {
                 // Fallback to WARP device.
                 Adapter warpAdapter = _factory.CreateSoftwareAdapter(_appInst);
-                D3DDevice = new Device(warpAdapter, FeatureLevel.Level_11_0);
+                Device = new Device(warpAdapter, FeatureLevel.Level_11_0);
             }
 
-            Fence = D3DDevice.CreateFence(0, FenceFlags.None);
+            Fence = Device.CreateFence(0, FenceFlags.None);
             _fenceEvent = new AutoResetEvent(false);
 
-            RtvDescriptorSize = D3DDevice.GetDescriptorHandleIncrementSize(DescriptorHeapType.RenderTargetView);
-            DsvDescriptorSize = D3DDevice.GetDescriptorHandleIncrementSize(DescriptorHeapType.DepthStencilView);
-            CbvSrvUavDescriptorSize = D3DDevice.GetDescriptorHandleIncrementSize(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView);
+            RtvDescriptorSize = Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.RenderTargetView);
+            DsvDescriptorSize = Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.DepthStencilView);
+            CbvSrvUavDescriptorSize = Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView);
 
             // Check 4X MSAA quality support for our back buffer format.
             // All Direct3D 11 capable devices support 4X MSAA for all render 
@@ -424,7 +424,7 @@ namespace DX12GameProgramming
             msQualityLevels.SampleCount = 4;
             msQualityLevels.Flags = MultisampleQualityLevelFlags.None;
             msQualityLevels.QualityLevelCount = 0;
-            Debug.Assert(D3DDevice.CheckFeatureSupport(Feature.MultisampleQualityLevels, ref msQualityLevels));
+            Debug.Assert(Device.CheckFeatureSupport(Feature.MultisampleQualityLevels, ref msQualityLevels));
             _m4xMsaaQuality = msQualityLevels.QualityLevelCount;
 
 #if DEBUG
@@ -460,11 +460,11 @@ namespace DX12GameProgramming
         private void CreateCommandObjects()
         {
             var queueDesc = new CommandQueueDescription(CommandListType.Direct);
-            CommandQueue = D3DDevice.CreateCommandQueue(queueDesc);
+            CommandQueue = Device.CreateCommandQueue(queueDesc);
 
-            DirectCmdListAlloc = D3DDevice.CreateCommandAllocator(CommandListType.Direct);
+            DirectCmdListAlloc = Device.CreateCommandAllocator(CommandListType.Direct);
 
-            CommandList = D3DDevice.CreateCommandList(
+            CommandList = Device.CreateCommandList(
                 0,
                 CommandListType.Direct,
                 DirectCmdListAlloc, // Associated command allocator.
@@ -518,14 +518,14 @@ namespace DX12GameProgramming
                 DescriptorCount = SwapChainBufferCount,
                 Type = DescriptorHeapType.RenderTargetView
             };
-            _rtvHeap = D3DDevice.CreateDescriptorHeap(rtvHeapDesc);
+            _rtvHeap = Device.CreateDescriptorHeap(rtvHeapDesc);
 
             var dsvHeapDesc = new DescriptorHeapDescription
             {
                 DescriptorCount = 1,
                 Type = DescriptorHeapType.DepthStencilView
             };
-            _dsvHeap = D3DDevice.CreateDescriptorHeap(dsvHeapDesc);
+            _dsvHeap = Device.CreateDescriptorHeap(dsvHeapDesc);
         }
 
         private void LogAdapters()

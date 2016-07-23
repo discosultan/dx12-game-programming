@@ -357,7 +357,7 @@ namespace DX12GameProgramming
                 slotRootParameters);
 
             // Create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer.
-            _rootSignature = D3DDevice.CreateRootSignature(rootSigDesc.Serialize());
+            _rootSignature = Device.CreateRootSignature(rootSigDesc.Serialize());
         }
 
         private void BuildShadersAndInputLayout()
@@ -393,7 +393,7 @@ namespace DX12GameProgramming
 
             List<short> indices = grid.GetIndices16();
 
-            var geo = MeshGeometry.New(D3DDevice, CommandList, vertices, indices.ToArray(), "landGeo");
+            var geo = MeshGeometry.New(Device, CommandList, vertices, indices.ToArray(), "landGeo");
 
             var submesh = new SubmeshGeometry
             {
@@ -433,7 +433,7 @@ namespace DX12GameProgramming
             }
 
             // Vertices are set dynamically.
-            var geo = MeshGeometry.New(D3DDevice, CommandList, indices, "waterGeo");
+            var geo = MeshGeometry.New(Device, CommandList, indices, "waterGeo");
             geo.VertexByteStride = Utilities.SizeOf<Vertex>();
             geo.VertexBufferByteSize = geo.VertexByteStride * _waves.VertexCount;
 
@@ -472,7 +472,7 @@ namespace DX12GameProgramming
             };
             opaquePsoDesc.RenderTargetFormats[0] = BackBufferFormat;
 
-            _psos["opaque"] = D3DDevice.CreateGraphicsPipelineState(opaquePsoDesc);
+            _psos["opaque"] = Device.CreateGraphicsPipelineState(opaquePsoDesc);
 
             //
             // PSO for opaque wireframe objects.
@@ -481,14 +481,14 @@ namespace DX12GameProgramming
             var opaqueWireframePsoDesc = opaquePsoDesc;
             opaqueWireframePsoDesc.RasterizerState.FillMode = FillMode.Wireframe;
 
-            _psos["opaque_wireframe"] = D3DDevice.CreateGraphicsPipelineState(opaqueWireframePsoDesc);
+            _psos["opaque_wireframe"] = Device.CreateGraphicsPipelineState(opaqueWireframePsoDesc);
         }
 
         private void BuildFrameResources()
         {
             for (int i = 0; i < NumFrameResources; i++)
             {
-                _frameResources.Add(new FrameResource(D3DDevice, 1, _allRitems.Count, _materials.Count, _waves.VertexCount));
+                _frameResources.Add(new FrameResource(Device, 1, _allRitems.Count, _materials.Count, _waves.VertexCount));
                 _fenceEvents.Add(new AutoResetEvent(false));
             }
         }

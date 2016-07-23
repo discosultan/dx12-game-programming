@@ -309,7 +309,7 @@ namespace DX12GameProgramming
                 slotRootParameters);
 
             // Create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer.
-            _rootSignature = D3DDevice.CreateRootSignature(rootSigDesc.Serialize());
+            _rootSignature = Device.CreateRootSignature(rootSigDesc.Serialize());
         }
 
         private void BuildShadersAndInputLayout()
@@ -423,7 +423,7 @@ namespace DX12GameProgramming
             indices.AddRange(sphere.GetIndices16());
             indices.AddRange(cylinder.GetIndices16());
 
-            var geo = MeshGeometry.New(D3DDevice, CommandList, vertices, indices.ToArray(), "shapeGeo");
+            var geo = MeshGeometry.New(Device, CommandList, vertices, indices.ToArray(), "shapeGeo");
 
             geo.DrawArgs["box"] = boxSubmesh;
             geo.DrawArgs["grid"] = gridSubmesh;
@@ -492,7 +492,7 @@ namespace DX12GameProgramming
                 }
             }
 
-            var geo = MeshGeometry.New(D3DDevice, CommandList, vertices.ToArray(), indices.ToArray(), "skullGeo");
+            var geo = MeshGeometry.New(Device, CommandList, vertices.ToArray(), indices.ToArray(), "skullGeo");
             var submesh = new SubmeshGeometry
             {
                 IndexCount = indices.Count,
@@ -528,14 +528,14 @@ namespace DX12GameProgramming
             };
             opaquePsoDesc.RenderTargetFormats[0] = BackBufferFormat;
 
-            _opaquePso = D3DDevice.CreateGraphicsPipelineState(opaquePsoDesc);
+            _opaquePso = Device.CreateGraphicsPipelineState(opaquePsoDesc);
         }
 
         private void BuildFrameResources()
         {
             for (int i = 0; i < NumFrameResources; i++)
             {
-                _frameResources.Add(new FrameResource(D3DDevice, 1, _allRitems.Count, _materials.Count));
+                _frameResources.Add(new FrameResource(Device, 1, _allRitems.Count, _materials.Count));
                 _fenceEvents.Add(new AutoResetEvent(false));
             }
         }

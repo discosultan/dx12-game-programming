@@ -294,7 +294,7 @@ namespace DX12GameProgramming
                 Type = DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView,
                 Flags = DescriptorHeapFlags.ShaderVisible
             };
-            _cbvHeap = D3DDevice.CreateDescriptorHeap(cbvHeapDesc);
+            _cbvHeap = Device.CreateDescriptorHeap(cbvHeapDesc);
             _descriptorHeaps = new[] { _cbvHeap };
         }
 
@@ -326,7 +326,7 @@ namespace DX12GameProgramming
                         SizeInBytes = objCBByteSize
                     };
 
-                    D3DDevice.CreateConstantBufferView(cbvDesc, handle);
+                    Device.CreateConstantBufferView(cbvDesc, handle);
                 }
             }
 
@@ -349,7 +349,7 @@ namespace DX12GameProgramming
                     SizeInBytes = passCBByteSize
                 };
 
-                D3DDevice.CreateConstantBufferView(cbvDesc, handle);
+                Device.CreateConstantBufferView(cbvDesc, handle);
             }
         }
 
@@ -371,7 +371,7 @@ namespace DX12GameProgramming
                 slotRootParameters);
 
             // Create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer.
-            _rootSignature = D3DDevice.CreateRootSignature(rootSigDesc.Serialize());
+            _rootSignature = Device.CreateRootSignature(rootSigDesc.Serialize());
         }
 
         private void BuildShadersAndInputLayout()
@@ -485,7 +485,7 @@ namespace DX12GameProgramming
             indices.AddRange(sphere.GetIndices16());
             indices.AddRange(cylinder.GetIndices16());
 
-            var geo = MeshGeometry.New(D3DDevice, CommandList, vertices, indices.ToArray(), "shapeGeo");
+            var geo = MeshGeometry.New(Device, CommandList, vertices, indices.ToArray(), "shapeGeo");
 
             geo.DrawArgs["box"] = boxSubmesh;
             geo.DrawArgs["grid"] = gridSubmesh;
@@ -518,7 +518,7 @@ namespace DX12GameProgramming
             };
             opaquePsoDesc.RenderTargetFormats[0] = BackBufferFormat;
 
-            _psos["opaque"] = D3DDevice.CreateGraphicsPipelineState(opaquePsoDesc);
+            _psos["opaque"] = Device.CreateGraphicsPipelineState(opaquePsoDesc);
 
             //
             // PSO for opaque wireframe objects.
@@ -527,14 +527,14 @@ namespace DX12GameProgramming
             var opaqueWireframePsoDesc = opaquePsoDesc;
             opaqueWireframePsoDesc.RasterizerState.FillMode = FillMode.Wireframe;
 
-            _psos["opaque_wireframe"] = D3DDevice.CreateGraphicsPipelineState(opaqueWireframePsoDesc);
+            _psos["opaque_wireframe"] = Device.CreateGraphicsPipelineState(opaqueWireframePsoDesc);
         }
 
         private void BuildFrameResources()
         {
             for (int i = 0; i < NumFrameResources; i++)
             {
-                _frameResources.Add(new FrameResource(D3DDevice, 1, _allRitems.Count));
+                _frameResources.Add(new FrameResource(Device, 1, _allRitems.Count));
                 _fenceEvents.Add(new AutoResetEvent(false));
             }
         }

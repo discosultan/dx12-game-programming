@@ -309,7 +309,7 @@ namespace DX12GameProgramming
                 Name = "woodCrateTex",
                 Filename = "Textures/WoodCrate01.dds"
             };
-            woodCrateTex.Resource = TextureUtilities.CreateTextureFromDDS(D3DDevice, woodCrateTex.Filename);
+            woodCrateTex.Resource = TextureUtilities.CreateTextureFromDDS(Device, woodCrateTex.Filename);
             _textures[woodCrateTex.Name] = woodCrateTex;
         }
 
@@ -337,7 +337,7 @@ namespace DX12GameProgramming
                 slotRootParameters,
                 GetStaticSamplers());
             
-            _rootSignature = D3DDevice.CreateRootSignature(rootSigDesc.Serialize());
+            _rootSignature = Device.CreateRootSignature(rootSigDesc.Serialize());
         }
 
         private void BuildDescriptorHeaps()
@@ -351,7 +351,7 @@ namespace DX12GameProgramming
                 Type = DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView,
                 Flags = DescriptorHeapFlags.ShaderVisible
             };
-            _srvDescriptorHeap = D3DDevice.CreateDescriptorHeap(srvHeapDesc);
+            _srvDescriptorHeap = Device.CreateDescriptorHeap(srvHeapDesc);
             _descriptorHeaps = new[] { _srvDescriptorHeap };
 
             //
@@ -376,7 +376,7 @@ namespace DX12GameProgramming
                 }
             };
 
-            D3DDevice.CreateShaderResourceView(woodCrateTexture, srvDesc, hDescriptor);
+            Device.CreateShaderResourceView(woodCrateTexture, srvDesc, hDescriptor);
         }
 
         private void BuildShadersAndInputLayout()
@@ -412,7 +412,7 @@ namespace DX12GameProgramming
 
             short[] indices = box.GetIndices16().ToArray();
             
-            var geo = MeshGeometry.New(D3DDevice, CommandList, vertices, indices, "boxGeo");
+            var geo = MeshGeometry.New(Device, CommandList, vertices, indices, "boxGeo");
 
             geo.DrawArgs["box"] = boxSubmesh;
 
@@ -442,14 +442,14 @@ namespace DX12GameProgramming
             };
             opaquePsoDesc.RenderTargetFormats[0] = BackBufferFormat;
 
-            _opaquePso = D3DDevice.CreateGraphicsPipelineState(opaquePsoDesc);
+            _opaquePso = Device.CreateGraphicsPipelineState(opaquePsoDesc);
         }
 
         private void BuildFrameResources()
         {
             for (int i = 0; i < NumFrameResources; i++)
             {
-                _frameResources.Add(new FrameResource(D3DDevice, 1, _allRitems.Count, _materials.Count));
+                _frameResources.Add(new FrameResource(Device, 1, _allRitems.Count, _materials.Count));
                 _fenceEvents.Add(new AutoResetEvent(false));
             }
         }

@@ -317,7 +317,7 @@ namespace DX12GameProgramming
                 Name = name,
                 Filename = $"Textures\\{filename}"
             };
-            tex.Resource = TextureUtilities.CreateTextureFromDDS(D3DDevice, tex.Filename);
+            tex.Resource = TextureUtilities.CreateTextureFromDDS(Device, tex.Filename);
             _textures[tex.Name] = tex;
         }
 
@@ -345,7 +345,7 @@ namespace DX12GameProgramming
                 slotRootParameters,
                 GetStaticSamplers());
 
-            _rootSignature = D3DDevice.CreateRootSignature(rootSigDesc.Serialize());
+            _rootSignature = Device.CreateRootSignature(rootSigDesc.Serialize());
         }
 
         private void BuildDescriptorHeaps()
@@ -359,7 +359,7 @@ namespace DX12GameProgramming
                 Type = DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView,
                 Flags = DescriptorHeapFlags.ShaderVisible
             };
-            _srvDescriptorHeap = D3DDevice.CreateDescriptorHeap(srvHeapDesc);
+            _srvDescriptorHeap = Device.CreateDescriptorHeap(srvHeapDesc);
             _descriptorHeaps = new[] { _srvDescriptorHeap };
 
             //
@@ -386,19 +386,19 @@ namespace DX12GameProgramming
                 }
             };
 
-            D3DDevice.CreateShaderResourceView(bricksTex, srvDesc, hDescriptor);
+            Device.CreateShaderResourceView(bricksTex, srvDesc, hDescriptor);
 
             // Next descriptor.
             hDescriptor += CbvSrvUavDescriptorSize;
 
             srvDesc.Format = stoneTex.Description.Format;
-            D3DDevice.CreateShaderResourceView(stoneTex, srvDesc, hDescriptor);
+            Device.CreateShaderResourceView(stoneTex, srvDesc, hDescriptor);
 
             // Next descriptor.
             hDescriptor += CbvSrvUavDescriptorSize;
 
             srvDesc.Format = tileTex.Description.Format;
-            D3DDevice.CreateShaderResourceView(tileTex, srvDesc, hDescriptor);
+            Device.CreateShaderResourceView(tileTex, srvDesc, hDescriptor);
         }
 
         private void BuildShadersAndInputLayout()
@@ -517,7 +517,7 @@ namespace DX12GameProgramming
             indices.AddRange(sphere.GetIndices16());
             indices.AddRange(cylinder.GetIndices16());
 
-            var geo = MeshGeometry.New(D3DDevice, CommandList, vertices, indices.ToArray(), "shapeGeo");
+            var geo = MeshGeometry.New(Device, CommandList, vertices, indices.ToArray(), "shapeGeo");
 
             geo.DrawArgs["box"] = boxSubmesh;
             geo.DrawArgs["grid"] = gridSubmesh;
@@ -550,14 +550,14 @@ namespace DX12GameProgramming
             };
             opaquePsoDesc.RenderTargetFormats[0] = BackBufferFormat;
 
-            _opaquePso = D3DDevice.CreateGraphicsPipelineState(opaquePsoDesc);
+            _opaquePso = Device.CreateGraphicsPipelineState(opaquePsoDesc);
         }
 
         private void BuildFrameResources()
         {
             for (int i = 0; i < NumFrameResources; i++)
             {
-                _frameResources.Add(new FrameResource(D3DDevice, 1, _allRitems.Count, _materials.Count));
+                _frameResources.Add(new FrameResource(Device, 1, _allRitems.Count, _materials.Count));
                 _fenceEvents.Add(new AutoResetEvent(false));
             }
         }

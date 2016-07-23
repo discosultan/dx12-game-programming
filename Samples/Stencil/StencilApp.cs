@@ -429,7 +429,7 @@ namespace DX12GameProgramming
                 Name = name,
                 Filename = $"Textures\\{filename}"
             };
-            tex.Resource = TextureUtilities.CreateTextureFromDDS(D3DDevice, tex.Filename);
+            tex.Resource = TextureUtilities.CreateTextureFromDDS(Device, tex.Filename);
             _textures[tex.Name] = tex;
         }
 
@@ -458,7 +458,7 @@ namespace DX12GameProgramming
                 slotRootParameters,
                 GetStaticSamplers());
 
-            _rootSignature = D3DDevice.CreateRootSignature(rootSigDesc.Serialize());
+            _rootSignature = Device.CreateRootSignature(rootSigDesc.Serialize());
         }
 
         private void BuildDescriptorHeaps()
@@ -472,7 +472,7 @@ namespace DX12GameProgramming
                 Type = DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView,
                 Flags = DescriptorHeapFlags.ShaderVisible
             };
-            _srvDescriptorHeap = D3DDevice.CreateDescriptorHeap(srvHeapDesc);
+            _srvDescriptorHeap = Device.CreateDescriptorHeap(srvHeapDesc);
             _descriptorHeaps = new[] { _srvDescriptorHeap };
 
             //
@@ -499,25 +499,25 @@ namespace DX12GameProgramming
                 }
             };
 
-            D3DDevice.CreateShaderResourceView(bricksTex, srvDesc, hDescriptor);
+            Device.CreateShaderResourceView(bricksTex, srvDesc, hDescriptor);
 
             // Next descriptor.
             hDescriptor += CbvSrvUavDescriptorSize;
 
             srvDesc.Format = checkboardTex.Description.Format;
-            D3DDevice.CreateShaderResourceView(checkboardTex, srvDesc, hDescriptor);
+            Device.CreateShaderResourceView(checkboardTex, srvDesc, hDescriptor);
 
             // Next descriptor.
             hDescriptor += CbvSrvUavDescriptorSize;
 
             srvDesc.Format = iceTex.Description.Format;
-            D3DDevice.CreateShaderResourceView(iceTex, srvDesc, hDescriptor);
+            Device.CreateShaderResourceView(iceTex, srvDesc, hDescriptor);
 
             // Next descriptor.
             hDescriptor += CbvSrvUavDescriptorSize;
 
             srvDesc.Format = white1x1Tex.Description.Format;
-            D3DDevice.CreateShaderResourceView(white1x1Tex, srvDesc, hDescriptor);
+            Device.CreateShaderResourceView(white1x1Tex, srvDesc, hDescriptor);
         }
 
         private void BuildShadersAndInputLayout()
@@ -615,7 +615,7 @@ namespace DX12GameProgramming
 
             };
 
-            var geo = MeshGeometry.New(D3DDevice, CommandList, vertices, indices, "roomGeo");
+            var geo = MeshGeometry.New(Device, CommandList, vertices, indices, "roomGeo");
 
             geo.DrawArgs["floor"] = new SubmeshGeometry
             {
@@ -698,7 +698,7 @@ namespace DX12GameProgramming
                 }
             }
 
-            var geo = MeshGeometry.New(D3DDevice, CommandList, vertices.ToArray(), indices.ToArray(), "skullGeo");
+            var geo = MeshGeometry.New(Device, CommandList, vertices.ToArray(), indices.ToArray(), "skullGeo");
 
             geo.DrawArgs["skull"] = new SubmeshGeometry
             {
@@ -733,7 +733,7 @@ namespace DX12GameProgramming
             };
             opaquePsoDesc.RenderTargetFormats[0] = BackBufferFormat;
 
-            _psos["opaque"] = D3DDevice.CreateGraphicsPipelineState(opaquePsoDesc);
+            _psos["opaque"] = Device.CreateGraphicsPipelineState(opaquePsoDesc);
 
             //
             // PSO for transparent objects.
@@ -756,7 +756,7 @@ namespace DX12GameProgramming
             };
             transparentPsoDesc.BlendState.RenderTarget[0] = transparencyBlendDesc;
 
-            _psos["transparent"] = D3DDevice.CreateGraphicsPipelineState(transparentPsoDesc);
+            _psos["transparent"] = Device.CreateGraphicsPipelineState(transparentPsoDesc);
 
             //
             // PSO for marking stencil mirrors.
@@ -796,7 +796,7 @@ namespace DX12GameProgramming
             GraphicsPipelineStateDescription markMirrorsPsoDesc = opaquePsoDesc.Copy();
             markMirrorsPsoDesc.BlendState = mirrorBlendState;
             markMirrorsPsoDesc.DepthStencilState = mirrorDSS;
-            _psos["markStencilMirrors"] = D3DDevice.CreateGraphicsPipelineState(markMirrorsPsoDesc);
+            _psos["markStencilMirrors"] = Device.CreateGraphicsPipelineState(markMirrorsPsoDesc);
 
             //
             // PSO for stencil reflections.
@@ -825,7 +825,7 @@ namespace DX12GameProgramming
             drawReflectionsPsoDesc.DepthStencilState = reflectionDSS;
             drawReflectionsPsoDesc.RasterizerState.CullMode = CullMode.Back;
             drawReflectionsPsoDesc.RasterizerState.IsFrontCounterClockwise = true;
-            _psos["drawStencilReflections"] = D3DDevice.CreateGraphicsPipelineState(drawReflectionsPsoDesc);
+            _psos["drawStencilReflections"] = Device.CreateGraphicsPipelineState(drawReflectionsPsoDesc);
 
             //
             // PSO for shadow objects.
@@ -852,14 +852,14 @@ namespace DX12GameProgramming
 
             GraphicsPipelineStateDescription shadowPsoDesc = transparentPsoDesc.Copy();
             shadowPsoDesc.DepthStencilState = shadowDSS;
-            _psos["shadow"] = D3DDevice.CreateGraphicsPipelineState(shadowPsoDesc);
+            _psos["shadow"] = Device.CreateGraphicsPipelineState(shadowPsoDesc);
         }
 
         private void BuildFrameResources()
         {
             for (int i = 0; i < NumFrameResources; i++)
             {
-                _frameResources.Add(new FrameResource(D3DDevice, 2, _allRitems.Count, _materials.Count));
+                _frameResources.Add(new FrameResource(Device, 2, _allRitems.Count, _materials.Count));
                 _fenceEvents.Add(new AutoResetEvent(false));
             }
         }
