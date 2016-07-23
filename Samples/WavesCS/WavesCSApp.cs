@@ -19,6 +19,7 @@ namespace DX12GameProgramming
         private int _currFrameResourceIndex;
 
         private RootSignature _rootSignature;
+        private RootSignature _wavesRootSignature;
 
         private DescriptorHeap _srvDescriptorHeap;
         private DescriptorHeap[] _descriptorHeaps;
@@ -31,8 +32,6 @@ namespace DX12GameProgramming
 
         private InputLayoutDescription _inputLayout;
 
-        private RenderItem _wavesRitem;
-
         // List of all the render items.
         private readonly List<RenderItem> _allRitems = new List<RenderItem>();
 
@@ -41,7 +40,8 @@ namespace DX12GameProgramming
         {
             [RenderLayer.Opaque] = new List<RenderItem>(),
             [RenderLayer.Transparent] = new List<RenderItem>(),
-            [RenderLayer.AlphaTested] = new List<RenderItem>()
+            [RenderLayer.AlphaTested] = new List<RenderItem>(),
+            [RenderLayer.GpuWaves] = new List<RenderItem>()
         };
 
         private GpuWaves _waves;
@@ -74,10 +74,11 @@ namespace DX12GameProgramming
             // Reset the command list to prep for initialization commands.
             CommandList.Reset(DirectCmdListAlloc, null);
 
-            _waves = new GpuWaves(128, 128, 1.0f, 0.03f, 4.0f, 0.2f);
+            _waves = new GpuWaves(D3DDevice, CommandList, 256, 256, 0.25f, 0.03f, 2.0f, 0.2f);
 
             LoadTextures();
             BuildRootSignature();
+            BuildWavesRootSignature();
             BuildDescriptorHeaps();
             BuildShadersAndInputLayout();
             BuildLandGeometry();
@@ -123,7 +124,6 @@ namespace DX12GameProgramming
             UpdateObjectCBs();
             UpdateMaterialCBs();
             UpdateMainPassCB(gt);
-            UpdateWaves(gt);
         }
 
         protected override void Draw(GameTimer gt)
@@ -138,6 +138,12 @@ namespace DX12GameProgramming
             // Reusing the command list reuses memory.
             CommandList.Reset(cmdListAlloc, _psos["opaque"]);
 
+            CommandList.SetDescriptorHeaps(_descriptorHeaps.Length, _descriptorHeaps);
+
+            UpdateWavesGPU(gt);
+
+            CommandList.PipelineState = _psos["opaque"];
+
             CommandList.SetViewport(Viewport);
             CommandList.SetScissorRectangles(ScissorRectangle);
 
@@ -151,13 +157,12 @@ namespace DX12GameProgramming
             // Specify the buffers we are going to render to.            
             CommandList.SetRenderTargets(CurrentBackBufferView, CurrentDepthStencilView);
 
-            CommandList.SetDescriptorHeaps(_descriptorHeaps.Length, _descriptorHeaps);
+            CommandList.SetGraphicsRootSignature(_rootSignature);            
 
-            CommandList.SetGraphicsRootSignature(_rootSignature);
-
-            // Bind per-pass constant buffer. We only need to do this once per-pass.
             Resource passCB = CurrFrameResource.PassCB.Resource;
             CommandList.SetGraphicsRootConstantBufferView(2, passCB.GPUVirtualAddress);
+
+            CommandList.SetGraphicsRootDescriptorTable(4, _waves.DisplacementMap);
 
             DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Opaque]);
 
@@ -166,6 +171,9 @@ namespace DX12GameProgramming
 
             CommandList.PipelineState = _psos["transparent"];
             DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Transparent]);
+
+            CommandList.PipelineState = _psos["wavesRender"];
+            DrawRenderItems(CommandList, _ritemLayers[RenderLayer.GpuWaves]);
 
             // Indicate a state transition on the resource usage.
             CommandList.ResourceBarrierTransition(CurrentBackBuffer, ResourceStates.RenderTarget, ResourceStates.Present);
@@ -288,7 +296,9 @@ namespace DX12GameProgramming
                     var objConstants = new ObjectConstants
                     {
                         World = Matrix.Transpose(e.World),
-                        TexTransform = Matrix.Transpose(e.TexTransform)
+                        TexTransform = Matrix.Transpose(e.TexTransform),
+                        DisplacementMapTexelSize = e.DisplacementMapTexelSize,
+                        GridSpatialStep = e.GridSpatialStep
                     };
                     CurrFrameResource.ObjectCB.CopyData(e.ObjCBIndex, ref objConstants);
 
@@ -345,16 +355,16 @@ namespace DX12GameProgramming
             _mainPassCB.DeltaTime = gt.DeltaTime;
             _mainPassCB.AmbientLight = new Vector4(0.25f, 0.25f, 0.35f, 1.0f);
             _mainPassCB.Lights.Light1.Direction = new Vector3(0.57735f, -0.57735f, 0.57735f);
-            _mainPassCB.Lights.Light1.Strength = new Vector3(0.9f);
+            _mainPassCB.Lights.Light1.Strength = new Vector3(0.6f);
             _mainPassCB.Lights.Light2.Direction = new Vector3(-0.57735f, -0.57735f, 0.57735f);
-            _mainPassCB.Lights.Light2.Strength = new Vector3(0.5f);
+            _mainPassCB.Lights.Light2.Strength = new Vector3(0.3f);
             _mainPassCB.Lights.Light3.Direction = new Vector3(0.0f, -0.707f, -0.707f);
-            _mainPassCB.Lights.Light3.Strength = new Vector3(0.2f);            
+            _mainPassCB.Lights.Light3.Strength = new Vector3(0.15f);            
 
             CurrFrameResource.PassCB.CopyData(0, ref _mainPassCB);
         }
         
-        private void UpdateWaves(GameTimer gt)
+        private void UpdateWavesGPU(GameTimer gt)
         {
             // Every quarter second, generate a random wave.
             if ((Timer.TotalTime - _tBase) >= 0.25f)
@@ -364,33 +374,13 @@ namespace DX12GameProgramming
                 int i = MathHelper.Rand(4, _waves.RowCount - 5);
                 int j = MathHelper.Rand(4, _waves.ColumnCount - 5);
 
-                float r = MathHelper.Randf(0.2f, 0.5f);
+                float r = MathHelper.Randf(1.0f, 2.0f);
 
-                _waves.Disturb(i, j, r);
+                _waves.Disturb(CommandList, _wavesRootSignature, _psos["wavesDisturb"], i, j, r);
             }
 
             // Update the wave simulation.
-            _waves.Update(gt.DeltaTime);
-
-            // Update the wave vertex buffer with the new solution.
-            UploadBuffer<Vertex> currWavesVB = CurrFrameResource.WavesVB;
-            for (int i = 0; i < _waves.VertexCount; ++i)
-            {
-                var v = new Vertex
-                {
-                    Pos = _waves.Position(i),
-                    Normal = _waves.Normal(i),                    
-                };
-                // Derive tex-coords from position by 
-                // mapping [-w/2,w/2] --> [0,1]
-                v.TexC = new Vector2(
-                    0.5f + v.Pos.X / _waves.Width,
-                    0.5f - v.Pos.Z / _waves.Depth);
-                currWavesVB.CopyData(i, ref v);
-            }
-
-            // Set the dynamic VB of the wave renderitem to the current frame VB.
-            _wavesRitem.Geo.VertexBufferGPU = currWavesVB.Resource;
+            _waves.Update(gt, CommandList, _wavesRootSignature, _psos["wavesUpdate"]);            
         }
 
         private void LoadTextures()
@@ -414,6 +404,7 @@ namespace DX12GameProgramming
         private void BuildRootSignature()
         {
             var texTable = new DescriptorRange(DescriptorRangeType.ShaderResourceView, 1, 0);
+            var displacementMapTable = new DescriptorRange(DescriptorRangeType.ShaderResourceView, 1, 1);
 
             var descriptor1 = new RootDescriptor(0, 0);
             var descriptor2 = new RootDescriptor(1, 0);
@@ -423,10 +414,11 @@ namespace DX12GameProgramming
             // Perfomance TIP: Order from most frequent to least frequent.
             var slotRootParameters = new[]
             {
-                new RootParameter(ShaderVisibility.Pixel, texTable),
-                new RootParameter(ShaderVisibility.Vertex, descriptor1, RootParameterType.ConstantBufferView),
+                new RootParameter(ShaderVisibility.All, texTable),
+                new RootParameter(ShaderVisibility.All, descriptor1, RootParameterType.ConstantBufferView),
                 new RootParameter(ShaderVisibility.All, descriptor2, RootParameterType.ConstantBufferView),
-                new RootParameter(ShaderVisibility.All, descriptor3, RootParameterType.ConstantBufferView)
+                new RootParameter(ShaderVisibility.All, descriptor3, RootParameterType.ConstantBufferView),
+                new RootParameter(ShaderVisibility.All, displacementMapTable),
             };
 
             // A root signature is an array of root parameters.
@@ -438,14 +430,41 @@ namespace DX12GameProgramming
             _rootSignature = D3DDevice.CreateRootSignature(rootSigDesc.Serialize());
         }
 
+        private void BuildWavesRootSignature()
+        {
+            var uavTable0 = new DescriptorRange(DescriptorRangeType.UnorderedAccessView, 1, 0);
+            var uavTable1 = new DescriptorRange(DescriptorRangeType.UnorderedAccessView, 1, 1);
+            var uavTable2 = new DescriptorRange(DescriptorRangeType.UnorderedAccessView, 1, 2);
+
+            // Root parameter can be a table, root descriptor or root constants.
+            // Perfomance TIP: Order from most frequent to least frequent.
+            var slotRootParameters = new[]
+            {
+                new RootParameter(ShaderVisibility.All, new RootConstants(0, 0, 6)),
+                new RootParameter(ShaderVisibility.All, uavTable0),
+                new RootParameter(ShaderVisibility.All, uavTable1),
+                new RootParameter(ShaderVisibility.All, uavTable2),
+            };
+
+            // A root signature is an array of root parameters.
+            var rootSigDesc = new RootSignatureDescription(
+                RootSignatureFlags.AllowInputAssemblerInputLayout,
+                slotRootParameters,
+                GetStaticSamplers());
+
+            _wavesRootSignature = D3DDevice.CreateRootSignature(rootSigDesc.Serialize());
+        }
+
         private void BuildDescriptorHeaps()
         {
+            const int srvCount = 3;
+
             //
             // Create the SRV heap.
             //
             var srvHeapDesc = new DescriptorHeapDescription
             {
-                DescriptorCount = 3,
+                DescriptorCount = srvCount + _waves.DescriptorCount,
                 Type = DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView,
                 Flags = DescriptorHeapFlags.ShaderVisible
             };
@@ -488,6 +507,11 @@ namespace DX12GameProgramming
 
             srvDesc.Format = fenceTex.Description.Format;
             D3DDevice.CreateShaderResourceView(fenceTex, srvDesc, hDescriptor);
+
+            _waves.BuildDescriptors(                
+                _srvDescriptorHeap.CPUDescriptorHandleForHeapStart + srvCount * CbvSrvUavDescriptorSize,
+                _srvDescriptorHeap.GPUDescriptorHandleForHeapStart + srvCount * CbvSrvUavDescriptorSize,
+                CbvSrvUavDescriptorSize);
         }
 
         private void BuildShadersAndInputLayout()
@@ -503,9 +527,17 @@ namespace DX12GameProgramming
                 new ShaderMacro("ALPHA_TEST", "1")
             };
 
+            ShaderMacro[] waveDefines =
+            {
+                new ShaderMacro("DISPLACEMENT_MAP", "1")
+            };
+
             _shaders["standardVS"] = D3DUtil.CompileShader("Shaders\\Default.hlsl", "VS", "vs_5_0");
+            _shaders["wavesVS"] = D3DUtil.CompileShader("Shaders\\Default.hlsl", "VS", "vs_5_0", waveDefines);
             _shaders["opaquePS"] = D3DUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_0", defines);
             _shaders["alphaTestedPS"] = D3DUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_0", alphaTestDefines);
+            _shaders["wavesUpdateCS"] = D3DUtil.CompileShader("Shaders\\WaveSim.hlsl", "UpdateWavesCS", "cs_5_0");
+            _shaders["wavesDisturbCS"] = D3DUtil.CompileShader("Shaders\\WaveSim.hlsl", "DisturbWavesCS", "cs_5_0");
 
             _inputLayout = new InputLayoutDescription(new[]
             {
@@ -552,9 +584,19 @@ namespace DX12GameProgramming
         }
 
         private void BuildWavesGeometry()
-        {
-            var indices = new short[3 * _waves.TriangleCount]; // 3 indices per face.
-            Debug.Assert(_waves.VertexCount < short.MaxValue);
+        {            
+            GeometryGenerator.MeshData grid = GeometryGenerator.CreateGrid(160.0f, 160.0f, _waves.RowCount, _waves.ColumnCount);
+
+            var vertices = new Vertex[grid.Vertices.Count];
+            for (int i = 0; i < grid.Vertices.Count; i++)
+            {
+                vertices[i].Pos = grid.Vertices[i].Position;
+                vertices[i].Normal = grid.Vertices[i].Normal;
+                vertices[i].TexC = grid.Vertices[i].TexC;
+            }
+
+            var indices = new int[3 * _waves.TriangleCount]; // 3 indices per face.
+            Debug.Assert(_waves.VertexCount < int.MaxValue);
 
             // Iterate over each quad.
             int m = _waves.RowCount;
@@ -564,20 +606,19 @@ namespace DX12GameProgramming
             {
                 for (int j = 0; j < n - 1; ++j)
                 {
-                    indices[k + 0] = (short)(i * n + j);
-                    indices[k + 1] = (short)(i * n + j + 1);
-                    indices[k + 2] = (short)((i + 1) * n + j);
+                    indices[k + 0] = i * n + j;
+                    indices[k + 1] = i * n + j + 1;
+                    indices[k + 2] = (i + 1) * n + j;
 
-                    indices[k + 3] = (short)((i + 1) * n + j);
-                    indices[k + 4] = (short)(i * n + j + 1);
-                    indices[k + 5] = (short)((i + 1) * n + j + 1);
+                    indices[k + 3] = (i + 1) * n + j;
+                    indices[k + 4] = i * n + j + 1;
+                    indices[k + 5] = (i + 1) * n + j + 1;
 
                     k += 6; // Next quad.
                 }
             }
 
-            // Vertices are set dynamically.
-            var geo = MeshGeometry.New(D3DDevice, CommandList, indices, "waterGeo");
+            var geo = MeshGeometry.New(D3DDevice, CommandList, vertices, indices, "waterGeo");
             geo.VertexByteStride = Utilities.SizeOf<Vertex>();
             geo.VertexBufferByteSize = geo.VertexByteStride * _waves.VertexCount;
 
@@ -676,6 +717,41 @@ namespace DX12GameProgramming
             alphaTestedPsoDesc.PixelShader = _shaders["alphaTestedPS"];
 
             _psos["alphaTested"] = D3DDevice.CreateGraphicsPipelineState(alphaTestedPsoDesc);
+
+            //
+            // PSO for drawing waves.
+            //
+
+            var wavesRenderPSO = transparentPsoDesc.Copy();
+            wavesRenderPSO.VertexShader = _shaders["wavesVS"];
+
+            _psos["wavesRender"] = D3DDevice.CreateGraphicsPipelineState(wavesRenderPSO);
+
+            //
+            // PSO for disturbing waves.
+            //
+
+            var wavesDisturbPSO = new ComputePipelineStateDescription
+            {
+                RootSignature = _wavesRootSignature,
+                ComputeShader = _shaders["wavesDisturbCS"],
+                Flags = PipelineStateFlags.None
+            };
+
+            _psos["wavesDisturb"] = D3DDevice.CreateComputePipelineState(wavesDisturbPSO);
+
+            //
+            // PSO for updating waves.
+            //
+
+            var wavesUpdatePSO = new ComputePipelineStateDescription
+            {
+                RootSignature = _wavesRootSignature,
+                ComputeShader = _shaders["wavesUpdateCS"],
+                Flags = PipelineStateFlags.None
+            };
+
+            _psos["wavesUpdate"] = D3DDevice.CreateComputePipelineState(wavesUpdatePSO);
         }
 
         private void BuildFrameResources()
@@ -717,25 +793,27 @@ namespace DX12GameProgramming
                 MatCBIndex = 2,
                 DiffuseSrvHeapIndex = 2,
                 DiffuseAlbedo = new Vector4(1.0f),
-                FresnelR0 = new Vector3(0.1f),
+                FresnelR0 = new Vector3(0.2f),
                 Roughness = 0.25f
             };
         }
 
         private void BuildRenderItems()
         {
-            _wavesRitem = new RenderItem();
-            _wavesRitem.World = Matrix.Identity;
-            _wavesRitem.TexTransform = Matrix.Scaling(5.0f, 5.0f, 1.0f);
-            _wavesRitem.ObjCBIndex = 0;
-            _wavesRitem.Mat = _materials["water"];
-            _wavesRitem.Geo = _geometries["waterGeo"];
-            _wavesRitem.PrimitiveType = PrimitiveTopology.TriangleList;
-            _wavesRitem.IndexCount = _wavesRitem.Geo.DrawArgs["grid"].IndexCount;
-            _wavesRitem.StartIndexLocation = _wavesRitem.Geo.DrawArgs["grid"].StartIndexLocation;
-            _wavesRitem.BaseVertexLocation = _wavesRitem.Geo.DrawArgs["grid"].BaseVertexLocation;
-            _ritemLayers[RenderLayer.Transparent].Add(_wavesRitem);
-            _allRitems.Add(_wavesRitem);
+            var wavesRitem = new RenderItem();
+            wavesRitem.World = Matrix.Identity;
+            wavesRitem.TexTransform = Matrix.Scaling(5.0f, 5.0f, 1.0f);
+            wavesRitem.DisplacementMapTexelSize = new Vector2(1.0f / _waves.ColumnCount, 1.0f / _waves.RowCount);
+            wavesRitem.GridSpatialStep = _waves.SpatialStep;
+            wavesRitem.ObjCBIndex = 0;
+            wavesRitem.Mat = _materials["water"];
+            wavesRitem.Geo = _geometries["waterGeo"];
+            wavesRitem.PrimitiveType = PrimitiveTopology.TriangleList;
+            wavesRitem.IndexCount = wavesRitem.Geo.DrawArgs["grid"].IndexCount;
+            wavesRitem.StartIndexLocation = wavesRitem.Geo.DrawArgs["grid"].StartIndexLocation;
+            wavesRitem.BaseVertexLocation = wavesRitem.Geo.DrawArgs["grid"].BaseVertexLocation;
+            _ritemLayers[RenderLayer.Transparent].Add(wavesRitem);
+            _allRitems.Add(wavesRitem);
 
             var gridRitem = new RenderItem();
             gridRitem.World = Matrix.Identity;
@@ -790,14 +868,6 @@ namespace DX12GameProgramming
             }
         }
 
-        private static float GetHillsHeight(float x, float z) => 0.3f * (z * MathHelper.Sinf(0.1f * x) + x * MathHelper.Cosf(0.1f * z));
-
-        private static Vector3 GetHillsNormal(float x, float z) => Vector3.Normalize(new Vector3(
-            // n = (-df/dx, 1, -df/dz)
-            -0.03f * z * MathHelper.Cosf(0.1f * x) - 0.3f * MathHelper.Cosf(0.1f * z),
-            1.0f,
-            -0.3f * MathHelper.Sinf(0.1f * x) + 0.03f * x * MathHelper.Sinf(0.1f * z)));
-
         // Applications usually only need a handful of samplers. So just define them all up front
         // and keep them available as part of the root signature.
         private static StaticSamplerDescription[] GetStaticSamplers() => new[]
@@ -851,5 +921,13 @@ namespace DX12GameProgramming
                 AddressW = TextureAddressMode.Clamp
             }
         };
+
+        private static float GetHillsHeight(float x, float z) => 0.3f * (z * MathHelper.Sinf(0.1f * x) + x * MathHelper.Cosf(0.1f * z));
+
+        private static Vector3 GetHillsNormal(float x, float z) => Vector3.Normalize(new Vector3(
+            // n = (-df/dx, 1, -df/dz)
+            -0.03f * z * MathHelper.Cosf(0.1f * x) - 0.3f * MathHelper.Cosf(0.1f * z),
+            1.0f,
+            -0.3f * MathHelper.Sinf(0.1f * x) + 0.03f * x * MathHelper.Sinf(0.1f * z)));
     }
 }

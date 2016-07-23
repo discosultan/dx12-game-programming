@@ -1,6 +1,5 @@
 ﻿using SharpDX;
 using System.Diagnostics;
-using System.Threading.Tasks;
 using SharpDX.Direct3D12;
 using SharpDX.DXGI;
 using Device = SharpDX.Direct3D12.Device;
@@ -11,15 +10,13 @@ namespace DX12GameProgramming
     internal class GpuWaves
     {
         // Simulation constants we can precompute.
-        private readonly float _k1;
-        private readonly float _k2;
-        private readonly float _k3;
+        private readonly float[] _k;
 
         private float _t;
         private readonly float _timeStep;
         private readonly float _spatialStep;
 
-        private Device _device;
+        private readonly Device _device;
 
         private GpuDescriptorHandle _prevSolSrv;
         private GpuDescriptorHandle _currSolSrv;
@@ -54,12 +51,18 @@ namespace DX12GameProgramming
 
             float d = damping * dt + 2.0f;
             float e = (speed * speed) * (dt * dt) / (dx * dx);
-            _k1 = (damping * dt - 2.0f) / d;
-            _k2 = (4.0f - 8.0f * e) / d;
-            _k3 = (2.0f * e) / d;
+            _k = new[]
+            {
+                (damping * dt - 2.0f) / d,
+                (4.0f - 8.0f * e) / d,
+                (2.0f * e) / d
+            };
 
             BuildResources(cmdList);
         }
+
+        public float SpatialStep => _spatialStep;
+        public GpuDescriptorHandle DisplacementMap => _currSolSrv;
 
         public int RowCount { get; }
         public int ColumnCount { get; }
@@ -193,7 +196,7 @@ namespace DX12GameProgramming
             if (_t >= _timeStep)
             {
                 // Set the update constants.
-                cmdList.SetComputeRoot32BitConstants(0, 3, mK, 0);
+                Utilities.Pin(_k, ptr => cmdList.SetComputeRoot32BitConstants(0, 3, ptr, 0));                
 
                 cmdList.SetComputeRootDescriptorTable(1, _prevSolUav);
                 cmdList.SetComputeRootDescriptorTable(2, _currSolUav);
@@ -243,8 +246,8 @@ namespace DX12GameProgramming
 
             // Set the disturb constants.
             int[] disturbIndex = { j, i };
-            cmdList.SetComputeRoot32BitConstants(0, 1, magnitude, 3);
-            cmdList.SetComputeRoot32BitConstants(0, 2, disturbIndex, 4);
+            Utilities.Pin(ref magnitude, ptr => cmdList.SetComputeRoot32BitConstants(0, 1, ptr, 3));
+            Utilities.Pin(disturbIndex, ptr => cmdList.SetComputeRoot32BitConstants(0, 2, ptr, 4));
 
             cmdList.SetComputeRootDescriptorTable(3, _currSolUav);
 
