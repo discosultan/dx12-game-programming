@@ -192,6 +192,9 @@ namespace DX12GameProgramming
             // Accumulate time.
             _t += gt.DeltaTime;
 
+            cmdList.PipelineState = pso;
+            cmdList.SetComputeRootSignature(rootSig);
+
             // Only update the simulation at the specified time step.
             if (_t >= _timeStep)
             {
@@ -216,17 +219,17 @@ namespace DX12GameProgramming
                 // The next solution becomes the current solution.
                 //
 
-                var resTemp = _prevSol;
+                Resource resTemp = _prevSol;
                 _prevSol = _currSol;
                 _currSol = _nextSol;
                 _nextSol = resTemp;
 
-                var srvTemp = _prevSolSrv;
+                GpuDescriptorHandle srvTemp = _prevSolSrv;
                 _prevSolSrv = _currSolSrv;
                 _currSolSrv = _nextSolSrv;
                 _nextSolSrv = srvTemp;
 
-                var uavTemp = _prevSolUav;
+                GpuDescriptorHandle uavTemp = _prevSolUav;
                 _prevSolUav = _currSolUav;
                 _currSolUav = _nextSolUav;
                 _nextSolUav = uavTemp;

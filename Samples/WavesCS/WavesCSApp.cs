@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using SharpDX;
 using SharpDX.Direct3D;
@@ -403,22 +404,15 @@ namespace DX12GameProgramming
 
         private void BuildRootSignature()
         {
-            var texTable = new DescriptorRange(DescriptorRangeType.ShaderResourceView, 1, 0);
-            var displacementMapTable = new DescriptorRange(DescriptorRangeType.ShaderResourceView, 1, 1);
-
-            var descriptor1 = new RootDescriptor(0, 0);
-            var descriptor2 = new RootDescriptor(1, 0);
-            var descriptor3 = new RootDescriptor(2, 0);
-
             // Root parameter can be a table, root descriptor or root constants.
             // Perfomance TIP: Order from most frequent to least frequent.
             var slotRootParameters = new[]
             {
-                new RootParameter(ShaderVisibility.All, texTable),
-                new RootParameter(ShaderVisibility.All, descriptor1, RootParameterType.ConstantBufferView),
-                new RootParameter(ShaderVisibility.All, descriptor2, RootParameterType.ConstantBufferView),
-                new RootParameter(ShaderVisibility.All, descriptor3, RootParameterType.ConstantBufferView),
-                new RootParameter(ShaderVisibility.All, displacementMapTable),
+                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 1, 0)),
+                new RootParameter(ShaderVisibility.All, new RootDescriptor(0, 0), RootParameterType.ConstantBufferView),
+                new RootParameter(ShaderVisibility.All, new RootDescriptor(1, 0), RootParameterType.ConstantBufferView),
+                new RootParameter(ShaderVisibility.All, new RootDescriptor(2, 0), RootParameterType.ConstantBufferView),
+                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 1, 1))
             };
 
             // A root signature is an array of root parameters.
@@ -873,7 +867,7 @@ namespace DX12GameProgramming
         private static StaticSamplerDescription[] GetStaticSamplers() => new[]
         {
             // PointWrap
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 0, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 0, 0)
             {
                 Filter = Filter.MinMagMipPoint,
                 AddressU = TextureAddressMode.Wrap,
@@ -881,7 +875,7 @@ namespace DX12GameProgramming
                 AddressW = TextureAddressMode.Wrap
             },
             // PointClamp
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 1, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 1, 0)
             {
                 Filter = Filter.MinMagMipPoint,
                 AddressU = TextureAddressMode.Clamp,
@@ -889,7 +883,7 @@ namespace DX12GameProgramming
                 AddressW = TextureAddressMode.Clamp
             },
             // LinearWrap
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 2, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 2, 0)
             {
                 Filter = Filter.MinMagMipLinear,
                 AddressU = TextureAddressMode.Wrap,
@@ -897,7 +891,7 @@ namespace DX12GameProgramming
                 AddressW = TextureAddressMode.Wrap
             },
             // LinearClamp
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 3, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 3, 0)
             {
                 Filter = Filter.MinMagMipLinear,
                 AddressU = TextureAddressMode.Clamp,
@@ -905,7 +899,7 @@ namespace DX12GameProgramming
                 AddressW = TextureAddressMode.Clamp
             },
             // AnisotropicWrap
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 4, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 4, 0)
             {
                 Filter = Filter.Anisotropic,
                 AddressU = TextureAddressMode.Wrap,
@@ -913,7 +907,7 @@ namespace DX12GameProgramming
                 AddressW = TextureAddressMode.Wrap
             },
             // AnisotropicClamp
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 5, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 5, 0)
             {
                 Filter = Filter.Anisotropic,
                 AddressU = TextureAddressMode.Clamp,
