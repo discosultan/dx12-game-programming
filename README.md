@@ -58,12 +58,36 @@ Renders the shapes scene with fully textured objects.
 
 Introduces the blending formula and how to configure a blend state in the graphics pipeline. Renders the hills and water scene with transparent water and box texture.
 
-## [Stencil](Stamples/Stencil)
+## [Stencil](Samples/Stencil)
 <img src="./Images/Stencil.jpg" height="96px" align="right">
 
 Constructs a mirror using stencil buffer. Introduces stenciling, projecting mirrored images and shadows.
 
-## [TreeBillboards](Stamples/TreeBillboards)
+## [TreeBillboards](Samples/TreeBillboards)
 <img src="./Images/TreeBillboards.jpg" height="96px" align="right">
 
 Renders trees as billboards. Introduces alpha to coverage.
+
+## [WavesCS](Samples/WavesCS)
+
+Uses compute shader to update blend sample waves simulation.
+
+## [VecAdd](Samples/VecAdd)
+
+WIP . . .
+
+## [Blur](Samples/Blur)
+
+WIP . . .
+
+## [SobelFilter](Samples/SobelFilter)
+
+WIP . . .
+
+## [BasicTessellation](Samples/BasicTessellation)
+
+WIP . . .
+
+## [BezierPatch](Samples/BezierPatch)
+
+WIP . . .
