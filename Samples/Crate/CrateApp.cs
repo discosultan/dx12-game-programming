@@ -361,13 +361,11 @@ namespace DX12GameProgramming
 
             Resource woodCrateTexture = _textures["woodCrateTex"].Resource;
 
-            // Ref: http://www.notjustcode.it/Blog/RenderTarget_DX12
-            const int DefaultShader4ComponentMapping = 5768;
             var srvDesc = new ShaderResourceViewDescription
             {
-                Shader4ComponentMapping = DefaultShader4ComponentMapping, // TODO: turn int to enum
+                Shader4ComponentMapping = D3DUtil.DefaultShader4ComponentMapping, // TODO: turn int to enum
                 Format = woodCrateTexture.Description.Format,
-                Dimension = ShaderResourceViewDimension.Texture2D ,
+                Dimension = ShaderResourceViewDimension.Texture2D,
                 Texture2D = new ShaderResourceViewDescription.Texture2DResource
                 {
                     MostDetailedMip = 0,

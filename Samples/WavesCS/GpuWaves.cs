@@ -148,10 +148,9 @@ namespace DX12GameProgramming
 
         public void BuildDescriptors(CpuDescriptorHandle cpuDescriptor, GpuDescriptorHandle gpuDescriptor, int descriptorSize)
         {
-            const int DefaultShader4ComponentMapping = 5768;
             var srvDesc = new ShaderResourceViewDescription
             {
-                Shader4ComponentMapping = DefaultShader4ComponentMapping,
+                Shader4ComponentMapping = D3DUtil.DefaultShader4ComponentMapping,
                 Format = Format.R32_Float,
                 Dimension = ShaderResourceViewDimension.Texture2D,
                 Texture2D = new ShaderResourceViewDescription.Texture2DResource

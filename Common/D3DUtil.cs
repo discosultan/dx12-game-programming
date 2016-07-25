@@ -13,6 +13,9 @@ namespace DX12GameProgramming
 {
     public static class D3DUtil
     {
+        // Ref: http://www.notjustcode.it/Blog/RenderTarget_DX12
+        public const int DefaultShader4ComponentMapping = 5768;
+
         public static Resource CreateDefaultBuffer<T>(
             Device device,
             GraphicsCommandList cmdList,

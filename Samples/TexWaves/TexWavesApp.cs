@@ -453,11 +453,9 @@ namespace DX12GameProgramming
             Resource waterTex = _textures["waterTex"].Resource;
             Resource fenceTex = _textures["fenceTex"].Resource;
 
-            // Ref: http://www.notjustcode.it/Blog/RenderTarget_DX12
-            const int DefaultShader4ComponentMapping = 5768;
             var srvDesc = new ShaderResourceViewDescription
             {
-                Shader4ComponentMapping = DefaultShader4ComponentMapping,
+                Shader4ComponentMapping = D3DUtil.DefaultShader4ComponentMapping,
                 Format = grassTex.Description.Format,
                 Dimension = ShaderResourceViewDimension.Texture2D,
                 Texture2D = new ShaderResourceViewDescription.Texture2DResource
