@@ -39,6 +39,8 @@ namespace DX12GameProgramming
             _height = height;
             _width = width;
             _device = device;
+
+            BuildResources();
         }
 
         public Resource Output => _blurMap0;

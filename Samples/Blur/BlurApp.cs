@@ -19,8 +19,9 @@ namespace DX12GameProgramming
         private int _currFrameResourceIndex;
 
         private RootSignature _rootSignature;
+        private RootSignature _postProcessRootSignature;
 
-        private DescriptorHeap _srvDescriptorHeap;
+        private DescriptorHeap _cbvSrvUavDescriptorHeap;
         private DescriptorHeap[] _descriptorHeaps;
 
         private readonly Dictionary<string, MeshGeometry> _geometries = new Dictionary<string, MeshGeometry>();
@@ -45,6 +46,8 @@ namespace DX12GameProgramming
         };
 
         private Waves _waves;
+
+        private BlurFilter _blurFilter;
 
         private PassConstants _mainPassCB = PassConstants.Default;
 
@@ -76,8 +79,11 @@ namespace DX12GameProgramming
 
             _waves = new Waves(128, 128, 1.0f, 0.03f, 4.0f, 0.2f);
 
+            _blurFilter = new BlurFilter(Device, ClientWidth, ClientHeight, Format.R8G8B8A8_UNorm);
+
             LoadTextures();
             BuildRootSignature();
+            BuildPostProcessRootSignature();
             BuildDescriptorHeaps();
             BuildShadersAndInputLayout();
             BuildLandGeometry();
@@ -102,6 +108,8 @@ namespace DX12GameProgramming
 
             // The window resized, so update the aspect ratio and recompute the projection matrix.
             _proj = Matrix.PerspectiveFovLH(0.25f * MathUtil.Pi, AspectRatio, 1.0f, 1000.0f);
+
+            _blurFilter?.OnResize(ClientWidth, ClientHeight);
         }
 
         protected override void Update(GameTimer gt)
@@ -167,8 +175,15 @@ namespace DX12GameProgramming
             CommandList.PipelineState = _psos["transparent"];
             DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Transparent]);
 
-            // Indicate a state transition on the resource usage.
-            CommandList.ResourceBarrierTransition(CurrentBackBuffer, ResourceStates.RenderTarget, ResourceStates.Present);
+            _blurFilter.Execute(CommandList, _postProcessRootSignature, _psos["horzBlur"], _psos["vertBlur"], CurrentBackBuffer, 4);
+
+            // Prepare to copy blurred output to the back buffer.
+            CommandList.ResourceBarrierTransition(CurrentBackBuffer, ResourceStates.CopySource, ResourceStates.CopyDestination);
+
+            CommandList.CopyResource(CurrentBackBuffer, _blurFilter.Output);
+
+            // Transition to PRESENT state.
+            CommandList.ResourceBarrierTransition(CurrentBackBuffer, ResourceStates.CopyDestination, ResourceStates.Present);
 
             // Done recording commands.
             CommandList.Close();
@@ -229,8 +244,10 @@ namespace DX12GameProgramming
         {
             if (disposing)
             {
+                _blurFilter.Dispose();
                 foreach (Texture texture in _textures.Values) texture.Dispose();
                 foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();
+                _postProcessRootSignature.Dispose();
                 _rootSignature.Dispose();
                 foreach (MeshGeometry geometry in _geometries.Values) geometry.Dispose();
                 foreach (PipelineState pso in _psos.Values) pso.Dispose();
@@ -345,11 +362,11 @@ namespace DX12GameProgramming
             _mainPassCB.DeltaTime = gt.DeltaTime;
             _mainPassCB.AmbientLight = new Vector4(0.25f, 0.25f, 0.35f, 1.0f);
             _mainPassCB.Lights.Light1.Direction = new Vector3(0.57735f, -0.57735f, 0.57735f);
-            _mainPassCB.Lights.Light1.Strength = new Vector3(0.9f);
+            _mainPassCB.Lights.Light1.Strength = new Vector3(0.6f);
             _mainPassCB.Lights.Light2.Direction = new Vector3(-0.57735f, -0.57735f, 0.57735f);
-            _mainPassCB.Lights.Light2.Strength = new Vector3(0.5f);
+            _mainPassCB.Lights.Light2.Strength = new Vector3(0.3f);
             _mainPassCB.Lights.Light3.Direction = new Vector3(0.0f, -0.707f, -0.707f);
-            _mainPassCB.Lights.Light3.Strength = new Vector3(0.2f);            
+            _mainPassCB.Lights.Light3.Strength = new Vector3(0.15f);            
 
             CurrFrameResource.PassCB.CopyData(0, ref _mainPassCB);
         }
@@ -413,20 +430,14 @@ namespace DX12GameProgramming
 
         private void BuildRootSignature()
         {
-            var texTable = new DescriptorRange(DescriptorRangeType.ShaderResourceView, 1, 0);
-
-            var descriptor1 = new RootDescriptor(0, 0);
-            var descriptor2 = new RootDescriptor(1, 0);
-            var descriptor3 = new RootDescriptor(2, 0);
-
             // Root parameter can be a table, root descriptor or root constants.
             // Perfomance TIP: Order from most frequent to least frequent.
             var slotRootParameters = new[]
             {
-                new RootParameter(ShaderVisibility.Pixel, texTable),
-                new RootParameter(ShaderVisibility.Vertex, descriptor1, RootParameterType.ConstantBufferView),
-                new RootParameter(ShaderVisibility.All, descriptor2, RootParameterType.ConstantBufferView),
-                new RootParameter(ShaderVisibility.All, descriptor3, RootParameterType.ConstantBufferView)
+                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 1, 0)),
+                new RootParameter(ShaderVisibility.All, new RootDescriptor(0, 0), RootParameterType.ConstantBufferView),
+                new RootParameter(ShaderVisibility.All, new RootDescriptor(1, 0), RootParameterType.ConstantBufferView),
+                new RootParameter(ShaderVisibility.All, new RootDescriptor(2, 0), RootParameterType.ConstantBufferView)
             };
 
             // A root signature is an array of root parameters.
@@ -438,24 +449,46 @@ namespace DX12GameProgramming
             _rootSignature = Device.CreateRootSignature(rootSigDesc.Serialize());
         }
 
+        private void BuildPostProcessRootSignature()
+        {
+            // Root parameter can be a table, root descriptor or root constants.
+            // Perfomance TIP: Order from most frequent to least frequent.
+            var slotRootParameters = new[]
+            {
+                new RootParameter(ShaderVisibility.All, new RootConstants(0, 0, 12)),
+                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 1, 0)),
+                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.UnorderedAccessView, 1, 0))
+            };
+
+            // A root signature is an array of root parameters.
+            var rootSigDesc = new RootSignatureDescription(
+                RootSignatureFlags.AllowInputAssemblerInputLayout,
+                slotRootParameters);
+
+            _postProcessRootSignature = Device.CreateRootSignature(rootSigDesc.Serialize());
+        }
+
         private void BuildDescriptorHeaps()
         {
+            const int textureDescriptorCount = 3;
+            const int blurDescriptorCount = 4;
+
             //
-            // Create the SRV heap.
+            // Create the descriptor heap.
             //
-            var srvHeapDesc = new DescriptorHeapDescription
+            var heapDesc = new DescriptorHeapDescription
             {
-                DescriptorCount = 3,
+                DescriptorCount = textureDescriptorCount + blurDescriptorCount,
                 Type = DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView,
                 Flags = DescriptorHeapFlags.ShaderVisible
             };
-            _srvDescriptorHeap = Device.CreateDescriptorHeap(srvHeapDesc);
-            _descriptorHeaps = new[] { _srvDescriptorHeap };
+            _cbvSrvUavDescriptorHeap = Device.CreateDescriptorHeap(heapDesc);
+            _descriptorHeaps = new[] { _cbvSrvUavDescriptorHeap };
 
             //
-            // Fill out the heap with actual descriptors.
+            // Fill out the heap with texture descriptors.
             //
-            CpuDescriptorHandle hDescriptor = _srvDescriptorHeap.CPUDescriptorHandleForHeapStart;
+            CpuDescriptorHandle hDescriptor = _cbvSrvUavDescriptorHeap.CPUDescriptorHandleForHeapStart;
 
             Resource grassTex = _textures["grassTex"].Resource;
             Resource waterTex = _textures["waterTex"].Resource;
@@ -486,6 +519,15 @@ namespace DX12GameProgramming
 
             srvDesc.Format = fenceTex.Description.Format;
             Device.CreateShaderResourceView(fenceTex, srvDesc, hDescriptor);
+
+            //
+            // Fill out the heap with the descriptors to the BlurFilter resources.
+            //
+
+            _blurFilter.BuildDescriptors(
+                _cbvSrvUavDescriptorHeap.CPUDescriptorHandleForHeapStart + textureDescriptorCount * CbvSrvUavDescriptorSize,
+                _cbvSrvUavDescriptorHeap.GPUDescriptorHandleForHeapStart + textureDescriptorCount * CbvSrvUavDescriptorSize,
+                CbvSrvUavDescriptorSize);
         }
 
         private void BuildShadersAndInputLayout()
@@ -504,6 +546,8 @@ namespace DX12GameProgramming
             _shaders["standardVS"] = D3DUtil.CompileShader("Shaders\\Default.hlsl", "VS", "vs_5_0");
             _shaders["opaquePS"] = D3DUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_0", defines);
             _shaders["alphaTestedPS"] = D3DUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_0", alphaTestDefines);
+            _shaders["horzBlurCS"] = D3DUtil.CompileShader("Shaders\\Blur.hlsl", "HorzBlurCS", "cs_5_0");
+            _shaders["vertBlurCS"] = D3DUtil.CompileShader("Shaders\\Blur.hlsl", "VertBlurCS", "cs_5_0");
 
             _inputLayout = new InputLayoutDescription(new[]
             {
@@ -674,6 +718,32 @@ namespace DX12GameProgramming
             alphaTestedPsoDesc.PixelShader = _shaders["alphaTestedPS"];
 
             _psos["alphaTested"] = Device.CreateGraphicsPipelineState(alphaTestedPsoDesc);
+
+            //
+            // PSO for horizontal blur.
+            //
+
+            var horzBlurPso = new ComputePipelineStateDescription
+            {
+                RootSignature = _postProcessRootSignature,
+                ComputeShader = _shaders["horzBlurCS"],
+                Flags = PipelineStateFlags.None
+            };
+
+            _psos["horzBlur"] = Device.CreateComputePipelineState(horzBlurPso);
+
+            //
+            // PSO for vertical blur.
+            //
+
+            var vertBlurPso = new ComputePipelineStateDescription
+            {
+                RootSignature = _postProcessRootSignature,
+                ComputeShader = _shaders["vertBlurCS"],
+                Flags = PipelineStateFlags.None
+            };
+
+            _psos["vertBlur"] = Device.CreateComputePipelineState(vertBlurPso);
         }
 
         private void BuildFrameResources()
@@ -715,8 +785,8 @@ namespace DX12GameProgramming
                 MatCBIndex = 2,
                 DiffuseSrvHeapIndex = 2,
                 DiffuseAlbedo = new Vector4(1.0f),
-                FresnelR0 = new Vector3(0.1f),
-                Roughness = 0.25f
+                FresnelR0 = new Vector3(0.02f),
+                Roughness = 0.2f
             };
         }
 
@@ -775,7 +845,7 @@ namespace DX12GameProgramming
                 cmdList.SetIndexBuffer(ri.Geo.IndexBufferView);
                 cmdList.PrimitiveTopology = ri.PrimitiveType;
 
-                GpuDescriptorHandle tex = _srvDescriptorHeap.GPUDescriptorHandleForHeapStart + ri.Mat.DiffuseSrvHeapIndex * CbvSrvUavDescriptorSize;
+                GpuDescriptorHandle tex = _cbvSrvUavDescriptorHeap.GPUDescriptorHandleForHeapStart + ri.Mat.DiffuseSrvHeapIndex * CbvSrvUavDescriptorSize;
 
                 long objCBAddress = objectCB.GPUVirtualAddress + ri.ObjCBIndex * objCBByteSize;
                 long matCBAddress = matCB.GPUVirtualAddress + ri.Mat.MatCBIndex * matCBByteSize;
@@ -786,15 +856,7 @@ namespace DX12GameProgramming
 
                 cmdList.DrawIndexedInstanced(ri.IndexCount, 1, ri.StartIndexLocation, ri.BaseVertexLocation, 0);
             }
-        }
-
-        private static float GetHillsHeight(float x, float z) => 0.3f * (z * MathHelper.Sinf(0.1f * x) + x * MathHelper.Cosf(0.1f * z));
-
-        private static Vector3 GetHillsNormal(float x, float z) => Vector3.Normalize(new Vector3(
-            // n = (-df/dx, 1, -df/dz)
-            -0.03f * z * MathHelper.Cosf(0.1f * x) - 0.3f * MathHelper.Cosf(0.1f * z),
-            1.0f,
-            -0.3f * MathHelper.Sinf(0.1f * x) + 0.03f * x * MathHelper.Sinf(0.1f * z)));
+        }        
 
         // Applications usually only need a handful of samplers. So just define them all up front
         // and keep them available as part of the root signature.
@@ -849,5 +911,13 @@ namespace DX12GameProgramming
                 AddressW = TextureAddressMode.Clamp
             }
         };
+
+        private static float GetHillsHeight(float x, float z) => 0.3f * (z * MathHelper.Sinf(0.1f * x) + x * MathHelper.Cosf(0.1f * z));
+
+        private static Vector3 GetHillsNormal(float x, float z) => Vector3.Normalize(new Vector3(
+            // n = (-df/dx, 1, -df/dz)
+            -0.03f * z * MathHelper.Cosf(0.1f * x) - 0.3f * MathHelper.Cosf(0.1f * z),
+            1.0f,
+            -0.3f * MathHelper.Sinf(0.1f * x) + 0.03f * x * MathHelper.Sinf(0.1f * z)));
     }
 }
