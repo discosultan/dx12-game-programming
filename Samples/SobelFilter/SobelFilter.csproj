@@ -58,8 +58,13 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="SobelFilter.cs" />
+    <Compile Include="GpuWaves.cs" />
+    <Compile Include="FrameResource.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RenderItem.cs" />
+    <Compile Include="SobelFilterApp.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
