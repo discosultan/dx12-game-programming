@@ -18,8 +18,9 @@ namespace DX12GameProgramming
         private readonly List<AutoResetEvent> _fenceEvents = new List<AutoResetEvent>(NumFrameResources);
         private int _currFrameResourceIndex;
 
-        private RootSignature _rootSignature;
+        private RootSignature _rootSignature;        
         private RootSignature _wavesRootSignature;
+        private RootSignature _postProcessRootSignature;
 
         private DescriptorHeap _srvDescriptorHeap;
         private DescriptorHeap[] _descriptorHeaps;
@@ -45,6 +46,10 @@ namespace DX12GameProgramming
         };
 
         private GpuWaves _waves;
+
+        private RenderTarget _offscreenRT;
+
+        private SobelFilter _sobelFilter;
 
         private PassConstants _mainPassCB = PassConstants.Default;
 
@@ -76,9 +81,14 @@ namespace DX12GameProgramming
 
             _waves = new GpuWaves(Device, CommandList, 256, 256, 0.25f, 0.03f, 2.0f, 0.2f);
 
+            _sobelFilter = new SobelFilter(Device, ClientWidth, ClientHeight, BackBufferFormat);
+
+            _offscreenRT = new RenderTarget(Device, ClientWidth, ClientHeight, BackBufferFormat);
+
             LoadTextures();
             BuildRootSignature();
             BuildWavesRootSignature();
+            BuildPostProcessRootSignature();
             BuildDescriptorHeaps();
             BuildShadersAndInputLayout();
             BuildLandGeometry();
@@ -97,12 +107,18 @@ namespace DX12GameProgramming
             FlushCommandQueue();
         }
 
+        // Add +1 descriptor for offscreen render target.
+        protected override int RtvDescriptorCount => SwapChainBufferCount + 1;        
+
         protected override void OnResize()
         {
             base.OnResize();
 
             // The window resized, so update the aspect ratio and recompute the projection matrix.
             _proj = Matrix.PerspectiveFovLH(0.25f * MathUtil.Pi, AspectRatio, 1.0f, 1000.0f);
+
+            _sobelFilter?.OnResize(ClientWidth, ClientHeight);
+            _offscreenRT?.OnResize(ClientWidth, ClientHeight);
         }
 
         protected override void Update(GameTimer gt)
@@ -155,7 +171,7 @@ namespace DX12GameProgramming
             CommandList.ClearDepthStencilView(CurrentDepthStencilView, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
 
             // Specify the buffers we are going to render to.            
-            CommandList.SetRenderTargets(CurrentBackBufferView, CurrentDepthStencilView);
+            CommandList.SetRenderTargets(_offscreenRT.Rtv, CurrentDepthStencilView);
 
             CommandList.SetGraphicsRootSignature(_rootSignature);            
 
@@ -174,6 +190,27 @@ namespace DX12GameProgramming
 
             CommandList.PipelineState = _psos["wavesRender"];
             DrawRenderItems(CommandList, _ritemLayers[RenderLayer.GpuWaves]);
+
+            // Change offscreen texture to be used as an input.
+            CommandList.ResourceBarrierTransition(_offscreenRT.Resource, ResourceStates.RenderTarget, ResourceStates.GenericRead);
+
+            _sobelFilter.Execute(CommandList, _postProcessRootSignature, _psos["sobel"], _offscreenRT.Srv);
+
+            //
+            // Switching back to back buffer rendering.
+            //
+
+            // Indicate a state transition on the resource usage.
+            CommandList.ResourceBarrierTransition(CurrentBackBuffer, ResourceStates.Present, ResourceStates.RenderTarget);
+
+            // Specify the buffers we are going to render to.
+            CommandList.SetRenderTargets(CurrentBackBufferView, CurrentDepthStencilView);
+
+            CommandList.SetGraphicsRootSignature(_postProcessRootSignature);
+            CommandList.PipelineState = _psos["composite"];
+            CommandList.SetGraphicsRootDescriptorTable(0, _offscreenRT.Srv);
+            CommandList.SetGraphicsRootDescriptorTable(1, _sobelFilter.OutputSrv);
+            DrawFullscreenQuad(CommandList);
 
             // Indicate a state transition on the resource usage.
             CommandList.ResourceBarrierTransition(CurrentBackBuffer, ResourceStates.RenderTarget, ResourceStates.Present);
@@ -240,6 +277,8 @@ namespace DX12GameProgramming
                 foreach (Texture texture in _textures.Values) texture.Dispose();
                 foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();
                 _rootSignature.Dispose();
+                _wavesRootSignature.Dispose();
+                _postProcessRootSignature.Dispose();
                 foreach (MeshGeometry geometry in _geometries.Values) geometry.Dispose();
                 foreach (PipelineState pso in _psos.Values) pso.Dispose();
             }
@@ -442,22 +481,48 @@ namespace DX12GameProgramming
             // A root signature is an array of root parameters.
             var rootSigDesc = new RootSignatureDescription(
                 RootSignatureFlags.AllowInputAssemblerInputLayout,
-                slotRootParameters,
-                GetStaticSamplers());
+                slotRootParameters);
 
             _wavesRootSignature = Device.CreateRootSignature(rootSigDesc.Serialize());
         }
 
+        private void BuildPostProcessRootSignature()
+        {
+            // Root parameter can be a table, root descriptor or root constants.
+            // Perfomance TIP: Order from most frequent to least frequent.
+            var slotRootParameters = new[]
+            {
+                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 1, 0)),
+                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 1, 1)),
+                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.UnorderedAccessView, 1, 0))
+            };
+
+            // A root signature is an array of root parameters.
+            var rootSigDesc = new RootSignatureDescription(
+                RootSignatureFlags.AllowInputAssemblerInputLayout,
+                slotRootParameters,
+                GetStaticSamplers());
+
+            _postProcessRootSignature = Device.CreateRootSignature(rootSigDesc.Serialize());
+        }
+
         private void BuildDescriptorHeaps()
         {
+            // Offscreen RTV goes after the swap chain descriptors.
+            const int rtvOffset = SwapChainBufferCount;
+
             const int srvCount = 3;
+
+            int waveSrvOffset = srvCount;
+            int sobelSrvOffset = waveSrvOffset + _waves.DescriptorCount;
+            int offscreenSrvOffset = sobelSrvOffset + _sobelFilter.DescriptorCount;
 
             //
             // Create the SRV heap.
             //
             var srvHeapDesc = new DescriptorHeapDescription
             {
-                DescriptorCount = srvCount + _waves.DescriptorCount,
+                DescriptorCount = srvCount + _waves.DescriptorCount + _sobelFilter.DescriptorCount + 1, // Extra offscreen render target.
                 Type = DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView,
                 Flags = DescriptorHeapFlags.ShaderVisible
             };
@@ -499,10 +564,25 @@ namespace DX12GameProgramming
             srvDesc.Format = fenceTex.Description.Format;
             Device.CreateShaderResourceView(fenceTex, srvDesc, hDescriptor);
 
+            CpuDescriptorHandle srvCpuStart = _srvDescriptorHeap.CPUDescriptorHandleForHeapStart;
+            GpuDescriptorHandle srvGpuStart = _srvDescriptorHeap.GPUDescriptorHandleForHeapStart;
+
+            CpuDescriptorHandle rtvCpuStart = RtvHeap.CPUDescriptorHandleForHeapStart;
+
             _waves.BuildDescriptors(                
-                _srvDescriptorHeap.CPUDescriptorHandleForHeapStart + srvCount * CbvSrvUavDescriptorSize,
-                _srvDescriptorHeap.GPUDescriptorHandleForHeapStart + srvCount * CbvSrvUavDescriptorSize,
+                _srvDescriptorHeap.CPUDescriptorHandleForHeapStart + waveSrvOffset * CbvSrvUavDescriptorSize,
+                _srvDescriptorHeap.GPUDescriptorHandleForHeapStart + waveSrvOffset * CbvSrvUavDescriptorSize,
                 CbvSrvUavDescriptorSize);
+
+            _sobelFilter.BuildDescriptors(
+                srvCpuStart + sobelSrvOffset * CbvSrvUavDescriptorSize,
+                srvGpuStart + sobelSrvOffset * CbvSrvUavDescriptorSize,
+                CbvSrvUavDescriptorSize);
+
+            _offscreenRT.BuildDescriptors(
+                srvCpuStart + offscreenSrvOffset * CbvSrvUavDescriptorSize,
+                srvGpuStart + offscreenSrvOffset * CbvSrvUavDescriptorSize,
+                rtvCpuStart + rtvOffset * RtvDescriptorSize);
         }
 
         private void BuildShadersAndInputLayout()
@@ -529,6 +609,9 @@ namespace DX12GameProgramming
             _shaders["alphaTestedPS"] = D3DUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_0", alphaTestDefines);
             _shaders["wavesUpdateCS"] = D3DUtil.CompileShader("Shaders\\WaveSim.hlsl", "UpdateWavesCS", "cs_5_0");
             _shaders["wavesDisturbCS"] = D3DUtil.CompileShader("Shaders\\WaveSim.hlsl", "DisturbWavesCS", "cs_5_0");
+            _shaders["compositeVS"] = D3DUtil.CompileShader("Shaders\\composite.hlsl", "VS", "vs_5_0");
+            _shaders["compositePS"] = D3DUtil.CompileShader("Shaders\\composite.hlsl", "PS", "ps_5_0");
+            _shaders["sobelCS"] = D3DUtil.CompileShader("Shaders\\Sobel.hlsl", "SobelCS", "cs_5_0");
 
             _inputLayout = new InputLayoutDescription(new[]
             {
@@ -743,6 +826,19 @@ namespace DX12GameProgramming
             };
 
             _psos["wavesUpdate"] = Device.CreateComputePipelineState(wavesUpdatePSO);
+
+            //
+            // PSO for sobel.
+            //
+
+            var sobelPSO = new ComputePipelineStateDescription
+            {
+                RootSignature = _postProcessRootSignature,
+                ComputeShader = _shaders["sobelCS"],
+                Flags = PipelineStateFlags.None
+            };
+
+            _psos["sobel"] = Device.CreateComputePipelineState(sobelPSO);
         }
 
         private void BuildFrameResources()
@@ -784,7 +880,7 @@ namespace DX12GameProgramming
                 MatCBIndex = 2,
                 DiffuseSrvHeapIndex = 2,
                 DiffuseAlbedo = new Vector4(1.0f),
-                FresnelR0 = new Vector3(0.2f),
+                FresnelR0 = new Vector3(0.02f),
                 Roughness = 0.25f
             };
         }
@@ -857,6 +953,16 @@ namespace DX12GameProgramming
 
                 cmdList.DrawIndexedInstanced(ri.IndexCount, 1, ri.StartIndexLocation, ri.BaseVertexLocation, 0);
             }
+        }
+
+        private void DrawFullscreenQuad(GraphicsCommandList cmdList)
+        {
+            // Null-out IA stage since we build the vertex off the SV_VertexID in the shader.
+            cmdList.SetVertexBuffers(0, null, 1);
+            cmdList.SetIndexBuffer(null);
+            cmdList.PrimitiveTopology = PrimitiveTopology.TriangleList;
+
+            cmdList.DrawInstanced(6, 1, 0, 0);
         }
 
         // Applications usually only need a handful of samplers. So just define them all up front

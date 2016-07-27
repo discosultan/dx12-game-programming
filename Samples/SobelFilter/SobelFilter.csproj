@@ -58,6 +58,7 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="RenderTarget.cs" />
     <Compile Include="SobelFilter.cs" />
     <Compile Include="GpuWaves.cs" />
     <Compile Include="FrameResource.cs" />
@@ -67,6 +68,18 @@
     <Compile Include="SobelFilterApp.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\Textures\grass.dds">
+      <Link>Textures\grass.dds</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\Textures\water1.dds">
+      <Link>Textures\water1.dds</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\Textures\WireFence.dds">
+      <Link>Textures\WireFence.dds</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>

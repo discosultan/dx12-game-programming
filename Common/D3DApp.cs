@@ -41,10 +41,7 @@ namespace DX12GameProgramming
         private float _timeElapsed;
 
         private Factory _factory;
-        private readonly Resource[] _swapChainBuffers = new Resource[SwapChainBufferCount];
-
-        private DescriptorHeap _rtvHeap;
-        private DescriptorHeap _dsvHeap;
+        private readonly Resource[] _swapChainBuffers = new Resource[SwapChainBufferCount];        
 
         private AutoResetEvent _fenceEvent;
 
@@ -71,6 +68,9 @@ namespace DX12GameProgramming
                 }
             }
         }
+
+        protected DescriptorHeap RtvHeap { get; private set; }
+        protected DescriptorHeap DsvHeap { get; private set; }
 
         protected int MsaaCount => M4xMsaaState ? 4 : 1;
         protected int MsaaQuality => M4xMsaaState ? _m4xMsaaQuality - 1 : 0;
@@ -106,8 +106,8 @@ namespace DX12GameProgramming
         protected Format DepthStencilFormat { get; } = Format.D24_UNorm_S8_UInt;
 
         protected Resource CurrentBackBuffer => _swapChainBuffers[SwapChain.CurrentBackBufferIndex];
-        protected CpuDescriptorHandle CurrentBackBufferView => _rtvHeap.CPUDescriptorHandleForHeapStart + SwapChain.CurrentBackBufferIndex * RtvDescriptorSize;
-        protected CpuDescriptorHandle CurrentDepthStencilView => _dsvHeap.CPUDescriptorHandleForHeapStart;
+        protected CpuDescriptorHandle CurrentBackBufferView => RtvHeap.CPUDescriptorHandleForHeapStart + SwapChain.CurrentBackBufferIndex * RtvDescriptorSize;
+        protected CpuDescriptorHandle CurrentDepthStencilView => DsvHeap.CPUDescriptorHandleForHeapStart;
 
         public virtual void Initialize()
         {
@@ -157,8 +157,8 @@ namespace DX12GameProgramming
                 DirectCmdListAlloc.Dispose();
                 CommandQueue.Dispose();
                 CommandList.Dispose();
-                _rtvHeap.Dispose();
-                _dsvHeap.Dispose();
+                RtvHeap.Dispose();
+                DsvHeap.Dispose();
                 Fence.Dispose();
                 SwapChain.Dispose();
                 Device.Dispose();
@@ -188,7 +188,7 @@ namespace DX12GameProgramming
                 BackBufferFormat,
                 SwapChainFlags.AllowModeSwitch);
 
-            CpuDescriptorHandle rtvHeapHandle = _rtvHeap.CPUDescriptorHandleForHeapStart;
+            CpuDescriptorHandle rtvHeapHandle = RtvHeap.CPUDescriptorHandleForHeapStart;
             for (int i = 0; i < SwapChainBufferCount; i++)
             {
                 Resource backBuffer = SwapChain.GetBackBuffer<Resource>(i);
@@ -233,7 +233,7 @@ namespace DX12GameProgramming
                 optClear);
 
             // Create descriptor to mip level 0 of entire resource using the format of the resource.
-            CpuDescriptorHandle dsvHeapHandle = _dsvHeap.CPUDescriptorHandleForHeapStart;
+            CpuDescriptorHandle dsvHeapHandle = DsvHeap.CPUDescriptorHandleForHeapStart;
             Device.CreateDepthStencilView(DepthStencilBuffer, null, dsvHeapHandle);
 
             // Transition the resource from its initial state to be used as a depth buffer.
@@ -457,6 +457,8 @@ namespace DX12GameProgramming
             }
         }
 
+        protected virtual int RtvDescriptorCount => SwapChainBufferCount;
+
         private void CreateCommandObjects()
         {
             var queueDesc = new CommandQueueDescription(CommandListType.Direct);
@@ -515,17 +517,17 @@ namespace DX12GameProgramming
         {
             var rtvHeapDesc = new DescriptorHeapDescription
             {
-                DescriptorCount = SwapChainBufferCount,
+                DescriptorCount = RtvDescriptorCount,
                 Type = DescriptorHeapType.RenderTargetView
             };
-            _rtvHeap = Device.CreateDescriptorHeap(rtvHeapDesc);
+            RtvHeap = Device.CreateDescriptorHeap(rtvHeapDesc);
 
             var dsvHeapDesc = new DescriptorHeapDescription
             {
                 DescriptorCount = 1,
                 Type = DescriptorHeapType.DepthStencilView
             };
-            _dsvHeap = Device.CreateDescriptorHeap(dsvHeapDesc);
+            DsvHeap = Device.CreateDescriptorHeap(dsvHeapDesc);
         }
 
         private void LogAdapters()

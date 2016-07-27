@@ -442,8 +442,7 @@ namespace DX12GameProgramming
             // A root signature is an array of root parameters.
             var rootSigDesc = new RootSignatureDescription(
                 RootSignatureFlags.AllowInputAssemblerInputLayout,
-                slotRootParameters,
-                GetStaticSamplers());
+                slotRootParameters);
 
             _wavesRootSignature = Device.CreateRootSignature(rootSigDesc.Serialize());
         }
