@@ -58,10 +58,29 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BezierPatchApp.cs" />
+    <Compile Include="FrameResource.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RenderItem.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\Textures\bricks3.dds">
+      <Link>Textures\bricks3.dds</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\Textures\checkboard.dds">
+      <Link>Textures\checkboard.dds</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\Textures\ice.dds">
+      <Link>Textures\ice.dds</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\Textures\white1x1.dds">
+      <Link>Textures\white1x1.dds</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>
