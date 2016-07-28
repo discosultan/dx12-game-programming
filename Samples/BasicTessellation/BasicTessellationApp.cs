@@ -6,13 +6,11 @@ using SharpDX.Direct3D;
 using SharpDX.Direct3D12;
 using SharpDX.DXGI;
 using Resource = SharpDX.Direct3D12.Resource;
-using System.IO;
-using System.Globalization;
 using ShaderResourceViewDimension = SharpDX.Direct3D12.ShaderResourceViewDimension;
 
 namespace DX12GameProgramming
 {
-    public class StencilApp : D3DApp
+    public class BasicTessellationApp : D3DApp
     {
         private readonly List<FrameResource> _frameResources = new List<FrameResource>(NumFrameResources);
         private readonly List<AutoResetEvent> _fenceEvents = new List<AutoResetEvent>(NumFrameResources);
@@ -29,12 +27,7 @@ namespace DX12GameProgramming
         private readonly Dictionary<string, ShaderBytecode> _shaders = new Dictionary<string, ShaderBytecode>();
         private readonly Dictionary<string, PipelineState> _psos = new Dictionary<string, PipelineState>();
 
-        private InputLayoutDescription _inputLayout;
-        
-        // Cache render items of interest.
-        private RenderItem _skullRitem;
-        private RenderItem _reflectedSkullRitem;
-        private RenderItem _shadowedSkullRitem;
+        private InputLayoutDescription _inputLayout;               
 
         // List of all the render items.
         private readonly List<RenderItem> _allRitems = new List<RenderItem>();
@@ -42,17 +35,10 @@ namespace DX12GameProgramming
         // Render items divided by PSO.
         private readonly Dictionary<RenderLayer, List<RenderItem>> _ritemLayers = new Dictionary<RenderLayer, List<RenderItem>>
         {
-            [RenderLayer.Opaque] = new List<RenderItem>(),
-            [RenderLayer.Transparent] = new List<RenderItem>(),
-            [RenderLayer.Mirrors] = new List<RenderItem>(),
-            [RenderLayer.Reflected] = new List<RenderItem>(),
-            [RenderLayer.Shadow] = new List<RenderItem>()
+            [RenderLayer.Opaque] = new List<RenderItem>()            
         };
 
         private PassConstants _mainPassCB = PassConstants.Default;
-        private PassConstants _reflectedPassCB = PassConstants.Default;
-
-        private Vector3 _skullTranslation = new Vector3(0.0f, 1.0f, -5.0f);
 
         private Vector3 _eyePos;
         private Matrix _proj = Matrix.Identity;
@@ -64,7 +50,7 @@ namespace DX12GameProgramming
 
         private Point _lastMousePos;
 
-        public StencilApp(IntPtr hInstance) : base(hInstance)
+        public BasicTessellationApp(IntPtr hInstance) : base(hInstance)
         {
         }
 
@@ -82,8 +68,7 @@ namespace DX12GameProgramming
             BuildRootSignature();
             BuildDescriptorHeaps();
             BuildShadersAndInputLayout();
-            BuildRoomGeometry();
-            BuildSkullGeometry();
+            BuildQuadPatchGeometry();
             BuildMaterials();
             BuildRenderItems();
             BuildFrameResources();
@@ -107,7 +92,6 @@ namespace DX12GameProgramming
 
         protected override void Update(GameTimer gt)
         {
-            OnKeyboardInput(gt);
             UpdateCamera();
 
             // Cycle through the circular frame resource array.
@@ -124,7 +108,6 @@ namespace DX12GameProgramming
             UpdateObjectCBs();
             UpdateMaterialCBs();
             UpdateMainPassCB(gt);
-            UpdateReflectedPassCB();
         }
 
         protected override void Draw(GameTimer gt)
@@ -161,30 +144,8 @@ namespace DX12GameProgramming
             // Draw opaque items--floors, walls, skull.
             Resource passCB = CurrFrameResource.PassCB.Resource;
             CommandList.SetGraphicsRootConstantBufferView(2, passCB.GPUVirtualAddress);
+
             DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Opaque]);
-
-            // Mark the visible mirror pixels in the stencil buffer with the value 1
-            CommandList.StencilReference = 1;
-            CommandList.PipelineState = _psos["markStencilMirrors"];
-            DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Mirrors]);
-
-            // Draw the reflection into the mirror only (only for pixels where the stencil buffer is 1).
-            // Note that we must supply a different per-pass constant buffer--one with the lights reflected.
-            CommandList.SetGraphicsRootConstantBufferView(2, passCB.GPUVirtualAddress + passCBByteSize);
-            CommandList.PipelineState = _psos["drawStencilReflections"];
-            DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Reflected]);
-
-            // Restore main pass constants and stencil ref.
-            CommandList.SetGraphicsRootConstantBufferView(2, passCB.GPUVirtualAddress);
-            CommandList.StencilReference = 0;
-
-            // Draw mirror with transparency so reflection blends through.
-            CommandList.PipelineState = _psos["transparent"];
-            DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Transparent]);
-
-            // Draw shadows
-            CommandList.PipelineState = _psos["shadow"];
-            DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Shadow]);
 
             // Indicate a state transition on the resource usage.
             CommandList.ResourceBarrierTransition(CurrentBackBuffer, ResourceStates.RenderTarget, ResourceStates.Present);
@@ -268,53 +229,6 @@ namespace DX12GameProgramming
             _view = Matrix.LookAtLH(_eyePos, Vector3.Zero, Vector3.Up);
         }
 
-        private void OnKeyboardInput(GameTimer gt)
-        {
-            //
-            // Allow user to move skull.
-            //
-
-            float dt = gt.DeltaTime;
-
-            if (IsKeyDown(Keys.A))
-                _skullTranslation.X -= 1.0f * dt;
-
-            if (IsKeyDown(Keys.D))
-                _skullTranslation.X += 1.0f * dt;
-
-            if (IsKeyDown(Keys.W))
-                _skullTranslation.Y += 1.0f * dt;
-
-            if (IsKeyDown(Keys.S))
-                _skullTranslation.Y -= 1.0f * dt;
-
-            // Don't let user move below ground plane.
-            _skullTranslation.Y = Math.Max(_skullTranslation.Y, 0.0f);
-
-            // Update the new world matrix.
-            Matrix skullRotate = Matrix.RotationY(0.5f * MathUtil.Pi);
-            Matrix skullScale = Matrix.Scaling(0.45f);
-            Matrix skullOffset = Matrix.Translation(_skullTranslation.X, _skullTranslation.Y, _skullTranslation.Z);
-            Matrix skullWorld = skullRotate * skullScale * skullOffset;
-            _skullRitem.World = skullWorld;
-
-            // Update reflection world matrix.
-            var mirrorPlane = new Plane(new Vector3(0, 0, 1), 0); // XY plane.
-            Matrix r = MathHelper.Reflection(mirrorPlane);
-            _reflectedSkullRitem.World = skullWorld * r;
-
-            // Update shadow world matrix.            
-            var shadowPlane = new Plane(new Vector3(0, 1, 0), 0); // XZ plane.
-            Vector3 toMainLight = -_mainPassCB.Lights[0].Direction;
-            Matrix s = MathHelper.Shadow(new Vector4(toMainLight, 0.0f), shadowPlane);
-            Matrix shadowOffsetY = Matrix.Translation(0.0f, 0.001f, 0.0f);
-            _shadowedSkullRitem.World = skullWorld * s * shadowOffsetY;
-
-            _skullRitem.NumFramesDirty = NumFrameResources;
-            _reflectedSkullRitem.NumFramesDirty = NumFrameResources;
-            _shadowedSkullRitem.NumFramesDirty = NumFrameResources;
-        }
-
         private void UpdateObjectCBs()
         {
             foreach (RenderItem e in _allRitems)
@@ -393,27 +307,6 @@ namespace DX12GameProgramming
             CurrFrameResource.PassCB.CopyData(0, ref _mainPassCB);
         }
 
-        private void UpdateReflectedPassCB()
-        {
-            _reflectedPassCB = _mainPassCB;
-
-            var mirrorPlane = new Plane(new Vector3(0, 0, 1), 0); // XY plane.
-            Matrix r = MathHelper.Reflection(mirrorPlane);
-
-            // Reflect the lighting.
-            for (int i = 0; i < 3; i++)
-            {
-                Vector3 lightDir = _mainPassCB.Lights[i].Direction;
-                Vector3 reflectedLightDir = Vector3.TransformNormal(lightDir, r);
-                Light reflectedLight = _reflectedPassCB.Lights[i];
-                reflectedLight.Direction = reflectedLightDir;
-                _reflectedPassCB.Lights[i] = reflectedLight;
-            }
-
-            // Reflected pass stored in index 1.
-            CurrFrameResource.PassCB.CopyData(1, ref _reflectedPassCB);
-        }
-
         private void LoadTextures()
         {
             AddTexture("bricksTex", "bricks3.dds");
@@ -434,7 +327,7 @@ namespace DX12GameProgramming
         }
 
         private void BuildRootSignature()
-        {
+        {            
             // Root parameter can be a table, root descriptor or root constants.
             // Perfomance TIP: Order from most frequent to least frequent.
             var slotRootParameters = new[]
@@ -513,187 +406,34 @@ namespace DX12GameProgramming
 
         private void BuildShadersAndInputLayout()
         {
-            ShaderMacro[] defines =
-            {
-                new ShaderMacro("FOG", "1")
-            };
-
-            ShaderMacro[] alphaTestDefines =
-            {
-                new ShaderMacro("FOG", "1"),
-                new ShaderMacro("ALPHA_TEST", "1")
-            };
-
-            _shaders["standardVS"] = D3DUtil.CompileShader("Shaders\\Default.hlsl", "VS", "vs_5_0");
-            _shaders["opaquePS"] = D3DUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_0", defines);
-            _shaders["alphaTestedPS"] = D3DUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_0", alphaTestDefines);
+            _shaders["tessVS"] = D3DUtil.CompileShader("Shaders\\Tessellation.hlsl", "VS", "vs_5_0");
+            _shaders["tessHS"] = D3DUtil.CompileShader("Shaders\\Tessellation.hlsl", "HS", "hs_5_0");
+            _shaders["tessDS"] = D3DUtil.CompileShader("Shaders\\Tessellation.hlsl", "DS", "ds_5_0");
+            _shaders["tessPS"] = D3DUtil.CompileShader("Shaders\\Tessellation.hlsl", "PS", "ps_5_0");
 
             _inputLayout = new InputLayoutDescription(new[]
             {
-                new InputElement("POSITION", 0, Format.R32G32B32_Float, 0, 0),
-                new InputElement("NORMAL", 0, Format.R32G32B32_Float, 12, 0),
-                new InputElement("TEXCOORD", 0, Format.R32G32_Float, 24, 0)
+                new InputElement("POSITION", 0, Format.R32G32B32_Float, 0, 0)
             });
         }
 
-        private void BuildRoomGeometry()
+        private void BuildQuadPatchGeometry()
         {
-            // Create and specify geometry.  For this sample we draw a floor
-            // and a wall with a mirror on it.  We put the floor, wall, and
-            // mirror geometry in one vertex buffer.
-            //
-            //   |--------------|
-            //   |              |
-            //   |----|----|----|
-            //   |Wall|Mirr|Wall|
-            //   |    | or |    |
-            //   /--------------/
-            //  /   Floor      /
-            // /--------------/
-
-            Vertex[] vertices =
+            Vector3[] vertices =
             {
-                // Floor: Observe we tile texture coordinates.
-                new Vertex(-3.5f, 0.0f, -10.0f, 0.0f, 1.0f, 0.0f, 0.0f, 4.0f), // 0 
-		        new Vertex(-3.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f),
-		        new Vertex(7.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 4.0f, 0.0f),
-		        new Vertex(7.5f, 0.0f, -10.0f, 0.0f, 1.0f, 0.0f, 4.0f, 4.0f),
-
-		        // Wall: Observe we tile texture coordinates, and that we
-		        // leave a gap in the middle for the mirror.
-		        new Vertex(-3.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 2.0f), // 4
-		        new Vertex(-3.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f),
-		        new Vertex(-2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.5f, 0.0f),
-		        new Vertex(-2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.5f, 2.0f),
-
-		        new Vertex(2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 2.0f), // 8 
-		        new Vertex(2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f),
-		        new Vertex(7.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 2.0f, 0.0f),
-		        new Vertex(7.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 2.0f, 2.0f),
-
-		        new Vertex(-3.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f), // 12
-		        new Vertex(-3.5f, 6.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f),
-		        new Vertex(7.5f, 6.0f, 0.0f, 0.0f, 0.0f, -1.0f, 6.0f, 0.0f),
-		        new Vertex(7.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 6.0f, 1.0f),
-
-		        // Mirror
-		        new Vertex(-2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f), // 16
-		        new Vertex(-2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f),
-		        new Vertex(2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f),
-		        new Vertex(2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f)
-
+                new Vector3(-10.0f, 0.0f, +10.0f),
+                new Vector3(+10.0f, 0.0f, +10.0f),
+                new Vector3(-10.0f, 0.0f, -10.0f),
+                new Vector3(+10.0f, 0.0f, -10.0f)
             };
 
-            short[] indices =
+            short[] indices = { 0, 1, 2, 3 };
+
+            var geo = MeshGeometry.New(Device, CommandList, vertices, indices, "quadpatchGeo");
+
+            geo.DrawArgs["quadpatch"] = new SubmeshGeometry
             {
-                // Floor
-                0, 1, 2,	
-		        0, 2, 3,
-
-		        // Walls
-		        4, 5, 6,
-		        4, 6, 7,
-
-		        8, 9, 10,
-		        8, 10, 11,
-
-		        12, 13, 14,
-		        12, 14, 15,
-
-		        // Mirror
-		        16, 17, 18,
-		        16, 18, 19
-
-            };
-
-            var geo = MeshGeometry.New(Device, CommandList, vertices, indices, "roomGeo");
-
-            geo.DrawArgs["floor"] = new SubmeshGeometry
-            {
-                IndexCount = 6,
-                StartIndexLocation = 0,
-                BaseVertexLocation = 0
-            };
-            geo.DrawArgs["wall"] = new SubmeshGeometry
-            {
-                IndexCount = 18,
-                StartIndexLocation = 6,
-                BaseVertexLocation = 0
-            };
-            geo.DrawArgs["mirror"] = new SubmeshGeometry
-            {
-                IndexCount = 6,
-                StartIndexLocation = 24,
-                BaseVertexLocation = 0
-            };
-
-            _geometries[geo.Name] = geo;
-        }
-
-        private void BuildSkullGeometry()
-        {
-            var vertices = new List<Vertex>();
-            var indices = new List<int>();
-            int vCount = 0, tCount = 0;
-            using (var reader = new StreamReader("Models\\Skull.txt"))
-            {
-                var input = reader.ReadLine();
-                if (input != null)
-                    vCount = Convert.ToInt32(input.Split(':')[1].Trim());
-
-                input = reader.ReadLine();
-                if (input != null)
-                    tCount = Convert.ToInt32(input.Split(':')[1].Trim());
-
-                do
-                {
-                    input = reader.ReadLine();
-                } while (input != null && !input.StartsWith("{", StringComparison.Ordinal));
-
-                for (int i = 0; i < vCount; i++)
-                {
-                    input = reader.ReadLine();
-                    if (input != null)
-                    {
-                        var vals = input.Split(' ');
-                        vertices.Add(new Vertex
-                        {
-                            Pos = new Vector3(
-                                Convert.ToSingle(vals[0].Trim(), CultureInfo.InvariantCulture),
-                                Convert.ToSingle(vals[1].Trim(), CultureInfo.InvariantCulture),
-                                Convert.ToSingle(vals[2].Trim(), CultureInfo.InvariantCulture)),
-                            Normal = new Vector3(
-                                Convert.ToSingle(vals[3].Trim(), CultureInfo.InvariantCulture),
-                                Convert.ToSingle(vals[4].Trim(), CultureInfo.InvariantCulture),
-                                Convert.ToSingle(vals[5].Trim(), CultureInfo.InvariantCulture))
-                        });
-                    }
-                }
-
-                do
-                {
-                    input = reader.ReadLine();
-                } while (input != null && !input.StartsWith("{", StringComparison.Ordinal));
-
-                for (var i = 0; i < tCount; i++)
-                {
-                    input = reader.ReadLine();
-                    if (input == null)
-                    {
-                        break;
-                    }
-                    var m = input.Trim().Split(' ');
-                    indices.Add(Convert.ToInt32(m[0].Trim()));
-                    indices.Add(Convert.ToInt32(m[1].Trim()));
-                    indices.Add(Convert.ToInt32(m[2].Trim()));
-                }
-            }
-
-            var geo = MeshGeometry.New(Device, CommandList, vertices.ToArray(), indices.ToArray(), "skullGeo");
-
-            geo.DrawArgs["skull"] = new SubmeshGeometry
-            {
-                IndexCount = indices.Count,
+                IndexCount = 4,
                 StartIndexLocation = 0,
                 BaseVertexLocation = 0
             };
@@ -711,139 +451,23 @@ namespace DX12GameProgramming
             {
                 InputLayout = _inputLayout,
                 RootSignature = _rootSignature,
-                VertexShader = _shaders["standardVS"],
-                PixelShader = _shaders["opaquePS"],
+                VertexShader = _shaders["tessVS"],
+                HullShader = _shaders["tessHS"],
+                DomainShader = _shaders["tessDS"],
+                PixelShader = _shaders["tessPS"],
                 RasterizerState = RasterizerStateDescription.Default(),
                 BlendState = BlendStateDescription.Default(),
                 DepthStencilState = DepthStencilStateDescription.Default(),
                 SampleMask = unchecked((int)0xFFFFFFFF),
-                PrimitiveTopologyType = PrimitiveTopologyType.Triangle,
+                PrimitiveTopologyType = PrimitiveTopologyType.Patch,
                 RenderTargetCount = 1,
                 SampleDescription = new SampleDescription(MsaaCount, MsaaQuality),
                 DepthStencilFormat = DepthStencilFormat
             };
             opaquePsoDesc.RenderTargetFormats[0] = BackBufferFormat;
+            opaquePsoDesc.RasterizerState.FillMode = FillMode.Wireframe;
 
             _psos["opaque"] = Device.CreateGraphicsPipelineState(opaquePsoDesc);
-
-            //
-            // PSO for transparent objects.
-            //
-
-            var transparentPsoDesc = opaquePsoDesc.Copy();
-
-            var transparencyBlendDesc = new RenderTargetBlendDescription
-            {
-                IsBlendEnabled = true,
-                LogicOpEnable = false,
-                SourceBlend = BlendOption.SourceAlpha,
-                DestinationBlend = BlendOption.InverseSourceAlpha,
-                BlendOperation = BlendOperation.Add,
-                SourceAlphaBlend = BlendOption.One,
-                DestinationAlphaBlend = BlendOption.Zero,
-                AlphaBlendOperation = BlendOperation.Add,
-                LogicOp = LogicOperation.Noop,
-                RenderTargetWriteMask = ColorWriteMaskFlags.All
-            };
-            transparentPsoDesc.BlendState.RenderTarget[0] = transparencyBlendDesc;
-
-            _psos["transparent"] = Device.CreateGraphicsPipelineState(transparentPsoDesc);
-
-            //
-            // PSO for marking stencil mirrors.
-            //
-
-            // We are not rendering backfacing polygons, so these settings do not matter.
-            var backFaceDSO = new DepthStencilOperationDescription
-            {
-                FailOperation = StencilOperation.Keep,
-                DepthFailOperation = StencilOperation.Keep,
-                PassOperation = StencilOperation.Replace,
-                Comparison = Comparison.Always
-            };
-
-            var mirrorBlendState = BlendStateDescription.Default();
-            mirrorBlendState.RenderTarget[0].RenderTargetWriteMask = 0;
-
-            var mirrorDSS = new DepthStencilStateDescription
-            {
-                IsDepthEnabled = true,
-                DepthWriteMask = DepthWriteMask.Zero,
-                DepthComparison = Comparison.Less,
-                IsStencilEnabled = true,
-                StencilReadMask = 0xff,
-                StencilWriteMask = 0xff,
-
-                FrontFace = new DepthStencilOperationDescription
-                {
-                    FailOperation = StencilOperation.Keep,
-                    DepthFailOperation = StencilOperation.Keep,
-                    PassOperation = StencilOperation.Replace,
-                    Comparison = Comparison.Always
-                },
-                BackFace = backFaceDSO
-            };
-
-            GraphicsPipelineStateDescription markMirrorsPsoDesc = opaquePsoDesc.Copy();
-            markMirrorsPsoDesc.BlendState = mirrorBlendState;
-            markMirrorsPsoDesc.DepthStencilState = mirrorDSS;
-            _psos["markStencilMirrors"] = Device.CreateGraphicsPipelineState(markMirrorsPsoDesc);
-
-            //
-            // PSO for stencil reflections.
-            //
-
-            var reflectionDSS = new DepthStencilStateDescription
-            {
-                IsDepthEnabled = true,
-                DepthWriteMask = DepthWriteMask.All,
-                DepthComparison = Comparison.Less,
-                IsStencilEnabled = true,
-                StencilReadMask = 0xff,
-                StencilWriteMask = 0xff,
-
-                FrontFace = new DepthStencilOperationDescription
-                {
-                    FailOperation = StencilOperation.Keep,
-                    DepthFailOperation = StencilOperation.Keep,
-                    PassOperation = StencilOperation.Keep,
-                    Comparison = Comparison.Equal
-                },
-                BackFace = backFaceDSO
-            };
-
-            GraphicsPipelineStateDescription drawReflectionsPsoDesc = opaquePsoDesc.Copy();
-            drawReflectionsPsoDesc.DepthStencilState = reflectionDSS;
-            drawReflectionsPsoDesc.RasterizerState.CullMode = CullMode.Back;
-            drawReflectionsPsoDesc.RasterizerState.IsFrontCounterClockwise = true;
-            _psos["drawStencilReflections"] = Device.CreateGraphicsPipelineState(drawReflectionsPsoDesc);
-
-            //
-            // PSO for shadow objects.
-            //
-
-            var shadowDSS = new DepthStencilStateDescription
-            {
-                IsDepthEnabled = true,
-                DepthWriteMask = DepthWriteMask.All,
-                DepthComparison = Comparison.Less,
-                IsStencilEnabled = true,
-                StencilReadMask = 0xff,
-                StencilWriteMask = 0xff,
-
-                FrontFace = new DepthStencilOperationDescription
-                {
-                    FailOperation = StencilOperation.Keep,
-                    DepthFailOperation = StencilOperation.Keep,
-                    PassOperation = StencilOperation.Increment,
-                    Comparison = Comparison.Equal
-                },
-                BackFace = backFaceDSO
-            };
-
-            GraphicsPipelineStateDescription shadowPsoDesc = transparentPsoDesc.Copy();
-            shadowPsoDesc.DepthStencilState = shadowDSS;
-            _psos["shadow"] = Device.CreateGraphicsPipelineState(shadowPsoDesc);
         }
 
         private void BuildFrameResources()
@@ -857,124 +481,31 @@ namespace DX12GameProgramming
 
         private void BuildMaterials()
         {
-            _materials["bricks"] = new Material
+            _materials["whiteMat"] = new Material
             {
-                Name = "bricks",
+                Name = "quadMat",
                 MatCBIndex = 0,
-                DiffuseSrvHeapIndex = 0,
+                DiffuseSrvHeapIndex = 3,
                 DiffuseAlbedo = Color.White.ToVector4(),
-                FresnelR0 = new Vector3(0.05f),
-                Roughness = 0.25f
-            };
-
-            _materials["checkertile"] = new Material
-            {
-                Name = "checkertile",
-                MatCBIndex = 1,
-                DiffuseSrvHeapIndex = 1,
-                DiffuseAlbedo = Color.White.ToVector4(),
-                FresnelR0 = new Vector3(0.07f),
-                Roughness = 0.3f
-            };
-
-            _materials["icemirror"] = new Material
-            {
-                Name = "icemirror",
-                MatCBIndex = 2,
-                DiffuseSrvHeapIndex = 2,
-                DiffuseAlbedo = new Vector4(1.0f, 1.0f, 1.0f, 0.3f),
                 FresnelR0 = new Vector3(0.1f),
                 Roughness = 0.5f
-            };
-
-            _materials["skullMat"] = new Material
-            {
-                Name = "skullMat",
-                MatCBIndex = 3,
-                DiffuseSrvHeapIndex = 3,
-                DiffuseAlbedo = Color.White.ToVector4(),
-                FresnelR0 = new Vector3(0.05f),
-                Roughness = 0.3f
-            };
-
-            _materials["shadowMat"] = new Material
-            {
-                Name = "shadowMat",
-                MatCBIndex = 4,
-                DiffuseSrvHeapIndex = 3,
-                DiffuseAlbedo = new Vector4(0.0f, 0.0f, 0.0f, 0.5f),
-                FresnelR0 = new Vector3(0.001f),
-                Roughness = 0.0f
             };
         }
 
         private void BuildRenderItems()
         {
-            var floorRitem = new RenderItem();
-            floorRitem.World = Matrix.Identity;
-            floorRitem.TexTransform = Matrix.Identity;
-            floorRitem.ObjCBIndex = 0;
-            floorRitem.Mat = _materials["checkertile"];
-            floorRitem.Geo = _geometries["roomGeo"];
-            floorRitem.PrimitiveType = PrimitiveTopology.TriangleList;
-            floorRitem.IndexCount = floorRitem.Geo.DrawArgs["floor"].IndexCount;
-            floorRitem.StartIndexLocation = floorRitem.Geo.DrawArgs["floor"].StartIndexLocation;
-            floorRitem.BaseVertexLocation = floorRitem.Geo.DrawArgs["floor"].BaseVertexLocation;
-            _ritemLayers[RenderLayer.Opaque].Add(floorRitem);
-            _allRitems.Add(floorRitem);
-
-            var wallsRitem = new RenderItem();
-            wallsRitem.World = Matrix.Identity;
-            wallsRitem.TexTransform = Matrix.Identity;
-            wallsRitem.ObjCBIndex = 1;
-            wallsRitem.Mat = _materials["bricks"];
-            wallsRitem.Geo = _geometries["roomGeo"];
-            wallsRitem.PrimitiveType = PrimitiveTopology.TriangleList;
-            wallsRitem.IndexCount = wallsRitem.Geo.DrawArgs["wall"].IndexCount;
-            wallsRitem.StartIndexLocation = wallsRitem.Geo.DrawArgs["wall"].StartIndexLocation;
-            wallsRitem.BaseVertexLocation = wallsRitem.Geo.DrawArgs["wall"].BaseVertexLocation;
-            _ritemLayers[RenderLayer.Opaque].Add(wallsRitem);
-            _allRitems.Add(wallsRitem);
-
-            _skullRitem = new RenderItem();
-            _skullRitem.World = Matrix.Identity;
-            _skullRitem.TexTransform = Matrix.Identity;
-            _skullRitem.ObjCBIndex = 2;
-            _skullRitem.Mat = _materials["skullMat"];
-            _skullRitem.Geo = _geometries["skullGeo"];
-            _skullRitem.PrimitiveType = PrimitiveTopology.TriangleList;
-            _skullRitem.IndexCount = _skullRitem.Geo.DrawArgs["skull"].IndexCount;
-            _skullRitem.StartIndexLocation = _skullRitem.Geo.DrawArgs["skull"].StartIndexLocation;
-            _skullRitem.BaseVertexLocation = _skullRitem.Geo.DrawArgs["skull"].BaseVertexLocation;
-            _ritemLayers[RenderLayer.Opaque].Add(_skullRitem);
-            _allRitems.Add(_skullRitem);
-
-            // Reflected skull will have different world matrix, so it needs to be its own render item.
-            _reflectedSkullRitem = _skullRitem.Copy();
-            _reflectedSkullRitem.ObjCBIndex = 3;
-            _ritemLayers[RenderLayer.Reflected].Add(_reflectedSkullRitem);
-            _allRitems.Add(_reflectedSkullRitem);
-
-            // Shadowed skull will have different world matrix, so it needs to be its own render item.
-            _shadowedSkullRitem = _skullRitem.Copy();
-            _shadowedSkullRitem.ObjCBIndex = 4;
-            _shadowedSkullRitem.Mat = _materials["shadowMat"];
-            _ritemLayers[RenderLayer.Shadow].Add(_shadowedSkullRitem);
-            _allRitems.Add(_shadowedSkullRitem);
-
-            var mirrorRitem = new RenderItem();
-            mirrorRitem.World = Matrix.Identity;
-            mirrorRitem.TexTransform = Matrix.Identity;
-            mirrorRitem.ObjCBIndex = 5;
-            mirrorRitem.Mat = _materials["icemirror"];
-            mirrorRitem.Geo = _geometries["roomGeo"];
-            mirrorRitem.PrimitiveType = PrimitiveTopology.TriangleList;
-            mirrorRitem.IndexCount = mirrorRitem.Geo.DrawArgs["mirror"].IndexCount;
-            mirrorRitem.StartIndexLocation = mirrorRitem.Geo.DrawArgs["mirror"].StartIndexLocation;
-            mirrorRitem.BaseVertexLocation = mirrorRitem.Geo.DrawArgs["mirror"].BaseVertexLocation;
-            _ritemLayers[RenderLayer.Mirrors].Add(mirrorRitem);
-            _ritemLayers[RenderLayer.Transparent].Add(mirrorRitem);
-            _allRitems.Add(mirrorRitem);
+            var quadPatchRitem = new RenderItem();
+            quadPatchRitem.World = Matrix.Identity;
+            quadPatchRitem.TexTransform = Matrix.Identity;
+            quadPatchRitem.ObjCBIndex = 0;
+            quadPatchRitem.Mat = _materials["whiteMat"];
+            quadPatchRitem.Geo = _geometries["quadpatchGeo"];
+            quadPatchRitem.PrimitiveType = PrimitiveTopology.PatchListWith4ControlPoints;
+            quadPatchRitem.IndexCount = quadPatchRitem.Geo.DrawArgs["quadpatch"].IndexCount;
+            quadPatchRitem.StartIndexLocation = quadPatchRitem.Geo.DrawArgs["quadpatch"].StartIndexLocation;
+            quadPatchRitem.BaseVertexLocation = quadPatchRitem.Geo.DrawArgs["quadpatch"].BaseVertexLocation;
+            _ritemLayers[RenderLayer.Opaque].Add(quadPatchRitem);
+            _allRitems.Add(quadPatchRitem);
         }
 
         private void DrawRenderItems(GraphicsCommandList cmdList, List<RenderItem> ritems)

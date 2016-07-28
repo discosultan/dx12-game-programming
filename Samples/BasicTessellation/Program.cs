@@ -6,11 +6,11 @@ namespace DX12GameProgramming
     {
         static void Main(string[] args)
         {
-            //using (D3DApp app = new BasicTessellationApp(Process.GetCurrentProcess().Handle))
-            //{
-            //    app.Initialize();
-            //    app.Run();
-            //}
+            using (D3DApp app = new BasicTessellationApp(Process.GetCurrentProcess().Handle))
+            {
+                app.Initialize();
+                app.Run();
+            }
         }
     }
 }
