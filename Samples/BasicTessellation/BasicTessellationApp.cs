@@ -433,7 +433,7 @@ namespace DX12GameProgramming
 
             geo.DrawArgs["quadpatch"] = new SubmeshGeometry
             {
-                IndexCount = 4,
+                IndexCount = indices.Length,
                 StartIndexLocation = 0,
                 BaseVertexLocation = 0
             };

@@ -406,10 +406,10 @@ namespace DX12GameProgramming
 
         private void BuildShadersAndInputLayout()
         {
-            _shaders["tessVS"] = D3DUtil.CompileShader("Shaders\\Tessellation.hlsl", "VS", "vs_5_0");
-            _shaders["tessHS"] = D3DUtil.CompileShader("Shaders\\Tessellation.hlsl", "HS", "hs_5_0");
-            _shaders["tessDS"] = D3DUtil.CompileShader("Shaders\\Tessellation.hlsl", "DS", "ds_5_0");
-            _shaders["tessPS"] = D3DUtil.CompileShader("Shaders\\Tessellation.hlsl", "PS", "ps_5_0");
+            _shaders["tessVS"] = D3DUtil.CompileShader("Shaders\\BezierTessellation.hlsl", "VS", "vs_5_0");
+            _shaders["tessHS"] = D3DUtil.CompileShader("Shaders\\BezierTessellation.hlsl", "HS", "hs_5_0");
+            _shaders["tessDS"] = D3DUtil.CompileShader("Shaders\\BezierTessellation.hlsl", "DS", "ds_5_0");
+            _shaders["tessPS"] = D3DUtil.CompileShader("Shaders\\BezierTessellation.hlsl", "PS", "ps_5_0");
 
             _inputLayout = new InputLayoutDescription(new[]
             {
@@ -458,7 +458,7 @@ namespace DX12GameProgramming
 
             geo.DrawArgs["quadpatch"] = new SubmeshGeometry
             {
-                IndexCount = 4,
+                IndexCount = indices.Length,
                 StartIndexLocation = 0,
                 BaseVertexLocation = 0
             };
