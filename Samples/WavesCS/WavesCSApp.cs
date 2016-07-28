@@ -680,7 +680,7 @@ namespace DX12GameProgramming
             // PSO for transparent objects.
             //
 
-            var transparentPsoDesc = opaquePsoDesc.Copy();
+            GraphicsPipelineStateDescription transparentPsoDesc = opaquePsoDesc.Copy();
 
             var transparencyBlendDesc = new RenderTargetBlendDescription
             {
@@ -703,8 +703,9 @@ namespace DX12GameProgramming
             // PSO for alpha tested objects.
             //
 
-            var alphaTestedPsoDesc = opaquePsoDesc.Copy();
+            GraphicsPipelineStateDescription alphaTestedPsoDesc = opaquePsoDesc.Copy();
             alphaTestedPsoDesc.PixelShader = _shaders["alphaTestedPS"];
+            alphaTestedPsoDesc.RasterizerState.CullMode = CullMode.None;
 
             _psos["alphaTested"] = Device.CreateGraphicsPipelineState(alphaTestedPsoDesc);
 
@@ -712,7 +713,7 @@ namespace DX12GameProgramming
             // PSO for drawing waves.
             //
 
-            var wavesRenderPSO = transparentPsoDesc.Copy();
+            GraphicsPipelineStateDescription wavesRenderPSO = transparentPsoDesc.Copy();
             wavesRenderPSO.VertexShader = _shaders["wavesVS"];
 
             _psos["wavesRender"] = Device.CreateGraphicsPipelineState(wavesRenderPSO);

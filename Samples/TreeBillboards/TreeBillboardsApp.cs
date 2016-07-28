@@ -713,7 +713,7 @@ namespace DX12GameProgramming
             // PSO for transparent objects.
             //
 
-            var transparentPsoDesc = opaquePsoDesc.Copy();
+            GraphicsPipelineStateDescription transparentPsoDesc = opaquePsoDesc.Copy();
 
             var transparencyBlendDesc = new RenderTargetBlendDescription
             {

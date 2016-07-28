@@ -163,11 +163,11 @@ namespace DX12GameProgramming
             CommandList.SetViewport(Viewport);
             CommandList.SetScissorRectangles(ScissorRectangle);
 
-            // Indicate a state transition on the resource usage.
-            CommandList.ResourceBarrierTransition(CurrentBackBuffer, ResourceStates.Present, ResourceStates.RenderTarget);
+            // Change offscreen texture to be used as a a render target output.
+            CommandList.ResourceBarrierTransition(_offscreenRT.Resource, ResourceStates.GenericRead, ResourceStates.RenderTarget);
 
             // Clear the back buffer and depth buffer.
-            CommandList.ClearRenderTargetView(CurrentBackBufferView, new Color(_mainPassCB.FogColor));
+            CommandList.ClearRenderTargetView(_offscreenRT.Rtv, new Color(_mainPassCB.FogColor));
             CommandList.ClearDepthStencilView(CurrentDepthStencilView, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
 
             // Specify the buffers we are going to render to.            
@@ -764,7 +764,7 @@ namespace DX12GameProgramming
             // PSO for transparent objects.
             //
 
-            var transparentPsoDesc = opaquePsoDesc.Copy();
+            GraphicsPipelineStateDescription transparentPsoDesc = opaquePsoDesc.Copy();
 
             var transparencyBlendDesc = new RenderTargetBlendDescription
             {
@@ -787,8 +787,9 @@ namespace DX12GameProgramming
             // PSO for alpha tested objects.
             //
 
-            var alphaTestedPsoDesc = opaquePsoDesc.Copy();
+            GraphicsPipelineStateDescription alphaTestedPsoDesc = opaquePsoDesc.Copy();
             alphaTestedPsoDesc.PixelShader = _shaders["alphaTestedPS"];
+            alphaTestedPsoDesc.RasterizerState.CullMode = CullMode.None;
 
             _psos["alphaTested"] = Device.CreateGraphicsPipelineState(alphaTestedPsoDesc);
 
@@ -796,10 +797,26 @@ namespace DX12GameProgramming
             // PSO for drawing waves.
             //
 
-            var wavesRenderPSO = transparentPsoDesc.Copy();
+            GraphicsPipelineStateDescription wavesRenderPSO = transparentPsoDesc.Copy();
             wavesRenderPSO.VertexShader = _shaders["wavesVS"];
 
             _psos["wavesRender"] = Device.CreateGraphicsPipelineState(wavesRenderPSO);
+
+            //
+            // PSO for compositing post process.
+            //
+
+            GraphicsPipelineStateDescription compositePSO = opaquePsoDesc.Copy();
+            compositePSO.RootSignature = _postProcessRootSignature;
+
+            // Disable depth test.
+            compositePSO.DepthStencilState.IsDepthEnabled = false;
+            compositePSO.DepthStencilState.DepthWriteMask = DepthWriteMask.Zero;
+            compositePSO.DepthStencilState.DepthComparison = Comparison.Always;
+            compositePSO.VertexShader = _shaders["compositeVS"];
+            compositePSO.PixelShader = _shaders["compositePS"];
+
+            _psos["composite"] = Device.CreateGraphicsPipelineState(compositePSO);
 
             //
             // PSO for disturbing waves.
