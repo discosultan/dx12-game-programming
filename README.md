@@ -76,8 +76,7 @@ Renders trees as billboards. Introduces texture arrays and alpha to coverage in 
 
 ## [VecAdd](Samples/VecAdd)
 
-Sums a bunch of vectors on GPU instead of CPU for high parallelism. Introduces programmable compute shaders.
-<br><br>
+Sums a bunch of vectors on GPU instead of CPU for high parallelism. Introduces programmable compute shaders. Outputs a 'results.txt' file instead of rendering to screen.
 
 ## [WavesCS](Samples/WavesCS)
 <img src="./Images/Blend.jpg" height="96px" align="right">
