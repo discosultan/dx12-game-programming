@@ -2,6 +2,8 @@
 
 A collection of *DirectX 12 C# samples* from Frank D. Luna's book [Introduction to 3D Game Programming with Direct3D 12.0](http://d3dcoder.net/d3d12.htm). Samples have been ported to the .NET environment using [SharpDX](http://sharpdx.org/).
 
+This repo contains all the samples from part 2 of the book - *Direct3D foundations*. There are no plans to port samples from part 3.
+
 # Building
 
 All the samples will compile with Visual Studio 2015+ and run on Windows 10 with DirectX 12 capable graphics hardware.
@@ -16,7 +18,7 @@ Sets up a basic Direct3D 12 enabled window. Introduces initializing Direct3D, se
 ## [Box](Samples/Box)
 <img src="./Images/Box.jpg" height="96px" align="right">
 
-Renders a colored box. Introduces vertices and input layouts, vertex and index buffers, vertex and pixel shaders, constant buffers, compiling shaders, rasterizer state, pipeline state object. 
+Renders a colored box. Introduces vertices and input layouts, vertex and index buffers, programmable vertex and pixel shaders, constant buffers, compiling shaders, rasterizer state, pipeline state object. 
 
 ## [Shapes](Samples/Shapes)
 <img src="./Images/Shapes.jpg" height="96px" align="right">
@@ -31,12 +33,12 @@ Constructs a basic terrain and animated water geometry. Introduces dynamic verte
 ## [LitWaves](Samples/LitWaves)
 <img src="./Images/LitWaves.jpg" height="96px" align="right">
 
-Adds lighting to previous land and waves sample. Introduces diffuse, ambient and specular lighting, materials, directional light. 
+Adds lighting to the previous hills scene. Introduces diffuse, ambient and specular lighting, materials and directional lights. 
 
 ## [LitColumns](Samples/LitColumns)
 <img src="./Images/LitColumns.jpg" height="96px" align="right">
 
-Introduces parsing and loading a skeleton model mesh from a custom model format.
+Introduces parsing and loading a skeleton model mesh from a custom model format. Applies lighting to the shapes scene.
 
 ## [Crate](Samples/Crate)
 <img src="./Images/Crate.jpg" height="96px" align="right">
@@ -46,7 +48,7 @@ Introduces texturing and uv-coordinates on a simple box.
 ## [TexWaves](Samples/TexWaves)
 <img src="./Images/TexWaves.jpg" height="96px" align="right">
 
-Introduces texture animations by animating water texture.
+Introduces texture animations by animating the water texture in the hills scene.
 
 ## [TexColumns](Samples/TexColumns)
 <img src="./Images/TexColumns.jpg" height="96px" align="right">
@@ -56,38 +58,43 @@ Renders the shapes scene with fully textured objects.
 ## [Blend](Samples/Blend)
 <img src="./Images/Blend.jpg" height="96px" align="right">
 
-Introduces the blending formula and how to configure a blend state in the graphics pipeline. Renders the hills and water scene with transparent water and box texture.
+Introduces the blending formula and how to configure a blend state in the graphics pipeline. Renders the hills scene with transparent water and a wire fence box texture.
 
 ## [Stencil](Samples/Stencil)
 <img src="./Images/Stencil.jpg" height="96px" align="right">
 
-Constructs a mirror using stencil buffer. Introduces stenciling, projecting mirrored images and shadows.
+Constructs a mirror using stencil buffer. Introduces stenciling, projecting mirrored images and rendering shadows.
 
 ## [TreeBillboards](Samples/TreeBillboards)
 <img src="./Images/TreeBillboards.jpg" height="96px" align="right">
 
-Renders trees as billboards. Introduces alpha to coverage.
-
-## [WavesCS](Samples/WavesCS)
-
-Uses compute shader to update blend sample waves simulation.
+Renders trees as billboards. Introduces texture arrays and alpha to coverage in relation to MSAA.
 
 ## [VecAdd](Samples/VecAdd)
 
-WIP . . .
+Sums a bunch of vectors on GPU instead of CPU for high parallelism. Introduces programmable compute shaders. 
+
+## [WavesCS](Samples/WavesCS)
+<img src="./Images/Blend.jpg" height="96px" align="right">
+
+Uses compute shader to update the hills scene waves simulation on GPU instead of CPU.
 
 ## [Blur](Samples/Blur)
+<img src="./Images/Blur.jpg" height="96px" align="right">
 
-WIP . . .
+Applies a Gaussian blur post processing effect using compute shader to the hills scene. Introduces render targets. 
 
 ## [SobelFilter](Samples/SobelFilter)
+<img src="./Images/SobelFilter.jpg" height="96px" align="right">
 
-WIP . . .
+Applies a sobel filter post processing effect using compute shader to the hills scene to render strong outlines for geometry.
 
 ## [BasicTessellation](Samples/BasicTessellation)
+<img src="./Images/BasicTessellation.jpg" height="96px" align="right">
 
-WIP . . .
+Tessellates a quad using 4 control points. Introduces programmable hull and domain shaders and the fixed tessellator stage. 
 
 ## [BezierPatch](Samples/BezierPatch)
+<img src="./Images/BezierPatch.jpg" height="96px" align="right">
 
-WIP . . .
+Tessellates a quad using 16 control points cubic Bézier surface.
