@@ -72,6 +72,7 @@ Constructs a mirror using stencil buffer. Introduces stenciling, projecting mirr
 <img src="./Images/TreeBillboards.jpg" height="96px" align="right">
 
 Renders trees as billboards. Introduces texture arrays and alpha to coverage in relation to MSAA.
+<br><br>
 
 ## [VecAdd](Samples/VecAdd)
 
