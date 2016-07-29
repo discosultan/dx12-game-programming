@@ -44,21 +44,24 @@ Introduces parsing and loading a skeleton model mesh from a custom model format.
 <img src="./Images/Crate.jpg" height="96px" align="right">
 
 Introduces texturing and uv-coordinates on a simple box.
+<br><br>
 
 ## [TexWaves](Samples/TexWaves)
 <img src="./Images/TexWaves.jpg" height="96px" align="right">
 
 Introduces texture animations by animating the water texture in the hills scene.
+<br><br>
 
 ## [TexColumns](Samples/TexColumns)
 <img src="./Images/TexColumns.jpg" height="96px" align="right">
 
 Renders the shapes scene with fully textured objects.
+<br><br>
 
 ## [Blend](Samples/Blend)
 <img src="./Images/Blend.jpg" height="96px" align="right">
 
-Introduces the blending formula and how to configure a blend state in the graphics pipeline. Renders the hills scene with transparent water and a wire fence box texture.
+Renders the hills scene with transparent water and a wire fence box texture. Introduces the blending formula, how to configure a blend state in the graphics pipeline and how to create a fog effect.
 
 ## [Stencil](Samples/Stencil)
 <img src="./Images/Stencil.jpg" height="96px" align="right">
@@ -72,12 +75,14 @@ Renders trees as billboards. Introduces texture arrays and alpha to coverage in 
 
 ## [VecAdd](Samples/VecAdd)
 
-Sums a bunch of vectors on GPU instead of CPU for high parallelism. Introduces programmable compute shaders. 
+Sums a bunch of vectors on GPU instead of CPU for high parallelism. Introduces programmable compute shaders.
+<br><br>
 
 ## [WavesCS](Samples/WavesCS)
 <img src="./Images/Blend.jpg" height="96px" align="right">
 
 Uses compute shader to update the hills scene waves simulation on GPU instead of CPU.
+<br><br>
 
 ## [Blur](Samples/Blur)
 <img src="./Images/Blur.jpg" height="96px" align="right">
