@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using SharpDX;
 using SharpDX.Direct3D12;
 

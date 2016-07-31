@@ -458,6 +458,7 @@ namespace DX12GameProgramming
         }
 
         protected virtual int RtvDescriptorCount => SwapChainBufferCount;
+        protected virtual int DsvDescriptorCount => 1;
 
         private void CreateCommandObjects()
         {
@@ -524,7 +525,7 @@ namespace DX12GameProgramming
 
             var dsvHeapDesc = new DescriptorHeapDescription
             {
-                DescriptorCount = 1,
+                DescriptorCount = DsvDescriptorCount,
                 Type = DescriptorHeapType.DepthStencilView
             };
             DsvHeap = Device.CreateDescriptorHeap(dsvHeapDesc);
