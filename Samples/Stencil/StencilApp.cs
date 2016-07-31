@@ -66,6 +66,7 @@ namespace DX12GameProgramming
 
         public StencilApp(IntPtr hInstance) : base(hInstance)
         {
+            MainWindowCaption = "Stencil";
         }
 
         private FrameResource CurrFrameResource => _frameResources[_currFrameResourceIndex];

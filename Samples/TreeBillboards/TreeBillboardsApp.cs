@@ -66,6 +66,7 @@ namespace DX12GameProgramming
 
         public TreeBillboardsApp(IntPtr hInstance) : base(hInstance)
         {
+            MainWindowCaption = "Tree Billboards";
         }
 
         private FrameResource CurrFrameResource => _frameResources[_currFrameResourceIndex];

@@ -47,6 +47,7 @@ namespace DX12GameProgramming
 
         public LitColumnsApp(IntPtr hInstance) : base(hInstance)
         {
+            MainWindowCaption = "Lit Columns";
         }
 
         private FrameResource CurrFrameResource => _frameResources[_currFrameResourceIndex];

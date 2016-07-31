@@ -57,6 +57,7 @@ namespace DX12GameProgramming
 
         public LitWavesApp(IntPtr hInstance) : base(hInstance)
         {
+            MainWindowCaption = "Lit Waves";
         }
 
         private FrameResource CurrFrameResource => _frameResources[_currFrameResourceIndex];

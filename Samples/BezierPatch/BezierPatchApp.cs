@@ -52,6 +52,7 @@ namespace DX12GameProgramming
 
         public BezierPatchApp(IntPtr hInstance) : base(hInstance)
         {
+            MainWindowCaption = "Bezier Patch";
         }
 
         private FrameResource CurrFrameResource => _frameResources[_currFrameResourceIndex];

@@ -49,6 +49,7 @@ namespace DX12GameProgramming
 
         public ShapesApp(IntPtr hInstance) : base(hInstance)
         {
+            MainWindowCaption = "Shapes";
         }
 
         private FrameResource CurrFrameResource => _frameResources[_currFrameResourceIndex];

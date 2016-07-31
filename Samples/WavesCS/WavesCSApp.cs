@@ -62,6 +62,7 @@ namespace DX12GameProgramming
 
         public WavesCSApp(IntPtr hInstance) : base(hInstance)
         {
+            MainWindowCaption = "Waves CS";
         }
 
         private FrameResource CurrFrameResource => _frameResources[_currFrameResourceIndex];

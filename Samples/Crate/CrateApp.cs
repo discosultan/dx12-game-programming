@@ -51,6 +51,7 @@ namespace DX12GameProgramming
 
         public CrateApp(IntPtr hInstance) : base(hInstance)
         {
+            MainWindowCaption = "Crate";
         }
 
         private FrameResource CurrFrameResource => _frameResources[_currFrameResourceIndex];

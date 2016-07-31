@@ -43,6 +43,7 @@ namespace DX12GameProgramming
 
         public CameraAndDynamicIndexingApp(IntPtr hInstance) : base(hInstance)
         {
+            MainWindowCaption = "Camera and Dynamic Indexing";
         }
 
         private FrameResource CurrFrameResource => _frameResources[_currFrameResourceIndex];

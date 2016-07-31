@@ -60,6 +60,7 @@ namespace DX12GameProgramming
 
         public TexWavesApp(IntPtr hInstance) : base(hInstance)
         {
+            MainWindowCaption = "Tex Waves";
         }
 
         private FrameResource CurrFrameResource => _frameResources[_currFrameResourceIndex];

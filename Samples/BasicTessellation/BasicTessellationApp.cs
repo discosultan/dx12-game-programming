@@ -52,6 +52,7 @@ namespace DX12GameProgramming
 
         public BasicTessellationApp(IntPtr hInstance) : base(hInstance)
         {
+            MainWindowCaption = "Basic Tessellation";
         }
 
         private FrameResource CurrFrameResource => _frameResources[_currFrameResourceIndex];

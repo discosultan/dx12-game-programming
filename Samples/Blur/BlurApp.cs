@@ -65,6 +65,7 @@ namespace DX12GameProgramming
 
         public BlurApp(IntPtr hInstance) : base(hInstance)
         {
+            MainWindowCaption = "Blur";
         }
 
         private FrameResource CurrFrameResource => _frameResources[_currFrameResourceIndex];

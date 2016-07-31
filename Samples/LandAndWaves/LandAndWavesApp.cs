@@ -55,6 +55,7 @@ namespace DX12GameProgramming
 
         public LandAndWavesApp(IntPtr hInstance) : base(hInstance)
         {
+            MainWindowCaption = "Land and Waves";
         }
 
         private FrameResource CurrFrameResource => _frameResources[_currFrameResourceIndex];

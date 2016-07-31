@@ -47,6 +47,7 @@ namespace DX12GameProgramming
 
         public BoxApp(IntPtr hInstance) : base(hInstance)
         {
+            MainWindowCaption = "Box";
         }
 
         public override void Initialize()

@@ -50,6 +50,7 @@ namespace DX12GameProgramming
 
         public TexColumnsApp(IntPtr hInstance) : base(hInstance)
         {
+            MainWindowCaption = "Tex Columns";
         }
 
         private FrameResource CurrFrameResource => _frameResources[_currFrameResourceIndex];

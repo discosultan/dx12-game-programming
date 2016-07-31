@@ -62,6 +62,7 @@ namespace DX12GameProgramming
 
         public BlendApp(IntPtr hInstance) : base(hInstance)
         {
+            MainWindowCaption = "Blend";
         }
 
         private FrameResource CurrFrameResource => _frameResources[_currFrameResourceIndex];

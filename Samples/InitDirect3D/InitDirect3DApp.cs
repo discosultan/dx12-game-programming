@@ -9,6 +9,7 @@ namespace DX12GameProgramming
     {
         public InitDirect3DApp(IntPtr hInstance) : base(hInstance)
         {
+            MainWindowCaption = "Init Direct3D";
         }
 
         protected override void Draw(GameTimer gt)

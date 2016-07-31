@@ -33,6 +33,7 @@ namespace DX12GameProgramming
 
         public VecAddApp(IntPtr hInstance) : base(hInstance)
         {
+            MainWindowCaption = "Vec Add";
         }
 
         public override void Initialize()

@@ -67,6 +67,7 @@ namespace DX12GameProgramming
 
         public SobelFilterApp(IntPtr hInstance) : base(hInstance)
         {
+            MainWindowCaption = "Sobel Filter";
         }
 
         private FrameResource CurrFrameResource => _frameResources[_currFrameResourceIndex];
