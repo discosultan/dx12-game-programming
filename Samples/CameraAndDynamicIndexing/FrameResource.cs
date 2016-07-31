@@ -10,6 +10,10 @@ namespace DX12GameProgramming
     {
         public Matrix World;
         public Matrix TexTransform;
+        public int MaterialIndex;
+        public int ObjPad0;
+        public int ObjPad1;
+        public int ObjPad2;
 
         public static ObjectConstants Default => new ObjectConstants
         {
@@ -57,6 +61,30 @@ namespace DX12GameProgramming
         };
     }
 
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    internal struct MaterialData
+    {
+        public Vector4 DiffuseAlbedo;
+        public Vector3 FresnelR0;
+        public float Roughness;
+
+        // Used in texture mapping.
+        public Matrix MatTransform;
+
+        public int DiffuseMapIndex;
+        public int MaterialPad0;
+        public int MaterialPad1;
+        public int MaterialPad2;
+
+        public static MaterialData Default => new MaterialData
+        {
+            DiffuseAlbedo = Vector4.One,
+            FresnelR0 = new Vector3(0.01f),
+            Roughness = 64.0f,
+            MatTransform = Matrix.Identity
+        };
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     internal struct Vertex
     {
@@ -72,8 +100,8 @@ namespace DX12GameProgramming
             CmdListAlloc = device.CreateCommandAllocator(CommandListType.Direct);
 
             PassCB = new UploadBuffer<PassConstants>(device, passCount, true);
-            MaterialCB = new UploadBuffer<MaterialConstants>(device, materialCount, true);
             ObjectCB = new UploadBuffer<ObjectConstants>(device, objectCount, true);
+            MaterialBuffer = new UploadBuffer<MaterialData>(device, materialCount, false);
         }
 
         // We cannot reset the allocator until the GPU is done processing the commands.
@@ -83,8 +111,8 @@ namespace DX12GameProgramming
         // We cannot update a cbuffer until the GPU is done processing the commands
         // that reference it. So each frame needs their own cbuffers.
         public UploadBuffer<PassConstants> PassCB { get; }
-        public UploadBuffer<MaterialConstants> MaterialCB { get; }
         public UploadBuffer<ObjectConstants> ObjectCB { get; }
+        public UploadBuffer<MaterialData> MaterialBuffer { get; }
 
         // Fence value to mark commands up to this fence point.  This lets us
         // check if these frame resources are still in use by the GPU.
@@ -92,8 +120,8 @@ namespace DX12GameProgramming
 
         public void Dispose()
         {
+            MaterialBuffer.Dispose();
             ObjectCB.Dispose();
-            MaterialCB.Dispose();
             PassCB.Dispose();
             CmdListAlloc.Dispose();
         }

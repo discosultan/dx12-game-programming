@@ -10,7 +10,7 @@ using ShaderResourceViewDimension = SharpDX.Direct3D12.ShaderResourceViewDimensi
 
 namespace DX12GameProgramming
 {
-    public class TexColumnsApp : D3DApp
+    public class CameraAndDynamicIndexingApp : D3DApp
     {
         private readonly List<FrameResource> _frameResources = new List<FrameResource>(NumFrameResources);
         private readonly List<AutoResetEvent> _fenceEvents = new List<AutoResetEvent>(NumFrameResources);
@@ -25,8 +25,7 @@ namespace DX12GameProgramming
         private readonly Dictionary<string, Material> _materials = new Dictionary<string, Material>();
         private readonly Dictionary<string, Texture> _textures = new Dictionary<string, Texture>();
         private readonly Dictionary<string, ShaderBytecode> _shaders = new Dictionary<string, ShaderBytecode>();
-
-        private PipelineState _opaquePso;
+        private readonly Dictionary<string, PipelineState> _psos = new Dictionary<string, PipelineState>();
 
         private InputLayoutDescription _inputLayout;
 
@@ -38,17 +37,11 @@ namespace DX12GameProgramming
 
         private PassConstants _mainPassCB;
 
-        private Vector3 _eyePos;
-        private Matrix _proj = Matrix.Identity;
-        private Matrix _view = Matrix.Identity;
-
-        private float _theta = 1.5f * MathUtil.Pi;
-        private float _phi = 0.2f * MathUtil.Pi;
-        private float _radius = 15.0f;
+        private readonly Camera _camera = new Camera();
 
         private Point _lastMousePos;
 
-        public TexColumnsApp(IntPtr hInstance) : base(hInstance)
+        public CameraAndDynamicIndexingApp(IntPtr hInstance) : base(hInstance)
         {
         }
 
@@ -61,6 +54,8 @@ namespace DX12GameProgramming
 
             // Reset the command list to prep for initialization commands.
             CommandList.Reset(DirectCmdListAlloc, null);
+
+            _camera.Position = new Vector3(0.0f, 2.0f, -15.0f);
 
             LoadTextures();
             BuildRootSignature();
@@ -85,12 +80,12 @@ namespace DX12GameProgramming
             base.OnResize();
 
             // The window resized, so update the aspect ratio and recompute the projection matrix.
-            _proj = Matrix.PerspectiveFovLH(0.25f * MathUtil.Pi, AspectRatio, 1.0f, 1000.0f);
+            _camera.SetLens(0.25f * MathUtil.Pi, AspectRatio, 1.0f, 1000.0f);
         }
 
         protected override void Update(GameTimer gt)
         {
-            UpdateCamera();
+            OnKeyboardInput(gt);
 
             // Cycle through the circular frame resource array.
             _currFrameResourceIndex = (_currFrameResourceIndex + 1) % NumFrameResources;
@@ -104,7 +99,7 @@ namespace DX12GameProgramming
             }
 
             UpdateObjectCBs();
-            UpdateMaterialCBs();
+            UpdateMaterialBuffer();
             UpdateMainPassCB(gt);
         }
 
@@ -118,7 +113,7 @@ namespace DX12GameProgramming
 
             // A command list can be reset after it has been added to the command queue via ExecuteCommandList.
             // Reusing the command list reuses memory.
-            CommandList.Reset(cmdListAlloc, _opaquePso);
+            CommandList.Reset(cmdListAlloc, _psos["opaque"]);
 
             CommandList.SetViewport(Viewport);
             CommandList.SetScissorRectangles(ScissorRectangle);
@@ -138,7 +133,17 @@ namespace DX12GameProgramming
             CommandList.SetGraphicsRootSignature(_rootSignature);
 
             Resource passCB = CurrFrameResource.PassCB.Resource;
-            CommandList.SetGraphicsRootConstantBufferView(2, passCB.GPUVirtualAddress);
+            CommandList.SetGraphicsRootConstantBufferView(1, passCB.GPUVirtualAddress);
+
+            // Bind all the materials used in this scene. For structured buffers, we can bypass the heap and 
+            // set as a root descriptor.
+            Resource matBuffer = CurrFrameResource.MaterialBuffer.Resource;
+            CommandList.SetGraphicsRootShaderResourceView(2, matBuffer.GPUVirtualAddress);
+
+            // Bind all the textures used in this scene. Observe
+            // that we only have to specify the first descriptor in the table. 
+            // The root signature knows how many descriptors are expected in the table.
+            CommandList.SetGraphicsRootDescriptorTable(3, _srvDescriptorHeap.GPUDescriptorHandleForHeapStart);
 
             DrawRenderItems(CommandList, _opaqueRitems);
 
@@ -177,24 +182,8 @@ namespace DX12GameProgramming
                 float dx = MathUtil.DegreesToRadians(0.25f * (location.X - _lastMousePos.X));
                 float dy = MathUtil.DegreesToRadians(0.25f * (location.Y - _lastMousePos.Y));
 
-                // Update angles based on input to orbit camera around box.
-                _theta += dx;
-                _phi += dy;
-
-                // Restrict the angle mPhi.
-                _phi = MathUtil.Clamp(_phi, 0.1f, MathUtil.Pi - 0.1f);
-            }
-            else if ((button & MouseButtons.Right) != 0)
-            {
-                // Make each pixel correspond to a quarter of a degree.                
-                float dx = 0.05f * (location.X - _lastMousePos.X);
-                float dy = 0.05f * (location.Y - _lastMousePos.Y);
-
-                // Update the camera radius based on input.
-                _radius += dx - dy;
-
-                // Restrict the radius.
-                _radius = MathUtil.Clamp(_radius, 5.0f, 150.0f);
+                _camera.Pitch(dy);
+                _camera.RotateY(dx);
             }
 
             _lastMousePos = location;
@@ -207,21 +196,26 @@ namespace DX12GameProgramming
                 foreach (Texture texture in _textures.Values) texture.Dispose();
                 foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();
                 _rootSignature.Dispose();
-                foreach (MeshGeometry geometry in _geometries.Values) geometry.Dispose();                
-                _opaquePso.Dispose();
+                foreach (MeshGeometry geometry in _geometries.Values) geometry.Dispose();
+                foreach (PipelineState pso in _psos.Values) pso.Dispose();
             }
             base.Dispose(disposing);
         }
 
-        private void UpdateCamera()
+        private void OnKeyboardInput(GameTimer gt)
         {
-            // Convert Spherical to Cartesian coordinates.
-            _eyePos.X = _radius * MathHelper.Sinf(_phi) * MathHelper.Cosf(_theta);
-            _eyePos.Z = _radius * MathHelper.Sinf(_phi) * MathHelper.Sinf(_theta);
-            _eyePos.Y = _radius * MathHelper.Cosf(_phi);
+            float dt = gt.DeltaTime;
 
-            // Build the view matrix.
-            _view = Matrix.LookAtLH(_eyePos, Vector3.Zero, Vector3.Up);
+            if (IsKeyDown(Keys.W))
+                _camera.Walk(10.0f * dt);
+            if (IsKeyDown(Keys.S))
+                _camera.Walk(-10.0f * dt);
+            if (IsKeyDown(Keys.A))
+                _camera.Strafe(-10.0f * dt);
+            if (IsKeyDown(Keys.D))
+                _camera.Strafe(10.0f * dt);
+
+            _camera.UpdateViewMatrix();
         }
 
         private void UpdateObjectCBs()
@@ -235,7 +229,8 @@ namespace DX12GameProgramming
                     var objConstants = new ObjectConstants
                     {
                         World = Matrix.Transpose(e.World),
-                        TexTransform = Matrix.Transpose(e.TexTransform)
+                        TexTransform = Matrix.Transpose(e.TexTransform),
+                        MaterialIndex = e.Mat.MatCBIndex
                     };
                     CurrFrameResource.ObjectCB.CopyData(e.ObjCBIndex, ref objConstants);
 
@@ -245,21 +240,22 @@ namespace DX12GameProgramming
             }
         }
 
-        private void UpdateMaterialCBs()
+        private void UpdateMaterialBuffer()
         {
-            UploadBuffer<MaterialConstants> currMaterialCB = CurrFrameResource.MaterialCB;
+            UploadBuffer<MaterialData> currMaterialCB = CurrFrameResource.MaterialBuffer;
             foreach (Material mat in _materials.Values)
             {
                 // Only update the cbuffer data if the constants have changed. If the cbuffer
                 // data changes, it needs to be updated for each FrameResource.
                 if (mat.NumFramesDirty > 0)
                 {
-                    var matConstants = new MaterialConstants
+                    var matConstants = new MaterialData
                     {
                         DiffuseAlbedo = mat.DiffuseAlbedo,
                         FresnelR0 = mat.FresnelR0,
                         Roughness = mat.Roughness,
-                        MatTransform = Matrix.Transpose(mat.MatTransform)
+                        MatTransform = Matrix.Transpose(mat.MatTransform),
+                        DiffuseMapIndex = mat.DiffuseSrvHeapIndex
                     };
 
                     currMaterialCB.CopyData(mat.MatCBIndex, ref matConstants);
@@ -272,18 +268,21 @@ namespace DX12GameProgramming
 
         private void UpdateMainPassCB(GameTimer gt)
         {
-            Matrix viewProj = _view * _proj;
-            Matrix invView = Matrix.Invert(_view);
-            Matrix invProj = Matrix.Invert(_proj);
+            Matrix view = _camera.View;
+            Matrix proj = _camera.Proj;
+
+            Matrix viewProj = view * proj;
+            Matrix invView = Matrix.Invert(view);
+            Matrix invProj = Matrix.Invert(proj);
             Matrix invViewProj = Matrix.Invert(viewProj);
 
-            _mainPassCB.View = Matrix.Transpose(_view);
+            _mainPassCB.View = Matrix.Transpose(view);
             _mainPassCB.InvView = Matrix.Transpose(invView);
-            _mainPassCB.Proj = Matrix.Transpose(_proj);
+            _mainPassCB.Proj = Matrix.Transpose(proj);
             _mainPassCB.InvProj = Matrix.Transpose(invProj);
             _mainPassCB.ViewProj = Matrix.Transpose(viewProj);
             _mainPassCB.InvViewProj = Matrix.Transpose(invViewProj);
-            _mainPassCB.EyePosW = _eyePos;
+            _mainPassCB.EyePosW = _camera.Position;
             _mainPassCB.RenderTargetSize = new Vector2(ClientWidth, ClientHeight);
             _mainPassCB.InvRenderTargetSize = 1.0f / _mainPassCB.RenderTargetSize;
             _mainPassCB.NearZ = 1.0f;
@@ -292,11 +291,11 @@ namespace DX12GameProgramming
             _mainPassCB.DeltaTime = gt.DeltaTime;
             _mainPassCB.AmbientLight = new Vector4(0.25f, 0.25f, 0.35f, 1.0f);
             _mainPassCB.Lights.Light1.Direction = new Vector3(0.57735f, -0.57735f, 0.57735f);
-            _mainPassCB.Lights.Light1.Strength = new Vector3(0.6f);
+            _mainPassCB.Lights.Light1.Strength = new Vector3(0.8f);
             _mainPassCB.Lights.Light2.Direction = new Vector3(-0.57735f, -0.57735f, 0.57735f);
-            _mainPassCB.Lights.Light2.Strength = new Vector3(0.3f);
+            _mainPassCB.Lights.Light2.Strength = new Vector3(0.4f);
             _mainPassCB.Lights.Light3.Direction = new Vector3(0.0f, -0.707f, -0.707f);
-            _mainPassCB.Lights.Light3.Strength = new Vector3(0.15f);
+            _mainPassCB.Lights.Light3.Strength = new Vector3(0.2f);
 
             CurrFrameResource.PassCB.CopyData(0, ref _mainPassCB);
         }
@@ -306,6 +305,7 @@ namespace DX12GameProgramming
             AddTexture("bricksTex", "bricks.dds");
             AddTexture("stoneTex", "stone.dds");
             AddTexture("tileTex", "tile.dds");
+            AddTexture("crateTex", "WoodCrate01.dds");
         }
 
         private void AddTexture(string name, string filename)
@@ -325,10 +325,10 @@ namespace DX12GameProgramming
             // Perfomance TIP: Order from most frequent to least frequent.
             var slotRootParameters = new[]
             {
-                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 1, 0)),
                 new RootParameter(ShaderVisibility.All, new RootDescriptor(0, 0), RootParameterType.ConstantBufferView),
                 new RootParameter(ShaderVisibility.All, new RootDescriptor(1, 0), RootParameterType.ConstantBufferView),
-                new RootParameter(ShaderVisibility.All, new RootDescriptor(2, 0), RootParameterType.ConstantBufferView)
+                new RootParameter(ShaderVisibility.All, new RootDescriptor(0, 1), RootParameterType.ShaderResourceView),
+                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 4, 0))
             };
 
             // A root signature is an array of root parameters.
@@ -347,7 +347,7 @@ namespace DX12GameProgramming
             //
             var srvHeapDesc = new DescriptorHeapDescription
             {
-                DescriptorCount = 3,
+                DescriptorCount = 4,
                 Type = DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView,
                 Flags = DescriptorHeapFlags.ShaderVisible
             };
@@ -362,6 +362,7 @@ namespace DX12GameProgramming
             Resource bricksTex = _textures["bricksTex"].Resource;
             Resource stoneTex = _textures["stoneTex"].Resource;
             Resource tileTex = _textures["tileTex"].Resource;
+            Resource crateTex = _textures["crateTex"].Resource;
 
             var srvDesc = new ShaderResourceViewDescription
             {
@@ -371,30 +372,38 @@ namespace DX12GameProgramming
                 Texture2D = new ShaderResourceViewDescription.Texture2DResource
                 {
                     MostDetailedMip = 0,
-                    MipLevels = -1,
+                    MipLevels = bricksTex.Description.MipLevels,
                     ResourceMinLODClamp = 0.0f
                 }
             };
-
             Device.CreateShaderResourceView(bricksTex, srvDesc, hDescriptor);
 
             // Next descriptor.
             hDescriptor += CbvSrvUavDescriptorSize;
 
             srvDesc.Format = stoneTex.Description.Format;
+            srvDesc.Texture2D.MipLevels = stoneTex.Description.MipLevels;
             Device.CreateShaderResourceView(stoneTex, srvDesc, hDescriptor);
 
             // Next descriptor.
             hDescriptor += CbvSrvUavDescriptorSize;
 
             srvDesc.Format = tileTex.Description.Format;
+            srvDesc.Texture2D.MipLevels = tileTex.Description.MipLevels;
             Device.CreateShaderResourceView(tileTex, srvDesc, hDescriptor);
+
+            // Next descriptor.
+            hDescriptor += CbvSrvUavDescriptorSize;
+
+            srvDesc.Format = crateTex.Description.Format;
+            srvDesc.Texture2D.MipLevels = crateTex.Description.MipLevels;
+            Device.CreateShaderResourceView(crateTex, srvDesc, hDescriptor);
         }
 
         private void BuildShadersAndInputLayout()
         {
-            _shaders["standardVS"] = D3DUtil.CompileShader("Shaders\\Default.hlsl", "VS", "vs_5_0");
-            _shaders["opaquePS"] = D3DUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_0");
+            _shaders["standardVS"] = D3DUtil.CompileShader("Shaders\\Default.hlsl", "VS", "vs_5_1");
+            _shaders["opaquePS"] = D3DUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_1");
 
             _inputLayout = new InputLayoutDescription(new[]
             {
@@ -540,7 +549,7 @@ namespace DX12GameProgramming
             };
             opaquePsoDesc.RenderTargetFormats[0] = BackBufferFormat;
 
-            _opaquePso = Device.CreateGraphicsPipelineState(opaquePsoDesc);
+            _psos["opaque"] = Device.CreateGraphicsPipelineState(opaquePsoDesc);
         }
 
         private void BuildFrameResources()
@@ -583,14 +592,24 @@ namespace DX12GameProgramming
                 FresnelR0 = new Vector3(0.02f),
                 Roughness = 0.2f
             };
+
+            _materials["crate0"] = new Material
+            {
+                Name = "crate0",
+                MatCBIndex = 3,
+                DiffuseSrvHeapIndex = 3,
+                DiffuseAlbedo = Color.White.ToVector4(),
+                FresnelR0 = new Vector3(0.05f),
+                Roughness = 0.2f
+            };
         }
 
         private void BuildRenderItems()
         {
             var boxRitem = new RenderItem();
-            boxRitem.World = Matrix.Scaling(2.0f, 2.0f, 2.0f) * Matrix.Translation(0.0f, 0.5f, 0.0f);
+            boxRitem.World = Matrix.Scaling(2.0f, 2.0f, 2.0f) * Matrix.Translation(0.0f, 1.0f, 0.0f);
             boxRitem.ObjCBIndex = 0;
-            boxRitem.Mat = _materials["stone0"];
+            boxRitem.Mat = _materials["crate0"];
             boxRitem.Geo = _geometries["shapeGeo"];
             boxRitem.PrimitiveType = PrimitiveTopology.TriangleList;
             boxRitem.IndexCount = boxRitem.Geo.DrawArgs["box"].IndexCount;
@@ -669,7 +688,6 @@ namespace DX12GameProgramming
             int matCBByteSize = D3DUtil.CalcConstantBufferByteSize<MaterialConstants>();
 
             Resource objectCB = CurrFrameResource.ObjectCB.Resource;
-            Resource matCB = CurrFrameResource.MaterialCB.Resource;
 
             foreach (RenderItem ri in ritems)
             {
@@ -677,14 +695,9 @@ namespace DX12GameProgramming
                 cmdList.SetIndexBuffer(ri.Geo.IndexBufferView);
                 cmdList.PrimitiveTopology = ri.PrimitiveType;
 
-                GpuDescriptorHandle tex = _srvDescriptorHeap.GPUDescriptorHandleForHeapStart + ri.Mat.DiffuseSrvHeapIndex * CbvSrvUavDescriptorSize;
-
                 long objCBAddress = objectCB.GPUVirtualAddress + ri.ObjCBIndex * objCBByteSize;
-                long matCBAddress = matCB.GPUVirtualAddress + ri.Mat.MatCBIndex * matCBByteSize;
 
-                cmdList.SetGraphicsRootDescriptorTable(0, tex);
-                cmdList.SetGraphicsRootConstantBufferView(1, objCBAddress);
-                cmdList.SetGraphicsRootConstantBufferView(3, matCBAddress);
+                cmdList.SetGraphicsRootConstantBufferView(0, objCBAddress);
 
                 cmdList.DrawIndexedInstanced(ri.IndexCount, 1, ri.StartIndexLocation, ri.BaseVertexLocation, 0);
             }

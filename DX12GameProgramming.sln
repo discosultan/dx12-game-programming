@@ -43,6 +43,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BezierPatch", "Samples\Bezi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InitDirect3D", "Samples\InitDirect3D\InitDirect3D.csproj", "{19E7FCEF-F70C-47F3-A7C9-FAF8E073CB01}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CameraAndDynamicIndexing", "Samples\CameraAndDynamicIndexing\CameraAndDynamicIndexing.csproj", "{FDF80094-B8EF-4A18-8846-785D7AAC3FF7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -125,6 +127,10 @@ Global
 		{19E7FCEF-F70C-47F3-A7C9-FAF8E073CB01}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{19E7FCEF-F70C-47F3-A7C9-FAF8E073CB01}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{19E7FCEF-F70C-47F3-A7C9-FAF8E073CB01}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FDF80094-B8EF-4A18-8846-785D7AAC3FF7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FDF80094-B8EF-4A18-8846-785D7AAC3FF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FDF80094-B8EF-4A18-8846-785D7AAC3FF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FDF80094-B8EF-4A18-8846-785D7AAC3FF7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -148,5 +154,6 @@ Global
 		{A2DAB809-BC2A-4969-9BCA-89797D298E20} = {F39AB6D3-10A4-4392-99E5-B827527D2310}
 		{8CC0EF52-87B8-47F5-8331-307EECFDC464} = {F39AB6D3-10A4-4392-99E5-B827527D2310}
 		{19E7FCEF-F70C-47F3-A7C9-FAF8E073CB01} = {F39AB6D3-10A4-4392-99E5-B827527D2310}
+		{FDF80094-B8EF-4A18-8846-785D7AAC3FF7} = {F39AB6D3-10A4-4392-99E5-B827527D2310}
 	EndGlobalSection
 EndGlobal
