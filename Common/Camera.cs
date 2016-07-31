@@ -56,7 +56,7 @@ namespace DX12GameProgramming
             Position = pos;
             Look = Vector3.Normalize(target - pos);
             Right = Vector3.Normalize(Vector3.Cross(up, Look));
-            Up = up;
+            Up = Vector3.Cross(Look, Right);
             _viewDirty = true;
         }
 
@@ -74,18 +74,26 @@ namespace DX12GameProgramming
 
         public void Pitch(float angle)
         {
-            Matrix r = Matrix.RotationX(angle);
+            // Rotate up and look vector about the right vector.
+
+            Matrix r = Matrix.RotationAxis(Right, angle);
+
             Up = Vector3.TransformNormal(Up, r);
             Look = Vector3.TransformNormal(Look, r);
+
             _viewDirty = true;
         }
 
         public void RotateY(float angle)
         {
+            // Rotate the basis vectors about the world y-axis.
+
             Matrix r = Matrix.RotationY(angle);
+
             Right = Vector3.TransformNormal(Right, r);
             Up = Vector3.TransformNormal(Up, r);
             Look = Vector3.TransformNormal(Look, r);
+
             _viewDirty = true;
         }
 
@@ -94,9 +102,8 @@ namespace DX12GameProgramming
             if (!_viewDirty) return;
 
             // Keep camera's axes orthogonal to each other and of unit length.
-            Look.Normalize();
-            Up = Vector3.Cross(Look, Right);
-            Up.Normalize();
+            Look = Vector3.Normalize(Look);
+            Up = Vector3.Normalize(Vector3.Cross(Look, Right));
 
             // U, L already ortho-normal, so no need to normalize cross product.
             Right = Vector3.Cross(Up, Look);
@@ -106,14 +113,12 @@ namespace DX12GameProgramming
             float y = -Vector3.Dot(Position, Up);
             float z = -Vector3.Dot(Position, Look);
 
-            var view = new Matrix(
+            View = new Matrix(
                 Right.X, Up.X, Look.X, 0.0f,
                 Right.Y, Up.Y, Look.Y, 0.0f,
                 Right.Z, Up.Z, Look.Z, 0.0f,
                 x, y, z, 1.0f
-            ); 
-           
-            View = view;
+            );
 
             _viewDirty = false;
         }
