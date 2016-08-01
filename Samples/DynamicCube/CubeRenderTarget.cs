@@ -138,11 +138,17 @@ namespace DX12GameProgramming
                 Flags = ResourceFlags.AllowRenderTarget
             };
 
+            var optClear = new ClearValue
+            {
+                Format = _format,
+                Color = Color.LightSteelBlue.ToVector4()                
+            };
             Resource = _device.CreateCommittedResource(
                 new HeapProperties(HeapType.Default),
                 HeapFlags.None,
                 texDesc,
-                ResourceStates.GenericRead);
+                ResourceStates.GenericRead,
+                optClear);
         }
 
         public void Dispose()

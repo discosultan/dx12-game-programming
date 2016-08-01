@@ -63,7 +63,7 @@ namespace DX12GameProgramming
 
         public DynamicCubeApp(IntPtr hInstance) : base(hInstance)
         {
-            MainWindowCaption = "Cube Map";
+            MainWindowCaption = "Dynamic Cube";
         }
 
         private FrameResource CurrFrameResource => _frameResources[_currFrameResourceIndex];
@@ -814,7 +814,7 @@ namespace DX12GameProgramming
         {
             for (int i = 0; i < NumFrameResources; i++)
             {
-                _frameResources.Add(new FrameResource(Device, 1, _allRitems.Count, _materials.Count));
+                _frameResources.Add(new FrameResource(Device, 7, _allRitems.Count, _materials.Count));
                 _fenceEvents.Add(new AutoResetEvent(false));
             }
         }
@@ -1076,8 +1076,8 @@ namespace DX12GameProgramming
 		        new Vector3(0.0f, 1.0f, 0.0f),  // -X
 		        new Vector3(0.0f, 0.0f, -1.0f), // +Y
 		        new Vector3(0.0f, 0.0f, +1.0f), // -Y
-		        new Vector3(0.0f, 1.0f, 0.0f),	 // +Z
-		        new Vector3(0.0f, 1.0f, 0.0f)	 // -Z
+		        new Vector3(0.0f, 1.0f, 0.0f),	// +Z
+		        new Vector3(0.0f, 1.0f, 0.0f)	// -Z
 	        };
 
             for (int i = 0; i < 6; i++)

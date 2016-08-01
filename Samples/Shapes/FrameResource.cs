@@ -5,7 +5,7 @@ using SharpDX.Direct3D12;
 
 namespace DX12GameProgramming
 {
-    struct ObjectConstants
+    internal struct ObjectConstants
     {
         public Matrix World;
 
@@ -15,8 +15,8 @@ namespace DX12GameProgramming
         };
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    struct PassConstants
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    internal struct PassConstants
     {
         public Matrix View;
         public Matrix InvView;
@@ -45,13 +45,13 @@ namespace DX12GameProgramming
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    struct Vertex
+    internal struct Vertex
     {
         public Vector3 Pos;
         public Vector4 Color;
     }
 
-    class FrameResource : IDisposable
+    internal class FrameResource : IDisposable
     {
         public FrameResource(Device device, int passCount, int objectCount)
         {
