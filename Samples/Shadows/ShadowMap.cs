@@ -7,18 +7,18 @@ using Resource = SharpDX.Direct3D12.Resource;
 
 namespace DX12GameProgramming
 {
-    internal class CubeRenderTarget : IDisposable
+    internal class ShadowMap : IDisposable
     {
-        private readonly Device _device;        
-        private readonly Format _format;
+        private readonly Device _device;
+        private readonly Format _format = Format.R24G8_Typeless;       
 
         private CpuDescriptorHandle _cpuSrv;
         private GpuDescriptorHandle _gpuSrv;
+        private CpuDescriptorHandle _cpuDsv;
 
-        public CubeRenderTarget(Device device, int width, int height, Format format)
+        public ShadowMap(Device device, int width, int height)
         {
-            _device = device;            
-            _format = format;
+            _device = device;
 
             Width = width;
             Height = height;
@@ -40,7 +40,7 @@ namespace DX12GameProgramming
 
         public Resource Resource { get; private set; }
         public GpuDescriptorHandle Srv => _gpuSrv;
-        public CpuDescriptorHandle[] Rtvs { get; private set; }
+        public CpuDescriptorHandle Dsv => _cpuDsv;
 
         public ViewportF Viewport { get; private set; }
         public RectangleF ScissorRect { get; private set; }
@@ -48,13 +48,12 @@ namespace DX12GameProgramming
         public void BuildDescriptors(
             CpuDescriptorHandle cpuSrv, 
             GpuDescriptorHandle gpuSrv,
-            CpuDescriptorHandle[] cpuRtvs)
+            CpuDescriptorHandle cpuDsv)
         {
             // Save references to the descriptors. 
             _cpuSrv = cpuSrv;
             _gpuSrv = gpuSrv;
-
-            Rtvs = cpuRtvs;
+            _cpuDsv = cpuDsv;
 
             //  Create the descriptors
             BuildDescriptors();
@@ -75,10 +74,11 @@ namespace DX12GameProgramming
 
         private void BuildDescriptors()
         {
+            // Create SRV to resource so we can sample the shadow map in a shader program.
             var srvDesc = new ShaderResourceViewDescription
             {
                 Shader4ComponentMapping = D3DUtil.DefaultShader4ComponentMapping,
-                Format = _format,
+                Format = Format.R24_UNorm_X8_Typeless,
                 Dimension = ShaderResourceViewDimension.TextureCube,
                 TextureCube = new ShaderResourceViewDescription.TextureCubeResource
                 {
@@ -87,50 +87,31 @@ namespace DX12GameProgramming
                     ResourceMinLODClamp = 0.0f
                 }
             };
-
-            // Create SRV to the entire cubemap resource.
             _device.CreateShaderResourceView(Resource, srvDesc, _cpuSrv);
 
-            // Create RTV to each cube face.
-            for (int i = 0; i < 6; i++)
-            {
-                var rtvDesc = new RenderTargetViewDescription
+            // Create DSV to resource so we can render to the shadow map.
+            var dsvDesc = new DepthStencilViewDescription
+            {                                
+                Flags = DepthStencilViewFlags.None,
+                Dimension = DepthStencilViewDimension.Texture2D,
+                Format = Format.D24_UNorm_S8_UInt,
+                Texture2D = new DepthStencilViewDescription.Texture2DResource
                 {
-                    Dimension = RenderTargetViewDimension.Texture2DArray,
-                    Format = _format,
-                    Texture2DArray = new RenderTargetViewDescription.Texture2DArrayResource
-                    {
-                        MipSlice = 0,
-                        PlaneSlice = 0,
-
-                        // Render target to ith element.
-                        FirstArraySlice = i,
-
-                        // Only view one element of the array.
-                        ArraySize = 1
-                    }
-                };
-
-                // Create RTV to ith cubemap face.
-                _device.CreateRenderTargetView(Resource, rtvDesc, Rtvs[i]);
-            }
+                    MipSlice = 0
+                }
+            };
+            _device.CreateDepthStencilView(Resource, dsvDesc, _cpuDsv);
         }
 
         private void BuildResource()
         {
-            // Note, compressed formats cannot be used for UAV. We get error like:
-            // ERROR: ID3D11Device::CreateTexture2D: The format (0x4d, BC3_UNORM) 
-            // cannot be bound as an UnorderedAccessView, or cast to a format that
-            // could be bound as an UnorderedAccessView. Therefore this format 
-            // does not support D3D11_BIND_UNORDERED_ACCESS.
-
             var texDesc = new ResourceDescription
             {
                 Dimension = ResourceDimension.Texture2D,
                 Alignment = 0,
                 Width = Width,
                 Height = Height,
-                DepthOrArraySize = 6,
+                DepthOrArraySize = 1,
                 MipLevels = 1,
                 Format = _format,
                 SampleDescription = new SampleDescription(1, 0),
@@ -143,6 +124,7 @@ namespace DX12GameProgramming
                 Format = _format,
                 Color = Color.LightSteelBlue.ToVector4()                
             };
+
             Resource = _device.CreateCommittedResource(
                 new HeapProperties(HeapType.Default),
                 HeapFlags.None,

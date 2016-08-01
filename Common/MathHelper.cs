@@ -16,7 +16,8 @@ namespace DX12GameProgramming
         public static float Atanf(double d) => (float)Math.Atan(d);
         public static float Atan2f(double y, double x) => (float)Math.Atan2(y, x);
         public static float Acosf(double d) => (float)Math.Acos(d);
-        public static float Expf(double d) => (float)Math.Exp(d);      
+        public static float Expf(double d) => (float)Math.Exp(d);
+        public static float Sqrtf(double d) => (float)Math.Sqrt(d);
 
         public static Vector3 SphericalToCartesian(float radius, float theta, float phi) => new Vector3(
             radius * Sinf(phi) * Cosf(theta),

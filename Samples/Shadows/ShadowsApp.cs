@@ -12,9 +12,9 @@ using ShaderResourceViewDimension = SharpDX.Direct3D12.ShaderResourceViewDimensi
 
 namespace DX12GameProgramming
 {
-    public class DynamicCubeApp : D3DApp
+    public class ShadowsApp : D3DApp
     {
-        private const int CubeMapSize = 512;
+        private const int ShadowMapSize = 2048;
 
         private readonly List<FrameResource> _frameResources = new List<FrameResource>(NumFrameResources);
         private readonly List<AutoResetEvent> _fenceEvents = new List<AutoResetEvent>(NumFrameResources);
@@ -24,8 +24,6 @@ namespace DX12GameProgramming
 
         private DescriptorHeap _srvDescriptorHeap;
         private DescriptorHeap[] _descriptorHeaps;
-
-        private Resource _cubeDepthStencilBuffer;
 
         private readonly Dictionary<string, MeshGeometry> _geometries = new Dictionary<string, MeshGeometry>();
         private readonly Dictionary<string, Material> _materials = new Dictionary<string, Material>();
@@ -42,28 +40,55 @@ namespace DX12GameProgramming
         private readonly Dictionary<RenderLayer, List<RenderItem>> _ritemLayers = new Dictionary<RenderLayer, List<RenderItem>>
         {
             [RenderLayer.Opaque] = new List<RenderItem>(),
-            [RenderLayer.OpaqueDynamicReflectors] = new List<RenderItem>(),
+            [RenderLayer.Debug] = new List<RenderItem>(),
             [RenderLayer.Sky] = new List<RenderItem>()
         };
 
         private int _skyTexHeapIndex;
-        private int _dynamicTexHeapIndex;
+        private int _shadowMapHeapIndex;
 
-        private RenderItem _skullRitem;
+        private int _nullCubeSrvIndex;
+        private int _nullTexSrvIndex;
 
-        private CubeRenderTarget _dynamicCubeMap;
-        private CpuDescriptorHandle _cubeDSV;
+        private GpuDescriptorHandle _nullSrv;
 
-        private PassConstants _mainPassCB;
+        private PassConstants _mainPassCB;   // Index 0 of pass cbuffer.
+        private PassConstants _shadowPassCB; // Index 1 of pass cbuffer.
 
         private readonly Camera _camera = new Camera();
-        private readonly Camera[] _cubeMapCameras = new Camera[6];
+
+        private ShadowMap _shadowMap;
+
+        private BoundingSphere _sceneBounds;
+
+        private float _lightNearZ;
+        private float _lightFarZ;
+        private Vector3 _lightPosW;
+        private Matrix _lightView = Matrix.Identity;
+        private Matrix _lightProj = Matrix.Identity;
+        private Matrix _shadowTransform = Matrix.Identity;
+
+        private float _lightRotationAngle;
+        private readonly Vector3[] _baseLightDirections =
+        {
+            new Vector3(0.57735f, -0.57735f, 0.57735f),
+            new Vector3(-0.57735f, -0.57735f, 0.57735f),
+            new Vector3(0.0f, -0.707f, -0.707f)
+        };
+        private readonly Vector3[] _rotatedLightDirections = new Vector3[3];
 
         private Point _lastMousePos;
 
-        public DynamicCubeApp(IntPtr hInstance) : base(hInstance)
+        public ShadowsApp(IntPtr hInstance) : base(hInstance)
         {
-            MainWindowCaption = "Dynamic Cube";
+            MainWindowCaption = "Shadows";
+
+            // Estimate the scene bounding sphere manually since we know how the scene was constructed.
+            // The grid is the "widest object" with a width of 20 and depth of 30.0f, and centered at
+            // the world space origin.  In general, you need to loop over every world space vertex
+            // position and compute the bounding sphere.
+            _sceneBounds.Center = Vector3.Zero;
+            _sceneBounds.Radius = MathHelper.Sqrtf(10.0f * 10.0f + 15.0f * 15.0f);
         }
 
         private FrameResource CurrFrameResource => _frameResources[_currFrameResourceIndex];
@@ -78,14 +103,11 @@ namespace DX12GameProgramming
 
             _camera.Position = new Vector3(0.0f, 2.0f, -15.0f);
 
-            BuildCubeFaceCameras(0.0f, 2.0f, 0.0f);
-
-            _dynamicCubeMap = new CubeRenderTarget(Device, CubeMapSize, CubeMapSize, Format.R8G8B8A8_UNorm);            
+            _shadowMap = new ShadowMap(Device, ShadowMapSize, ShadowMapSize);
 
             LoadTextures();
             BuildRootSignature();
             BuildDescriptorHeaps();
-            BuildCubeDepthStencil();
             BuildShadersAndInputLayout();
             BuildShapeGeometry();
             BuildSkullGeometry();
@@ -119,16 +141,6 @@ namespace DX12GameProgramming
         {
             OnKeyboardInput(gt);
 
-            //
-            // Animate the skull around the center sphere.
-            //
-            Matrix skullScale = Matrix.Scaling(0.2f);
-            Matrix skullOffset = Matrix.Translation(3.0f, 2.0f, 0.0f);
-            Matrix skullLocalRotate = Matrix.RotationY(2.0f * gt.TotalTime);
-            Matrix skullGlobalRotate = Matrix.RotationY(0.5f * gt.TotalTime);
-            _skullRitem.World = skullScale * skullLocalRotate * skullOffset * skullGlobalRotate;
-            _skullRitem.NumFramesDirty = NumFrameResources;
-
             // Cycle through the circular frame resource array.
             _currFrameResourceIndex = (_currFrameResourceIndex + 1) % NumFrameResources;
 
@@ -140,9 +152,21 @@ namespace DX12GameProgramming
                 CurrentFenceEvent.WaitOne();
             }
 
+            //
+            // Animate the lights (and hence shadows).
+            //
+
+            _lightRotationAngle += 0.1f * gt.DeltaTime;
+
+            Matrix r = Matrix.RotationY(_lightRotationAngle);
+            for (int i = 0; i < 3; i++)
+                _baseLightDirections[i] = Vector3.TransformNormal(_baseLightDirections[i], r);
+
             UpdateObjectCBs();
             UpdateMaterialBuffer();
+            UpdateShadowTransform();
             UpdateMainPassCB(gt);
+            UpdateShadowPassCB();
         }
 
         protected override void Draw(GameTimer gt)
@@ -166,20 +190,15 @@ namespace DX12GameProgramming
             Resource matBuffer = CurrFrameResource.MaterialBuffer.Resource;
             CommandList.SetGraphicsRootShaderResourceView(2, matBuffer.GPUVirtualAddress);
 
-            // Bind the sky cube map. For our demos, we just use one "world" cube map representing the environment
-            // from far away, so all objects will use the same cube map and we only need to set it once per-frame.  
-            // If we wanted to use "local" cube maps, we would have to change them per-object, or dynamically
-            // index into an array of cube maps.
-            GpuDescriptorHandle skyTexDescriptor = _srvDescriptorHeap.GPUDescriptorHandleForHeapStart;
-            skyTexDescriptor += _skyTexHeapIndex * CbvSrvUavDescriptorSize;
-            CommandList.SetGraphicsRootDescriptorTable(3, skyTexDescriptor);
+            // Bind null SRV for shadow map pass.
+            CommandList.SetGraphicsRootDescriptorTable(3, _nullSrv);
 
             // Bind all the textures used in this scene. Observe
             // that we only have to specify the first descriptor in the table. 
             // The root signature knows how many descriptors are expected in the table.
             CommandList.SetGraphicsRootDescriptorTable(4, _srvDescriptorHeap.GPUDescriptorHandleForHeapStart);
 
-            DrawSceneToCubeMap();
+            DrawSceneToShadowMap();
 
             CommandList.SetViewport(Viewport);
             CommandList.SetScissorRectangles(ScissorRectangle);
@@ -197,17 +216,20 @@ namespace DX12GameProgramming
             Resource passCB = CurrFrameResource.PassCB.Resource;
             CommandList.SetGraphicsRootConstantBufferView(1, passCB.GPUVirtualAddress);
 
-            // Use the dynamic cube map for the dynamic reflectors layer.
-            GpuDescriptorHandle dynamicTexDescriptor = _srvDescriptorHeap.GPUDescriptorHandleForHeapStart;
-            dynamicTexDescriptor += (_skyTexHeapIndex + 1) * CbvSrvUavDescriptorSize;
-            CommandList.SetGraphicsRootDescriptorTable(3, dynamicTexDescriptor);
+            // Bind the sky cube map.  For our demos, we just use one "world" cube map representing the environment
+            // from far away, so all objects will use the same cube map and we only need to set it once per-frame.  
+            // If we wanted to use "local" cube maps, we would have to change them per-object, or dynamically
+            // index into an array of cube maps.
 
-            DrawRenderItems(CommandList, _ritemLayers[RenderLayer.OpaqueDynamicReflectors]);
-
-            // Use the static "background" cube map for the other objects (including the sky).
+            GpuDescriptorHandle skyTexDescriptor = _srvDescriptorHeap.GPUDescriptorHandleForHeapStart;
+            skyTexDescriptor += _skyTexHeapIndex * CbvSrvUavDescriptorSize;
             CommandList.SetGraphicsRootDescriptorTable(3, skyTexDescriptor);
 
+            CommandList.PipelineState = _psos["opaque"];
             DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Opaque]);
+
+            CommandList.PipelineState = _psos["debug"];
+            DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Debug]);
 
             CommandList.PipelineState = _psos["sky"];
             DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Sky]);
@@ -258,8 +280,7 @@ namespace DX12GameProgramming
         {
             if (disposing)
             {
-                _cubeDepthStencilBuffer?.Dispose();
-                _dynamicCubeMap?.Dispose();
+                _shadowMap?.Dispose();
                 foreach (Texture texture in _textures.Values) texture.Dispose();
                 foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();
                 _rootSignature?.Dispose();
@@ -322,7 +343,8 @@ namespace DX12GameProgramming
                         FresnelR0 = mat.FresnelR0,
                         Roughness = mat.Roughness,
                         MatTransform = Matrix.Transpose(mat.MatTransform),
-                        DiffuseMapIndex = mat.DiffuseSrvHeapIndex
+                        DiffuseMapIndex = mat.DiffuseSrvHeapIndex,
+                        NormalMapIndex = mat.NormalSrvHeapIndex
                     };
 
                     currMaterialCB.CopyData(mat.MatCBIndex, ref matConstants);
@@ -331,6 +353,45 @@ namespace DX12GameProgramming
                     mat.NumFramesDirty--;
                 }
             }
+        }
+
+        private void UpdateShadowTransform()
+        {
+            // Only the first "main" light casts a shadow.
+            Vector3 lightDir = _rotatedLightDirections[0];
+            Vector3 lightPos = -2.0f * _sceneBounds.Radius * lightDir;
+            Vector3 targetPos = _sceneBounds.Center;
+            Vector3 lightUp = Vector3.Up;
+            Matrix lightView = Matrix.LookAtLH(lightPos, targetPos, lightUp);
+
+            _lightPosW = lightPos;
+
+            // Transform bounding sphere to light space.
+            Vector3 sphereCenterLS = Vector3.TransformCoordinate(targetPos, lightView);
+
+            // Ortho frustum in light space encloses scene.
+            float l = sphereCenterLS.X - _sceneBounds.Radius;
+            float b = sphereCenterLS.Y - _sceneBounds.Radius;
+            float n = sphereCenterLS.Z - _sceneBounds.Radius;
+            float r = sphereCenterLS.X + _sceneBounds.Radius;
+            float t = sphereCenterLS.Y + _sceneBounds.Radius;
+            float f = sphereCenterLS.Z + _sceneBounds.Radius;
+
+            _lightNearZ = n;
+            _lightFarZ = f;
+            Matrix lightProj = Matrix.OrthoOffCenterLH(l, r, b, t, n, f);
+
+            // Transform NDC space [-1,+1]^2 to texture space [0,1]^2
+            var transform = new Matrix(
+                0.5f, 0.0f, 0.0f, 0.0f,
+                0.0f, -0.5f, 0.0f, 0.0f,
+                0.0f, 0.0f, 1.0f, 0.0f,
+                0.5f, 0.5f, 0.0f, 1.0f);
+
+            Matrix s = lightView * lightProj * transform;
+            _lightView = lightView;
+            _lightProj = lightProj;
+            _shadowTransform = s;
         }
 
         private void UpdateMainPassCB(GameTimer gt)
@@ -357,47 +418,42 @@ namespace DX12GameProgramming
             _mainPassCB.TotalTime = gt.TotalTime;
             _mainPassCB.DeltaTime = gt.DeltaTime;
             _mainPassCB.AmbientLight = new Vector4(0.25f, 0.25f, 0.35f, 1.0f);
-            _mainPassCB.Lights.Light1.Direction = new Vector3(0.57735f, -0.57735f, 0.57735f);
-            _mainPassCB.Lights.Light1.Strength = new Vector3(0.8f);
-            _mainPassCB.Lights.Light2.Direction = new Vector3(-0.57735f, -0.57735f, 0.57735f);
+            _mainPassCB.Lights.Light1.Direction = _rotatedLightDirections[0];
+            _mainPassCB.Lights.Light1.Strength = new Vector3(0.9f);
+            _mainPassCB.Lights.Light2.Direction = _rotatedLightDirections[1];
             _mainPassCB.Lights.Light2.Strength = new Vector3(0.4f);
-            _mainPassCB.Lights.Light3.Direction = new Vector3(0.0f, -0.707f, -0.707f);
+            _mainPassCB.Lights.Light3.Direction = _rotatedLightDirections[2];
             _mainPassCB.Lights.Light3.Strength = new Vector3(0.2f);
 
             CurrFrameResource.PassCB.CopyData(0, ref _mainPassCB);
-
-            UpdateCubeMapFacePassCBs();
         }
 
-        private void UpdateCubeMapFacePassCBs()
+        private void UpdateShadowPassCB()
         {
-            for (int i = 0; i < 6; i++)
-            {
-                PassConstants cubeFacePassCB = _mainPassCB;
+            _shadowPassCB.View = _lightView;
+            _shadowPassCB.Proj = _lightProj;
+            _shadowPassCB.ViewProj = _shadowPassCB.View * _shadowPassCB.Proj;
+            _shadowPassCB.InvView = Matrix.Invert(_shadowPassCB.View);
+            _shadowPassCB.InvProj = Matrix.Invert(_shadowPassCB.Proj);
+            _shadowPassCB.InvViewProj = Matrix.Invert(_shadowPassCB.ViewProj);
+            _shadowPassCB.EyePosW = _lightPosW;
+            _shadowPassCB.RenderTargetSize = new Vector2(_shadowMap.Width, _shadowMap.Height);
+            _shadowPassCB.InvRenderTargetSize = new Vector2(1.0f / _shadowMap.Width, 1.0f / _shadowMap.Height);
+            _shadowPassCB.NearZ = _lightNearZ;
+            _shadowPassCB.FarZ = _lightFarZ;
 
-                cubeFacePassCB.View = _cubeMapCameras[i].View;
-                cubeFacePassCB.Proj = _cubeMapCameras[i].Proj;
-
-                cubeFacePassCB.ViewProj = cubeFacePassCB.View * cubeFacePassCB.Proj;
-                cubeFacePassCB.InvView = Matrix.Invert(cubeFacePassCB.View);
-                cubeFacePassCB.InvProj = Matrix.Invert(cubeFacePassCB.Proj);
-                cubeFacePassCB.InvViewProj = Matrix.Invert(cubeFacePassCB.ViewProj);
-
-                cubeFacePassCB.RenderTargetSize = new Vector2(_dynamicCubeMap.Width, _dynamicCubeMap.Height);
-                cubeFacePassCB.InvRenderTargetSize = new Vector2(1.0f / _dynamicCubeMap.Width, 1.0f / _dynamicCubeMap.Height);
-
-                UploadBuffer<PassConstants> currPassCB = CurrFrameResource.PassCB;
-
-                // Cube map pass cbuffers are stored in elements 1-6.
-                currPassCB.CopyData(1 + i, ref cubeFacePassCB);
-            }
+            UploadBuffer<PassConstants> currPassCB = CurrFrameResource.PassCB;
+            currPassCB.CopyData(1, ref _shadowPassCB);
         }
 
         private void LoadTextures()
         {
             AddTexture("bricksDiffuseMap", "bricks2.dds");
+            AddTexture("bricksNormalMap", "bricks2_nmap.dds");
             AddTexture("tileDiffuseMap", "tile.dds");
+            AddTexture("tileNormalMap", "tile_nmap.dds");
             AddTexture("defaultDiffuseMap", "white1x1.dds");
+            AddTexture("defaultNormalMap", "default_nmap.dds");
             AddTexture("skyCubeMap", "grasscube1024.dds");
         }
 
@@ -421,8 +477,8 @@ namespace DX12GameProgramming
                 new RootParameter(ShaderVisibility.All, new RootDescriptor(0, 0), RootParameterType.ConstantBufferView),
                 new RootParameter(ShaderVisibility.All, new RootDescriptor(1, 0), RootParameterType.ConstantBufferView),
                 new RootParameter(ShaderVisibility.All, new RootDescriptor(0, 1), RootParameterType.ShaderResourceView),
-                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 1, 0)),
-                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 5, 1))
+                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 2, 0)),
+                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 10, 2))
             };
 
             // A root signature is an array of root parameters.
@@ -441,7 +497,7 @@ namespace DX12GameProgramming
             //
             var srvHeapDesc = new DescriptorHeapDescription
             {
-                DescriptorCount = 6,
+                DescriptorCount = 14,
                 Type = DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView,
                 Flags = DescriptorHeapFlags.ShaderVisible
             };
@@ -453,119 +509,99 @@ namespace DX12GameProgramming
             //
             CpuDescriptorHandle hDescriptor = _srvDescriptorHeap.CPUDescriptorHandleForHeapStart;
 
-            Resource bricksTex = _textures["bricksDiffuseMap"].Resource;
-            Resource tileTex = _textures["tileDiffuseMap"].Resource;
-            Resource whiteTex = _textures["defaultDiffuseMap"].Resource;
-            Resource skyTex = _textures["skyCubeMap"].Resource;
+            Resource[] tex2DList =
+            {
+                _textures["bricksDiffuseMap"].Resource,
+                _textures["bricksNormalMap"].Resource,
+                _textures["tileDiffuseMap"].Resource,
+                _textures["tileNormalMap"].Resource,
+                _textures["defaultDiffuseMap"].Resource,
+                _textures["defaultNormalMap"].Resource,
+            };
+
+
+            Resource skyCubeMap = _textures["skyCubeMap"].Resource;
 
             var srvDesc = new ShaderResourceViewDescription
             {
                 Shader4ComponentMapping = D3DUtil.DefaultShader4ComponentMapping,
-                Format = bricksTex.Description.Format,
                 Dimension = ShaderResourceViewDimension.Texture2D,
                 Texture2D = new ShaderResourceViewDescription.Texture2DResource
                 {
                     MostDetailedMip = 0,
-                    MipLevels = bricksTex.Description.MipLevels,
                     ResourceMinLODClamp = 0.0f
                 }
             };
-            Device.CreateShaderResourceView(bricksTex, srvDesc, hDescriptor);
 
-            // Next descriptor.
-            hDescriptor += CbvSrvUavDescriptorSize;
+            foreach (Resource tex2D in tex2DList)
+            {
+                srvDesc.Format = tex2D.Description.Format;
+                srvDesc.Texture2D.MipLevels = tex2D.Description.MipLevels;
 
-            srvDesc.Format = tileTex.Description.Format;
-            srvDesc.Texture2D.MipLevels = tileTex.Description.MipLevels;
-            Device.CreateShaderResourceView(tileTex, srvDesc, hDescriptor);
+                Device.CreateShaderResourceView(tex2D, srvDesc, hDescriptor);
 
-            // Next descriptor.
-            hDescriptor += CbvSrvUavDescriptorSize;
-
-            srvDesc.Format = whiteTex.Description.Format;
-            srvDesc.Texture2D.MipLevels = whiteTex.Description.MipLevels;
-            Device.CreateShaderResourceView(whiteTex, srvDesc, hDescriptor);
-
-            // Next descriptor.
-            hDescriptor += CbvSrvUavDescriptorSize;
+                // Next descriptor.
+                hDescriptor += CbvSrvUavDescriptorSize;
+            }
 
             srvDesc.Dimension = ShaderResourceViewDimension.TextureCube;
             srvDesc.TextureCube = new ShaderResourceViewDescription.TextureCubeResource
             {
                 MostDetailedMip = 0,
-                MipLevels = skyTex.Description.MipLevels,
+                MipLevels = skyCubeMap.Description.MipLevels,
                 ResourceMinLODClamp = 0.0f
             };
-            srvDesc.Format = skyTex.Description.Format;
-            Device.CreateShaderResourceView(skyTex, srvDesc, hDescriptor);
+            srvDesc.Format = skyCubeMap.Description.Format;
+            Device.CreateShaderResourceView(skyCubeMap, srvDesc, hDescriptor);
 
-            _skyTexHeapIndex = 3;
-            _dynamicTexHeapIndex = _skyTexHeapIndex + 1;
+            _skyTexHeapIndex = tex2DList.Length;
+            _shadowMapHeapIndex = _skyTexHeapIndex + 1;
+
+            _nullCubeSrvIndex = _shadowMapHeapIndex + 1;
+            _nullTexSrvIndex = _nullCubeSrvIndex + 1;
 
             CpuDescriptorHandle srvCpuStart = _srvDescriptorHeap.CPUDescriptorHandleForHeapStart;
             GpuDescriptorHandle srvGpuStart = _srvDescriptorHeap.GPUDescriptorHandleForHeapStart;
-            CpuDescriptorHandle rtvCpuStart = RtvHeap.CPUDescriptorHandleForHeapStart;
+            CpuDescriptorHandle dsvCpuStart = DsvHeap.CPUDescriptorHandleForHeapStart;
 
-            // Cubemap RTV goes after the swap chain descriptors.
-            const int rtvOffset = SwapChainBufferCount;
+            CpuDescriptorHandle nullSrv = srvCpuStart + _nullCubeSrvIndex * CbvSrvUavDescriptorSize;
+            _nullSrv = srvGpuStart + _nullCubeSrvIndex * CbvSrvUavDescriptorSize;
 
-            var cubeRtvHandles = new CpuDescriptorHandle[6];
-            for (int i = 0; i < 6; i++)
-                cubeRtvHandles[i] = rtvCpuStart + (rtvOffset + i) * RtvDescriptorSize;
+            Device.CreateShaderResourceView(null, srvDesc, nullSrv);
+            nullSrv += CbvSrvUavDescriptorSize;
 
-            // Dynamic cubemap SRV is after the sky SRV.
-            _dynamicCubeMap.BuildDescriptors(
-                srvCpuStart + _dynamicTexHeapIndex * CbvSrvUavDescriptorSize,
-                srvGpuStart + _dynamicTexHeapIndex * CbvSrvUavDescriptorSize,
-                cubeRtvHandles);
-
-            _cubeDSV = DsvHeap.CPUDescriptorHandleForHeapStart + DsvDescriptorSize;
-        }
-
-        private void BuildCubeDepthStencil()
-        {
-            // Create the depth/stencil buffer and view.
-            var depthStencilDesc = new ResourceDescription
+            srvDesc.Dimension = ShaderResourceViewDimension.Texture2D;
+            srvDesc.Format = Format.R8G8B8A8_UNorm;
+            srvDesc.Texture2D = new ShaderResourceViewDescription.Texture2DResource
             {
-                Dimension = ResourceDimension.Texture2D,
-                Alignment = 0,
-                Width = CubeMapSize,
-                Height = CubeMapSize,
-                DepthOrArraySize = 1,
+                MostDetailedMip = 0,
                 MipLevels = 1,
-                Format = DepthStencilFormat,
-                SampleDescription = new SampleDescription(1, 0),
-                Layout = TextureLayout.Unknown,
-                Flags = ResourceFlags.AllowDepthStencil
+                ResourceMinLODClamp = 0.0f
             };
+            Device.CreateShaderResourceView(null, srvDesc, nullSrv);
 
-            var optClear = new ClearValue
-            {
-                Format = DepthStencilFormat,
-                DepthStencil = new DepthStencilValue
-                {
-                    Depth = 1.0f,
-                    Stencil = 0
-                }
-            };
-            _cubeDepthStencilBuffer = Device.CreateCommittedResource(
-                new HeapProperties(HeapType.Default),
-                HeapFlags.None,
-                depthStencilDesc,
-                ResourceStates.Common,
-                optClear);
-
-            // Create descriptor to mip level 0 of entire resource using the format of the resource.
-            Device.CreateDepthStencilView(_cubeDepthStencilBuffer, null, _cubeDSV);
-
-            // Transition the resource from its initial state to be used as a depth buffer.
-            CommandList.ResourceBarrierTransition(_cubeDepthStencilBuffer, ResourceStates.Common, ResourceStates.DepthWrite);
-        }
+            _shadowMap.BuildDescriptors(
+                srvCpuStart + _shadowMapHeapIndex * CbvSrvUavDescriptorSize,
+                srvGpuStart + _shadowMapHeapIndex * CbvSrvUavDescriptorSize,
+                dsvCpuStart + CbvSrvUavDescriptorSize);
+        }    
 
         private void BuildShadersAndInputLayout()
         {
+            ShaderMacro[] alphaTestDefines =
+            {
+                new ShaderMacro("ALPHA_TEST", "1")
+            };
+
             _shaders["standardVS"] = D3DUtil.CompileShader("Shaders\\Default.hlsl", "VS", "vs_5_1");
             _shaders["opaquePS"] = D3DUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_1");
+
+            _shaders["shadowVS"] = D3DUtil.CompileShader("Shaders\\Shadows.hlsl", "VS", "vs_5_1");
+            _shaders["shadowOpaquePS"] = D3DUtil.CompileShader("Shaders\\Shadows.hlsl", "PS", "ps_5_1");
+            _shaders["shadowAlphaTestedPS"] = D3DUtil.CompileShader("Shaders\\Shadows.hlsl", "PS", "ps_5_1", alphaTestDefines);
+
+            _shaders["debugVS"] = D3DUtil.CompileShader("Shaders\\ShadowDebug.hlsl", "VS", "vs_5_1");
+            _shaders["debugPS"] = D3DUtil.CompileShader("Shaders\\ShadowDebug.hlsl", "PS", "ps_5_1");
 
             _shaders["skyVS"] = D3DUtil.CompileShader("Shaders\\Sky.hlsl", "VS", "vs_5_1");
             _shaders["skyPS"] = D3DUtil.CompileShader("Shaders\\Sky.hlsl", "PS", "ps_5_1");
@@ -574,7 +610,8 @@ namespace DX12GameProgramming
             {
                 new InputElement("POSITION", 0, Format.R32G32B32_Float, 0, 0),
                 new InputElement("NORMAL", 0, Format.R32G32B32_Float, 12, 0),
-                new InputElement("TEXCOORD", 0, Format.R32G32_Float, 24, 0)
+                new InputElement("TEXCOORD", 0, Format.R32G32_Float, 24, 0),
+                new InputElement("TANGENT", 0, Format.R32G32B32_Float, 32, 0)
             });
         }
 
@@ -652,6 +689,7 @@ namespace DX12GameProgramming
                 vertices[k].Pos = box.Vertices[i].Position;
                 vertices[k].Normal = box.Vertices[i].Normal;
                 vertices[k].TexC = box.Vertices[i].TexC;
+                vertices[k].TangentU = box.Vertices[i].TangentU;
             }
 
             for (int i = 0; i < grid.Vertices.Count; ++i, ++k)
@@ -659,6 +697,7 @@ namespace DX12GameProgramming
                 vertices[k].Pos = grid.Vertices[i].Position;
                 vertices[k].Normal = grid.Vertices[i].Normal;
                 vertices[k].TexC = grid.Vertices[i].TexC;
+                vertices[k].TangentU = grid.Vertices[i].TangentU;
             }
 
             for (int i = 0; i < sphere.Vertices.Count; ++i, ++k)
@@ -666,6 +705,7 @@ namespace DX12GameProgramming
                 vertices[k].Pos = sphere.Vertices[i].Position;
                 vertices[k].Normal = sphere.Vertices[i].Normal;
                 vertices[k].TexC = sphere.Vertices[i].TexC;
+                vertices[k].TangentU = sphere.Vertices[i].TangentU;
             }
 
             for (int i = 0; i < cylinder.Vertices.Count; ++i, ++k)
@@ -673,6 +713,7 @@ namespace DX12GameProgramming
                 vertices[k].Pos = cylinder.Vertices[i].Position;
                 vertices[k].Normal = cylinder.Vertices[i].Normal;
                 vertices[k].TexC = cylinder.Vertices[i].TexC;
+                vertices[k].TangentU = cylinder.Vertices[i].TangentU;
             }
 
             var indices = new List<short>();
@@ -716,17 +757,30 @@ namespace DX12GameProgramming
                     input = reader.ReadLine();
                     if (input != null)
                     {
-                        var vals = input.Split(' ');
-                        vertices.Add(new Vertex
-                        {
-                            Pos = new Vector3(
+                        string[] vals = input.Split(' ');
+
+                        var pos = new Vector3(
                                 Convert.ToSingle(vals[0].Trim(), CultureInfo.InvariantCulture),
                                 Convert.ToSingle(vals[1].Trim(), CultureInfo.InvariantCulture),
-                                Convert.ToSingle(vals[2].Trim(), CultureInfo.InvariantCulture)),
-                            Normal = new Vector3(
+                                Convert.ToSingle(vals[2].Trim(), CultureInfo.InvariantCulture));
+
+                        var normal = new Vector3(
                                 Convert.ToSingle(vals[3].Trim(), CultureInfo.InvariantCulture),
                                 Convert.ToSingle(vals[4].Trim(), CultureInfo.InvariantCulture),
-                                Convert.ToSingle(vals[5].Trim(), CultureInfo.InvariantCulture))
+                                Convert.ToSingle(vals[5].Trim(), CultureInfo.InvariantCulture));
+
+                        // Generate a tangent vector so normal mapping works.  We aren't applying
+                        // a texture map to the skull, so we just need any tangent vector so that
+                        // the math works out to give us the original interpolated vertex normal.
+                        Vector3 tangent = Math.Abs(Vector3.Dot(normal, Vector3.Up)) < 1.0f - 0.001f
+                            ? Vector3.Normalize(Vector3.Cross(normal, Vector3.Up))
+                            : Vector3.Normalize(Vector3.Cross(normal, Vector3.ForwardLH));
+
+                        vertices.Add(new Vertex
+                        {
+                            Pos = pos,
+                            Normal = normal,
+                            TangentU = tangent
                         });
                     }
                 }
@@ -789,6 +843,33 @@ namespace DX12GameProgramming
             _psos["opaque"] = Device.CreateGraphicsPipelineState(opaquePsoDesc);
 
             //
+            // PSO for shadow map pass.
+            //
+
+            var smapPsoDesc = opaquePsoDesc.Copy();
+            smapPsoDesc.RasterizerState.DepthBias = 100000;
+            smapPsoDesc.RasterizerState.DepthBiasClamp = 0.0f;
+            smapPsoDesc.RasterizerState.SlopeScaledDepthBias = 1.0f;
+            smapPsoDesc.VertexShader = _shaders["shadowVS"];
+            smapPsoDesc.PixelShader = _shaders["shadowOpaquePS"];
+
+            // Shadow map pass does not have a render target.
+            smapPsoDesc.RenderTargetFormats[0] = Format.Unknown;
+            smapPsoDesc.RenderTargetCount = 0;
+
+            _psos["shadow_opaque"] = Device.CreateGraphicsPipelineState(smapPsoDesc);
+
+            //
+            // PSO for debug layer.
+            //
+
+            var debugPsoDesc = opaquePsoDesc.Copy();
+            debugPsoDesc.VertexShader = _shaders["debugVS"];
+            debugPsoDesc.PixelShader = _shaders["debugPS"];
+
+            _psos["debug"] = Device.CreateGraphicsPipelineState(debugPsoDesc);
+
+            //
             // PSO for sky.
             //
 
@@ -812,7 +893,7 @@ namespace DX12GameProgramming
         {
             for (int i = 0; i < NumFrameResources; i++)
             {
-                _frameResources.Add(new FrameResource(Device, 7, _allRitems.Count, _materials.Count));
+                _frameResources.Add(new FrameResource(Device, 2, _allRitems.Count, _materials.Count));
                 _fenceEvents.Add(new AutoResetEvent(false));
             }
         }
@@ -824,6 +905,7 @@ namespace DX12GameProgramming
                 Name = "bricks0",
                 MatCBIndex = 0,
                 DiffuseSrvHeapIndex = 0,
+                NormalSrvHeapIndex = 1,
                 DiffuseAlbedo = Vector4.One,
                 FresnelR0 = new Vector3(0.1f),
                 Roughness = 0.3f
@@ -832,38 +914,43 @@ namespace DX12GameProgramming
             {
                 Name = "tile0",
                 MatCBIndex = 1,
-                DiffuseSrvHeapIndex = 1,
+                DiffuseSrvHeapIndex = 2,
+                NormalSrvHeapIndex = 3,
                 DiffuseAlbedo = new Vector4(0.9f, 0.9f, 0.9f, 1.0f),
-                FresnelR0 = new Vector3(0.02f),
+                FresnelR0 = new Vector3(0.2f),
                 Roughness = 0.1f
             });
             AddMaterial(new Material
             {
                 Name = "mirror0",
                 MatCBIndex = 2,
-                DiffuseSrvHeapIndex = 2,
-                DiffuseAlbedo = new Vector4(0.0f, 0.0f, 0.1f, 1.0f),
+                DiffuseSrvHeapIndex = 4,
+                NormalSrvHeapIndex = 5,
+                DiffuseAlbedo = new Vector4(0.0f, 0.0f, 0.0f, 1.0f),
                 FresnelR0 = new Vector3(0.98f, 0.97f, 0.95f),
                 Roughness = 0.1f
             });
             AddMaterial(new Material
             {
-                Name = "sky",
+                Name = "skullMat",
                 MatCBIndex = 3,
-                DiffuseSrvHeapIndex = 3,
+                DiffuseSrvHeapIndex = 4,
+                NormalSrvHeapIndex = 5,
+                DiffuseAlbedo = new Vector4(0.3f, 0.3f, 0.3f, 1.0f),
+                FresnelR0 = new Vector3(0.6f),
+                Roughness = 0.2f
+            });
+            AddMaterial(new Material
+            {
+                Name = "sky",
+                MatCBIndex = 4,
+                DiffuseSrvHeapIndex = 6,
+                NormalSrvHeapIndex = 7,
                 DiffuseAlbedo = Vector4.One,
                 FresnelR0 = new Vector3(0.1f),
                 Roughness = 1.0f
             });
-            AddMaterial(new Material
-            {
-                Name = "skullMat",
-                MatCBIndex = 4,
-                DiffuseSrvHeapIndex = 2,
-                DiffuseAlbedo = new Vector4(0.8f, 0.8f, 0.8f, 1.0f),
-                FresnelR0 = new Vector3(0.2f),
-                Roughness = 0.2f
-            });
+            
         }
 
         private void AddMaterial(Material mat)
@@ -885,21 +972,21 @@ namespace DX12GameProgramming
             skyRitem.BaseVertexLocation = skyRitem.Geo.DrawArgs["sphere"].BaseVertexLocation;
             AddRenderItem(skyRitem, RenderLayer.Sky);
 
-            _skullRitem = new RenderItem();
-            _skullRitem.World = Matrix.Scaling(0.4f) * Matrix.Translation(0.0f, 1.0f, 0.0f);
-            _skullRitem.TexTransform = Matrix.Identity;
-            _skullRitem.ObjCBIndex = 1;
-            _skullRitem.Mat = _materials["skullMat"];
-            _skullRitem.Geo = _geometries["skullGeo"];
-            _skullRitem.PrimitiveType = PrimitiveTopology.TriangleList;
-            _skullRitem.IndexCount = _skullRitem.Geo.DrawArgs["skull"].IndexCount;
-            _skullRitem.StartIndexLocation = _skullRitem.Geo.DrawArgs["skull"].StartIndexLocation;
-            _skullRitem.BaseVertexLocation = _skullRitem.Geo.DrawArgs["skull"].BaseVertexLocation;
-            AddRenderItem(_skullRitem, RenderLayer.Opaque);
+            var quadRitem = new RenderItem();
+            quadRitem.World = Matrix.Identity;
+            quadRitem.TexTransform = Matrix.Identity;
+            quadRitem.ObjCBIndex = 1;
+            quadRitem.Mat = _materials["bricks0"];
+            quadRitem.Geo = _geometries["shapeGeo"];
+            quadRitem.PrimitiveType = PrimitiveTopology.TriangleList;
+            quadRitem.IndexCount = quadRitem.Geo.DrawArgs["quad"].IndexCount;
+            quadRitem.StartIndexLocation = quadRitem.Geo.DrawArgs["quad"].StartIndexLocation;
+            quadRitem.BaseVertexLocation = quadRitem.Geo.DrawArgs["quad"].BaseVertexLocation;
+            AddRenderItem(quadRitem, RenderLayer.Debug);
 
             var boxRitem = new RenderItem();
             boxRitem.World = Matrix.Scaling(2.0f, 1.0f, 2.0f) * Matrix.Translation(0.0f, 0.5f, 0.0f);
-            boxRitem.TexTransform = Matrix.Identity;
+            boxRitem.TexTransform = Matrix.Scaling(1.0f, 0.5f, 1.0f);
             boxRitem.ObjCBIndex = 2;
             boxRitem.Mat = _materials["bricks0"];
             boxRitem.Geo = _geometries["shapeGeo"];
@@ -909,20 +996,21 @@ namespace DX12GameProgramming
             boxRitem.BaseVertexLocation = boxRitem.Geo.DrawArgs["box"].BaseVertexLocation;
             AddRenderItem(boxRitem, RenderLayer.Opaque);
 
-            var globeRitem = new RenderItem();
-            globeRitem.World = Matrix.Scaling(2.0f) * Matrix.Translation(0.0f, 2.0f, 0.0f);
-            globeRitem.TexTransform = Matrix.Identity;
-            globeRitem.ObjCBIndex = 3;
-            globeRitem.Mat = _materials["mirror0"];
-            globeRitem.Geo = _geometries["shapeGeo"];
-            globeRitem.PrimitiveType = PrimitiveTopology.TriangleList;
-            globeRitem.IndexCount = globeRitem.Geo.DrawArgs["sphere"].IndexCount;
-            globeRitem.StartIndexLocation = globeRitem.Geo.DrawArgs["sphere"].StartIndexLocation;
-            globeRitem.BaseVertexLocation = globeRitem.Geo.DrawArgs["sphere"].BaseVertexLocation;
-            AddRenderItem(globeRitem, RenderLayer.OpaqueDynamicReflectors);
+            var skullRitem = new RenderItem();
+            skullRitem.World = Matrix.Scaling(0.4f) * Matrix.Translation(0.0f, 1.0f, 0.0f);
+            skullRitem.TexTransform = Matrix.Scaling(1.0f, 0.5f, 1.0f);
+            skullRitem.ObjCBIndex = 3;
+            skullRitem.Mat = _materials["skullMat"];
+            skullRitem.Geo = _geometries["skullGeo"];
+            skullRitem.PrimitiveType = PrimitiveTopology.TriangleList;
+            skullRitem.IndexCount = skullRitem.Geo.DrawArgs["skull"].IndexCount;
+            skullRitem.StartIndexLocation = skullRitem.Geo.DrawArgs["skull"].StartIndexLocation;
+            skullRitem.BaseVertexLocation = skullRitem.Geo.DrawArgs["skull"].BaseVertexLocation;
+            AddRenderItem(skullRitem, RenderLayer.Opaque);
 
             var gridRitem = new RenderItem();
             gridRitem.World = Matrix.Identity;
+            gridRitem.TexTransform = Matrix.Scaling(8.0f, 8.0f, 1.0f);
             gridRitem.ObjCBIndex = 4;
             gridRitem.Mat = _materials["tile0"];
             gridRitem.Geo = _geometries["shapeGeo"];
@@ -1012,87 +1100,42 @@ namespace DX12GameProgramming
             }
         }
 
-        private void DrawSceneToCubeMap()
+        private void DrawSceneToShadowMap()
         {
-            CommandList.SetViewport(_dynamicCubeMap.Viewport);
-            CommandList.SetScissorRectangles(_dynamicCubeMap.ScissorRect);
+            CommandList.SetViewport(_shadowMap.Viewport);
+            CommandList.SetScissorRectangles(_shadowMap.ScissorRect);
 
-            // Change to RENDER_TARGET.
-            CommandList.ResourceBarrierTransition(_dynamicCubeMap.Resource, ResourceStates.GenericRead, ResourceStates.RenderTarget);
+            // Change to DEPTH_WRITE.
+            CommandList.ResourceBarrierTransition(_shadowMap.Resource, ResourceStates.GenericRead, ResourceStates.DepthWrite);
 
             int passCBByteSize = D3DUtil.CalcConstantBufferByteSize<PassConstants>();
 
-            // For each cube map face.
-            for (int i = 0; i < 6; i++)
-            {
-                // Clear the back buffer and depth buffer.
-                CommandList.ClearRenderTargetView(_dynamicCubeMap.Rtvs[i], Color.LightSteelBlue);
-                CommandList.ClearDepthStencilView(_cubeDSV, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
+            // Clear the depth buffer.
+            CommandList.ClearDepthStencilView(_shadowMap.Dsv, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
 
-                // Specify the buffers we are going to render to.
-                CommandList.SetRenderTargets(_dynamicCubeMap.Rtvs[i], _cubeDSV);
+            // Set null render target because we are only going to draw to
+            // depth buffer. Setting a null render target will disable color writes.
+            // Note the active PSO also must specify a render target count of 0.
+            CommandList.SetRenderTargets(null, _shadowMap.Dsv);
 
-                // Bind the pass constant buffer for this cube map face so we use 
-                // the right view/proj matrix for this cube face.
-                Resource passCB = CurrFrameResource.PassCB.Resource;
-                long passCBAddress = passCB.GPUVirtualAddress + (1 + i) * passCBByteSize;
-                CommandList.SetGraphicsRootConstantBufferView(1, passCBAddress);
+            // Bind the pass constant buffer for shadow map pass.
+            Resource passCB = CurrFrameResource.PassCB.Resource;
+            long passCBAddress = passCB.GPUVirtualAddress + passCBByteSize;
+            CommandList.SetGraphicsRootConstantBufferView(1, passCBAddress);
 
-                DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Opaque]);
-
-                CommandList.PipelineState = _psos["sky"];
-                DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Sky]);
-
-                CommandList.PipelineState = _psos["opaque"];
-            }
+            CommandList.PipelineState = _psos["shadow_opaque"];
+            DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Opaque]);
 
             // Change back to GENERIC_READ so we can read the texture in a shader.
-            CommandList.ResourceBarrierTransition(_dynamicCubeMap.Resource, ResourceStates.RenderTarget, ResourceStates.GenericRead);
-        }
-
-        private void BuildCubeFaceCameras(float x, float y, float z)
-        {
-            // Generate the cube map about the given position.
-            var center = new Vector3(x, y, z);
-
-            // Look along each coordinate axis.
-            Vector3[] targets =
-            {
-                new Vector3(x + 1.0f, y, z), // +X
-		        new Vector3(x - 1.0f, y, z), // -X
-		        new Vector3(x, y + 1.0f, z), // +Y
-		        new Vector3(x, y - 1.0f, z), // -Y
-		        new Vector3(x, y, z + 1.0f), // +Z
-		        new Vector3(x, y, z - 1.0f)  // -Z
-	        };
-
-            // Use world up vector (0,1,0) for all directions except +Y/-Y.  In these cases, we
-            // are looking down +Y or -Y, so we need a different "up" vector.
-            Vector3[] ups =
-            {
-                new Vector3(0.0f, 1.0f, 0.0f),  // +X
-		        new Vector3(0.0f, 1.0f, 0.0f),  // -X
-		        new Vector3(0.0f, 0.0f, -1.0f), // +Y
-		        new Vector3(0.0f, 0.0f, +1.0f), // -Y
-		        new Vector3(0.0f, 1.0f, 0.0f),	// +Z
-		        new Vector3(0.0f, 1.0f, 0.0f)	// -Z
-	        };
-
-            for (int i = 0; i < 6; i++)
-            {
-                _cubeMapCameras[i] = new Camera();
-                _cubeMapCameras[i].LookAt(center, targets[i], ups[i]);
-                _cubeMapCameras[i].SetLens(0.5f * MathUtil.Pi, 1.0f, 0.1f, 1000.0f);
-                _cubeMapCameras[i].UpdateViewMatrix();
-            }
-        }
+            CommandList.ResourceBarrierTransition(_shadowMap.Resource, ResourceStates.DepthWrite, ResourceStates.GenericRead);
+        }        
 
         // Applications usually only need a handful of samplers. So just define them all up front
         // and keep them available as part of the root signature.
         private static StaticSamplerDescription[] GetStaticSamplers() => new[]
         {
             // PointWrap
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 0, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 0, 0)
             {
                 Filter = Filter.MinMagMipPoint,
                 AddressU = TextureAddressMode.Wrap,
@@ -1100,7 +1143,7 @@ namespace DX12GameProgramming
                 AddressW = TextureAddressMode.Wrap
             },
             // PointClamp
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 1, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 1, 0)
             {
                 Filter = Filter.MinMagMipPoint,
                 AddressU = TextureAddressMode.Clamp,
@@ -1108,7 +1151,7 @@ namespace DX12GameProgramming
                 AddressW = TextureAddressMode.Clamp
             },
             // LinearWrap
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 2, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 2, 0)
             {
                 Filter = Filter.MinMagMipLinear,
                 AddressU = TextureAddressMode.Wrap,
@@ -1116,7 +1159,7 @@ namespace DX12GameProgramming
                 AddressW = TextureAddressMode.Wrap
             },
             // LinearClamp
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 3, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 3, 0)
             {
                 Filter = Filter.MinMagMipLinear,
                 AddressU = TextureAddressMode.Clamp,
@@ -1124,7 +1167,7 @@ namespace DX12GameProgramming
                 AddressW = TextureAddressMode.Clamp
             },
             // AnisotropicWrap
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 4, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 4, 0)
             {
                 Filter = Filter.Anisotropic,
                 AddressU = TextureAddressMode.Wrap,
@@ -1134,7 +1177,7 @@ namespace DX12GameProgramming
                 MaxAnisotropy = 8
             },
             // AnisotropicClamp
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 5, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 5, 0)
             {
                 Filter = Filter.Anisotropic,
                 AddressU = TextureAddressMode.Clamp,
@@ -1142,6 +1185,18 @@ namespace DX12GameProgramming
                 AddressW = TextureAddressMode.Clamp,
                 MipLODBias = 0.0f,
                 MaxAnisotropy = 8
+            },
+            // Shadow
+            new StaticSamplerDescription(ShaderVisibility.All, 6, 0)
+            {
+                Filter = Filter.MinMagLinearMipPoint,
+                AddressU = TextureAddressMode.Border,
+                AddressV = TextureAddressMode.Border,
+                AddressW = TextureAddressMode.Border,
+                MipLODBias = 0.0f,
+                MaxAnisotropy = 16,
+                ComparisonFunc = Comparison.LessEqual,
+                BorderColor = StaticBorderColor.OpaqueBlack
             }
         };
     }
