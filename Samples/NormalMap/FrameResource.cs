@@ -72,9 +72,9 @@ namespace DX12GameProgramming
         public Matrix MatTransform;
 
         public int DiffuseMapIndex;
+        public int NormalMapIndex;
         public int MaterialPad0;
         public int MaterialPad1;
-        public int MaterialPad2;
 
         public static MaterialData Default => new MaterialData
         {
@@ -91,6 +91,7 @@ namespace DX12GameProgramming
         public Vector3 Pos;
         public Vector3 Normal;
         public Vector2 TexC;
+        public Vector3 TangentU;
     }
 
     internal class FrameResource : IDisposable

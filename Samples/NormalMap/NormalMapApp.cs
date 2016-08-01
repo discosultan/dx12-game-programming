@@ -71,7 +71,6 @@ namespace DX12GameProgramming
             BuildDescriptorHeaps();
             BuildShadersAndInputLayout();
             BuildShapeGeometry();
-            BuildSkullGeometry();
             BuildMaterials();
             BuildRenderItems();
             BuildFrameResources();
@@ -276,7 +275,8 @@ namespace DX12GameProgramming
                         FresnelR0 = mat.FresnelR0,
                         Roughness = mat.Roughness,
                         MatTransform = Matrix.Transpose(mat.MatTransform),
-                        DiffuseMapIndex = mat.DiffuseSrvHeapIndex
+                        DiffuseMapIndex = mat.DiffuseSrvHeapIndex,
+                        NormalMapIndex = mat.NormalSrvHeapIndex
                     };
 
                     currMaterialCB.CopyData(mat.MatCBIndex, ref matConstants);
@@ -353,7 +353,7 @@ namespace DX12GameProgramming
                 new RootParameter(ShaderVisibility.All, new RootDescriptor(1, 0), RootParameterType.ConstantBufferView),
                 new RootParameter(ShaderVisibility.All, new RootDescriptor(0, 1), RootParameterType.ShaderResourceView),
                 new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 1, 0)),
-                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 5, 1))
+                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 10, 1))
             };
 
             // A root signature is an array of root parameters.
@@ -372,7 +372,7 @@ namespace DX12GameProgramming
             //
             var srvHeapDesc = new DescriptorHeapDescription
             {
-                DescriptorCount = 5,
+                DescriptorCount = 10,
                 Type = DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView,
                 Flags = DescriptorHeapFlags.ShaderVisible
             };
@@ -384,53 +384,52 @@ namespace DX12GameProgramming
             //
             CpuDescriptorHandle hDescriptor = _srvDescriptorHeap.CPUDescriptorHandleForHeapStart;
 
-            Resource bricksTex = _textures["bricksDiffuseMap"].Resource;
-            Resource tileTex = _textures["tileDiffuseMap"].Resource;
-            Resource whiteTex = _textures["defaultDiffuseMap"].Resource;
-            Resource skyTex = _textures["skyCubeMap"].Resource;
+            Resource[] tex2DList =
+            {
+                _textures["bricksDiffuseMap"].Resource,
+                _textures["bricksNormalMap"].Resource,
+                _textures["tileDiffuseMap"].Resource,
+                _textures["tileNormalMap"].Resource,
+                _textures["defaultDiffuseMap"].Resource,
+                _textures["defaultNormalMap"].Resource,
+            };
+
+            
+            Resource skyCubeMap = _textures["skyCubeMap"].Resource;
 
             var srvDesc = new ShaderResourceViewDescription
             {
                 Shader4ComponentMapping = D3DUtil.DefaultShader4ComponentMapping,
-                Format = bricksTex.Description.Format,
                 Dimension = ShaderResourceViewDimension.Texture2D,
                 Texture2D = new ShaderResourceViewDescription.Texture2DResource
                 {
                     MostDetailedMip = 0,
-                    MipLevels = bricksTex.Description.MipLevels,
                     ResourceMinLODClamp = 0.0f
                 }
             };
-            Device.CreateShaderResourceView(bricksTex, srvDesc, hDescriptor);
 
-            // Next descriptor.
-            hDescriptor += CbvSrvUavDescriptorSize;
+            foreach (Resource tex2D in tex2DList)
+            {
+                srvDesc.Format = tex2D.Description.Format;
+                srvDesc.Texture2D.MipLevels = tex2D.Description.MipLevels;
 
-            srvDesc.Format = tileTex.Description.Format;
-            srvDesc.Texture2D.MipLevels = tileTex.Description.MipLevels;
-            Device.CreateShaderResourceView(tileTex, srvDesc, hDescriptor);
+                Device.CreateShaderResourceView(tex2D, srvDesc, hDescriptor);
 
-            // Next descriptor.
-            hDescriptor += CbvSrvUavDescriptorSize;
-
-            srvDesc.Format = whiteTex.Description.Format;
-            srvDesc.Texture2D.MipLevels = whiteTex.Description.MipLevels;
-            Device.CreateShaderResourceView(whiteTex, srvDesc, hDescriptor);
-
-            // Next descriptor.
-            hDescriptor += CbvSrvUavDescriptorSize;
+                // Next descriptor.
+                hDescriptor += CbvSrvUavDescriptorSize;
+            }
 
             srvDesc.Dimension = ShaderResourceViewDimension.TextureCube;
             srvDesc.TextureCube = new ShaderResourceViewDescription.TextureCubeResource
             {
                 MostDetailedMip = 0,
-                MipLevels = skyTex.Description.MipLevels,
+                MipLevels = skyCubeMap.Description.MipLevels,
                 ResourceMinLODClamp = 0.0f
             };
-            srvDesc.Format = skyTex.Description.Format;
-            Device.CreateShaderResourceView(skyTex, srvDesc, hDescriptor);
+            srvDesc.Format = skyCubeMap.Description.Format;
+            Device.CreateShaderResourceView(skyCubeMap, srvDesc, hDescriptor);
 
-            _skyTexHeapIndex = 3;
+            _skyTexHeapIndex = tex2DList.Length;
         }
 
         private void BuildShadersAndInputLayout()
@@ -445,7 +444,8 @@ namespace DX12GameProgramming
             {
                 new InputElement("POSITION", 0, Format.R32G32B32_Float, 0, 0),
                 new InputElement("NORMAL", 0, Format.R32G32B32_Float, 12, 0),
-                new InputElement("TEXCOORD", 0, Format.R32G32_Float, 24, 0)
+                new InputElement("TEXCOORD", 0, Format.R32G32_Float, 24, 0),
+                new InputElement("TANGENT", 0, Format.R32G32B32_Float, 32, 0),
             });
         }
 
@@ -560,79 +560,7 @@ namespace DX12GameProgramming
             geo.DrawArgs["cylinder"] = cylinderSubmesh;
 
             _geometries[geo.Name] = geo;
-        }
-
-        private void BuildSkullGeometry()
-        {
-            var vertices = new List<Vertex>();
-            var indices = new List<int>();
-            int vCount = 0, tCount = 0;
-            using (var reader = new StreamReader("Models\\Skull.txt"))
-            {
-                var input = reader.ReadLine();
-                if (input != null)
-                    vCount = Convert.ToInt32(input.Split(':')[1].Trim());
-
-                input = reader.ReadLine();
-                if (input != null)
-                    tCount = Convert.ToInt32(input.Split(':')[1].Trim());
-
-                do
-                {
-                    input = reader.ReadLine();
-                } while (input != null && !input.StartsWith("{", StringComparison.Ordinal));
-
-                for (int i = 0; i < vCount; i++)
-                {
-                    input = reader.ReadLine();
-                    if (input != null)
-                    {
-                        var vals = input.Split(' ');
-                        vertices.Add(new Vertex
-                        {
-                            Pos = new Vector3(
-                                Convert.ToSingle(vals[0].Trim(), CultureInfo.InvariantCulture),
-                                Convert.ToSingle(vals[1].Trim(), CultureInfo.InvariantCulture),
-                                Convert.ToSingle(vals[2].Trim(), CultureInfo.InvariantCulture)),
-                            Normal = new Vector3(
-                                Convert.ToSingle(vals[3].Trim(), CultureInfo.InvariantCulture),
-                                Convert.ToSingle(vals[4].Trim(), CultureInfo.InvariantCulture),
-                                Convert.ToSingle(vals[5].Trim(), CultureInfo.InvariantCulture))
-                        });
-                    }
-                }
-
-                do
-                {
-                    input = reader.ReadLine();
-                } while (input != null && !input.StartsWith("{", StringComparison.Ordinal));
-
-                for (var i = 0; i < tCount; i++)
-                {
-                    input = reader.ReadLine();
-                    if (input == null)
-                    {
-                        break;
-                    }
-                    var m = input.Trim().Split(' ');
-                    indices.Add(Convert.ToInt32(m[0].Trim()));
-                    indices.Add(Convert.ToInt32(m[1].Trim()));
-                    indices.Add(Convert.ToInt32(m[2].Trim()));
-                }
-            }
-
-            var geo = MeshGeometry.New(Device, CommandList, vertices.ToArray(), indices.ToArray(), "skullGeo");
-            var submesh = new SubmeshGeometry
-            {
-                IndexCount = indices.Count,
-                StartIndexLocation = 0,
-                BaseVertexLocation = 0
-            };
-
-            geo.DrawArgs["skull"] = submesh;
-
-            _geometries[geo.Name] = geo;
-        }
+        }       
 
         private void BuildPSOs()
         {
@@ -695,6 +623,7 @@ namespace DX12GameProgramming
                 Name = "bricks0",
                 MatCBIndex = 0,
                 DiffuseSrvHeapIndex = 0,
+                NormalSrvHeapIndex = 1,
                 DiffuseAlbedo = Vector4.One,
                 FresnelR0 = new Vector3(0.1f),
                 Roughness = 0.3f
@@ -702,8 +631,9 @@ namespace DX12GameProgramming
             AddMaterial(new Material
             {
                 Name = "tile0",
-                MatCBIndex = 1,
-                DiffuseSrvHeapIndex = 1,
+                MatCBIndex = 2,
+                DiffuseSrvHeapIndex = 2,
+                NormalSrvHeapIndex = 3,
                 DiffuseAlbedo = new Vector4(0.9f, 0.9f, 0.9f, 1.0f),
                 FresnelR0 = new Vector3(0.02f),
                 Roughness = 0.1f
@@ -711,26 +641,19 @@ namespace DX12GameProgramming
             AddMaterial(new Material
             {
                 Name = "mirror0",
-                MatCBIndex = 2,
-                DiffuseSrvHeapIndex = 2,
+                MatCBIndex = 3,
+                DiffuseSrvHeapIndex = 4,
+                NormalSrvHeapIndex = 5,
                 DiffuseAlbedo = new Vector4(0.0f, 0.0f, 0.1f, 1.0f),
                 FresnelR0 = new Vector3(0.98f, 0.97f, 0.95f),
                 Roughness = 0.1f
             });
             AddMaterial(new Material
             {
-                Name = "skullMat",
-                MatCBIndex = 3,
-                DiffuseSrvHeapIndex = 2,
-                DiffuseAlbedo = new Vector4(0.8f, 0.8f, 0.8f, 1.0f),
-                FresnelR0 = new Vector3(0.2f),
-                Roughness = 0.2f
-            });
-            AddMaterial(new Material
-            {
                 Name = "sky",
                 MatCBIndex = 4,
-                DiffuseSrvHeapIndex = 3,
+                DiffuseSrvHeapIndex = 6,
+                NormalSrvHeapIndex = 7,
                 DiffuseAlbedo = Vector4.One,
                 FresnelR0 = new Vector3(0.1f),
                 Roughness = 1.0f
@@ -768,17 +691,17 @@ namespace DX12GameProgramming
             boxRitem.BaseVertexLocation = boxRitem.Geo.DrawArgs["box"].BaseVertexLocation;
             AddRenderItem(boxRitem, RenderLayer.Opaque);
 
-            var skullRitem = new RenderItem();
-            skullRitem.World = Matrix.Scaling(0.4f) * Matrix.Translation(0.0f, 1.0f, 0.0f);
-            skullRitem.TexTransform = Matrix.Identity;
-            skullRitem.ObjCBIndex = 2;
-            skullRitem.Mat = _materials["skullMat"];
-            skullRitem.Geo = _geometries["skullGeo"];
-            skullRitem.PrimitiveType = PrimitiveTopology.TriangleList;
-            skullRitem.IndexCount = skullRitem.Geo.DrawArgs["skull"].IndexCount;
-            skullRitem.StartIndexLocation = skullRitem.Geo.DrawArgs["skull"].StartIndexLocation;
-            skullRitem.BaseVertexLocation = skullRitem.Geo.DrawArgs["skull"].BaseVertexLocation;
-            AddRenderItem(skullRitem, RenderLayer.Opaque);
+            var globeRitem = new RenderItem();
+            globeRitem.World = Matrix.Scaling(2.0f) * Matrix.Translation(0.0f, 2.0f, 0.0f);
+            globeRitem.TexTransform = Matrix.Identity;
+            globeRitem.ObjCBIndex = 2;
+            globeRitem.Mat = _materials["mirror0"];
+            globeRitem.Geo = _geometries["shapeGeo"];
+            globeRitem.PrimitiveType = PrimitiveTopology.TriangleList;
+            globeRitem.IndexCount = globeRitem.Geo.DrawArgs["sphere"].IndexCount;
+            globeRitem.StartIndexLocation = globeRitem.Geo.DrawArgs["sphere"].StartIndexLocation;
+            globeRitem.BaseVertexLocation = globeRitem.Geo.DrawArgs["sphere"].BaseVertexLocation;
+            AddRenderItem(globeRitem, RenderLayer.Opaque);
 
             var gridRitem = new RenderItem();
             gridRitem.World = Matrix.Identity;
