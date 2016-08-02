@@ -202,6 +202,7 @@ namespace DX12GameProgramming
             dynamicTexDescriptor += (_skyTexHeapIndex + 1) * CbvSrvUavDescriptorSize;
             CommandList.SetGraphicsRootDescriptorTable(3, dynamicTexDescriptor);
 
+            CommandList.PipelineState = _psos["opaque"];
             DrawRenderItems(CommandList, _ritemLayers[RenderLayer.OpaqueDynamicReflectors]);
 
             // Use the static "background" cube map for the other objects (including the sky).
@@ -375,14 +376,21 @@ namespace DX12GameProgramming
             {
                 PassConstants cubeFacePassCB = _mainPassCB;
 
-                cubeFacePassCB.View = _cubeMapCameras[i].View;
-                cubeFacePassCB.Proj = _cubeMapCameras[i].Proj;
+                Matrix view = _cubeMapCameras[i].View;
+                Matrix proj = _cubeMapCameras[i].Proj;
 
-                cubeFacePassCB.ViewProj = cubeFacePassCB.View * cubeFacePassCB.Proj;
-                cubeFacePassCB.InvView = Matrix.Invert(cubeFacePassCB.View);
-                cubeFacePassCB.InvProj = Matrix.Invert(cubeFacePassCB.Proj);
-                cubeFacePassCB.InvViewProj = Matrix.Invert(cubeFacePassCB.ViewProj);
+                Matrix viewProj = view * proj;
+                Matrix invView = Matrix.Invert(view);
+                Matrix invProj = Matrix.Invert(proj);
+                Matrix invViewProj = Matrix.Invert(viewProj);
 
+                cubeFacePassCB.View = Matrix.Transpose(view);
+                cubeFacePassCB.InvView = Matrix.Transpose(invView);
+                cubeFacePassCB.Proj = Matrix.Transpose(proj);
+                cubeFacePassCB.InvProj = Matrix.Transpose(invProj);
+                cubeFacePassCB.ViewProj = Matrix.Transpose(viewProj);
+                cubeFacePassCB.InvViewProj = Matrix.Transpose(invViewProj);
+                cubeFacePassCB.EyePosW = _cubeMapCameras[i].Position;
                 cubeFacePassCB.RenderTargetSize = new Vector2(_dynamicCubeMap.Width, _dynamicCubeMap.Height);
                 cubeFacePassCB.InvRenderTargetSize = new Vector2(1.0f / _dynamicCubeMap.Width, 1.0f / _dynamicCubeMap.Height);
 
@@ -834,7 +842,7 @@ namespace DX12GameProgramming
                 MatCBIndex = 1,
                 DiffuseSrvHeapIndex = 1,
                 DiffuseAlbedo = new Vector4(0.9f, 0.9f, 0.9f, 1.0f),
-                FresnelR0 = new Vector3(0.02f),
+                FresnelR0 = new Vector3(0.2f),
                 Roughness = 0.1f
             });
             AddMaterial(new Material
@@ -842,7 +850,7 @@ namespace DX12GameProgramming
                 Name = "mirror0",
                 MatCBIndex = 2,
                 DiffuseSrvHeapIndex = 2,
-                DiffuseAlbedo = new Vector4(0.0f, 0.0f, 0.1f, 1.0f),
+                DiffuseAlbedo = new Vector4(0.0f, 0.0f, 0.0f, 1.0f),
                 FresnelR0 = new Vector3(0.98f, 0.97f, 0.95f),
                 Roughness = 0.1f
             });
@@ -886,7 +894,7 @@ namespace DX12GameProgramming
             AddRenderItem(skyRitem, RenderLayer.Sky);
 
             _skullRitem = new RenderItem();
-            _skullRitem.World = Matrix.Scaling(0.4f) * Matrix.Translation(0.0f, 1.0f, 0.0f);
+            _skullRitem.World = Matrix.Scaling(0.2f) * Matrix.Translation(3.0f, 2.0f, 0.0f);
             _skullRitem.TexTransform = Matrix.Identity;
             _skullRitem.ObjCBIndex = 1;
             _skullRitem.Mat = _materials["skullMat"];
@@ -1016,7 +1024,7 @@ namespace DX12GameProgramming
         private void DrawSceneToCubeMap()
         {
             CommandList.SetViewport(_dynamicCubeMap.Viewport);
-            CommandList.SetScissorRectangles(_dynamicCubeMap.ScissorRect);
+            CommandList.SetScissorRectangles(_dynamicCubeMap.ScissorRectangle);
 
             // Change to RENDER_TARGET.
             CommandList.ResourceBarrierTransition(_dynamicCubeMap.Resource, ResourceStates.GenericRead, ResourceStates.RenderTarget);
@@ -1039,12 +1047,11 @@ namespace DX12GameProgramming
                 long passCBAddress = passCB.GPUVirtualAddress + (1 + i) * passCBByteSize;
                 CommandList.SetGraphicsRootConstantBufferView(1, passCBAddress);
 
+                CommandList.PipelineState = _psos["opaque"];
                 DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Opaque]);
 
                 CommandList.PipelineState = _psos["sky"];
-                DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Sky]);
-
-                CommandList.PipelineState = _psos["opaque"];
+                DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Sky]);                
             }
 
             // Change back to GENERIC_READ so we can read the texture in a shader.
@@ -1081,10 +1088,11 @@ namespace DX12GameProgramming
 
             for (int i = 0; i < 6; i++)
             {
-                _cubeMapCameras[i] = new Camera();
-                _cubeMapCameras[i].LookAt(center, targets[i], ups[i]);
-                _cubeMapCameras[i].SetLens(0.5f * MathUtil.Pi, 1.0f, 0.1f, 1000.0f);
-                _cubeMapCameras[i].UpdateViewMatrix();
+                var camera = new Camera();
+                camera.LookAt(center, targets[i], ups[i]);
+                camera.SetLens(MathUtil.PiOverTwo, 1.0f, 0.1f, 1000.0f);
+                camera.UpdateViewMatrix();
+                _cubeMapCameras[i] = camera;
             }
         }
 

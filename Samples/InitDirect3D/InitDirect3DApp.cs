@@ -5,7 +5,7 @@ using SharpDX.DXGI;
 
 namespace DX12GameProgramming
 {
-    class InitDirect3DApp : D3DApp
+    public class InitDirect3DApp : D3DApp
     {
         public InitDirect3DApp(IntPtr hInstance) : base(hInstance)
         {

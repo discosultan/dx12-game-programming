@@ -6,7 +6,7 @@ namespace DX12GameProgramming
     internal class Program
     {
         [STAThread]
-        internal static void Main(string[] args)
+        static void Main(string[] args)
         {
             using (D3DApp app = new NormalMapApp(Process.GetCurrentProcess().Handle))
             {

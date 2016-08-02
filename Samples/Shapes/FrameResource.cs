@@ -5,6 +5,7 @@ using SharpDX.Direct3D12;
 
 namespace DX12GameProgramming
 {
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
     internal struct ObjectConstants
     {
         public Matrix World;

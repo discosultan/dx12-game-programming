@@ -23,14 +23,8 @@ namespace DX12GameProgramming
             Width = width;
             Height = height;
 
-            Viewport = new ViewportF
-            {
-                Width = width,
-                Height = height,
-                MinDepth = 0.0f,
-                MaxDepth = 1.0f   
-            };
-            ScissorRect = new RectangleF(0, 0, width, height);
+            Viewport = new ViewportF(0, 0, Width, Height);            
+            ScissorRectangle = new RectangleF(0, 0, width, height);
 
             BuildResource();
         }
@@ -43,7 +37,7 @@ namespace DX12GameProgramming
         public CpuDescriptorHandle[] Rtvs { get; private set; }
 
         public ViewportF Viewport { get; private set; }
-        public RectangleF ScissorRect { get; private set; }
+        public RectangleF ScissorRectangle { get; private set; }
 
         public void BuildDescriptors(
             CpuDescriptorHandle cpuSrv, 
