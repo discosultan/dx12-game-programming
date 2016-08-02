@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
 using System.Threading;
 using SharpDX;
 using SharpDX.Direct3D;
@@ -705,6 +703,7 @@ namespace DX12GameProgramming
 
             var gridRitem = new RenderItem();
             gridRitem.World = Matrix.Identity;
+            gridRitem.TexTransform = Matrix.Scaling(8.0f, 8.0f, 1.0f);
             gridRitem.ObjCBIndex = 3;
             gridRitem.Mat = _materials["tile0"];
             gridRitem.Geo = _geometries["shapeGeo"];

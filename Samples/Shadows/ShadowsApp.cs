@@ -1116,7 +1116,7 @@ namespace DX12GameProgramming
             // Set null render target because we are only going to draw to
             // depth buffer. Setting a null render target will disable color writes.
             // Note the active PSO also must specify a render target count of 0.
-            CommandList.SetRenderTargets(null, _shadowMap.Dsv);
+            CommandList.SetRenderTargets((CpuDescriptorHandle?)null, _shadowMap.Dsv);
 
             // Bind the pass constant buffer for shadow map pass.
             Resource passCB = CurrFrameResource.PassCB.Resource;
