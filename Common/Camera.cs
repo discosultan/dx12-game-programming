@@ -8,7 +8,7 @@ namespace DX12GameProgramming
 
         public Camera()
         {
-            SetLens(0.25f * MathUtil.Pi, 1.0f, 1.0f, 1000.0f);
+            SetLens(MathUtil.PiOverFour, 1.0f, 1.0f, 1000.0f);
         }
 
         public Vector3 Position { get; set; }

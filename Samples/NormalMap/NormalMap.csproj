@@ -89,8 +89,8 @@
       <Link>Textures\default_nmap.dds</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\..\Textures\grasscube1024.dds">
-      <Link>Textures\grasscube1024.dds</Link>
+    <Content Include="..\..\Textures\snowcube1024.dds">
+      <Link>Textures\snowcube1024.dds</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="..\..\Textures\tile.dds">

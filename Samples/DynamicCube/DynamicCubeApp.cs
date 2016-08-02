@@ -112,7 +112,7 @@ namespace DX12GameProgramming
             base.OnResize();
 
             // The window resized, so update the aspect ratio and recompute the projection matrix.
-            _camera.SetLens(0.25f * MathUtil.Pi, AspectRatio, 1.0f, 1000.0f);
+            _camera.SetLens(MathUtil.PiOverFour, AspectRatio, 1.0f, 1000.0f);
         }
 
         protected override void Update(GameTimer gt)
@@ -894,7 +894,7 @@ namespace DX12GameProgramming
             AddRenderItem(skyRitem, RenderLayer.Sky);
 
             _skullRitem = new RenderItem();
-            _skullRitem.World = Matrix.Scaling(0.2f) * Matrix.Translation(3.0f, 2.0f, 0.0f);
+            _skullRitem.World = Matrix.Identity;
             _skullRitem.TexTransform = Matrix.Identity;
             _skullRitem.ObjCBIndex = 1;
             _skullRitem.Mat = _materials["skullMat"];

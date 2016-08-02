@@ -87,7 +87,7 @@ namespace DX12GameProgramming
             base.OnResize();
 
             // The window resized, so update the aspect ratio and recompute the projection matrix.
-            _camera.SetLens(0.25f * MathUtil.Pi, AspectRatio, 1.0f, 1000.0f);
+            _camera.SetLens(MathUtil.PiOverFour, AspectRatio, 1.0f, 1000.0f);
         }
 
         protected override void Update(GameTimer gt)
@@ -327,7 +327,7 @@ namespace DX12GameProgramming
             AddTexture("tileNormalMap", "tile_nmap.dds");
             AddTexture("defaultDiffuseMap", "white1x1.dds");
             AddTexture("defaultNormalMap", "default_nmap.dds");
-            AddTexture("skyCubeMap", "grasscube1024.dds");
+            AddTexture("skyCubeMap", "snowcube1024.dds");
         }
 
         private void AddTexture(string name, string filename)
