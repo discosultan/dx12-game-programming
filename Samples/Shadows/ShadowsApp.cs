@@ -160,7 +160,7 @@ namespace DX12GameProgramming
 
             Matrix r = Matrix.RotationY(_lightRotationAngle);
             for (int i = 0; i < 3; i++)
-                _baseLightDirections[i] = Vector3.TransformNormal(_baseLightDirections[i], r);
+                _rotatedLightDirections[i] = Vector3.TransformNormal(_baseLightDirections[i], r);
 
             UpdateObjectCBs();
             UpdateMaterialBuffer();
@@ -388,10 +388,9 @@ namespace DX12GameProgramming
                 0.0f, 0.0f, 1.0f, 0.0f,
                 0.5f, 0.5f, 0.0f, 1.0f);
 
-            Matrix s = lightView * lightProj * transform;
+            _shadowTransform = lightView * lightProj * transform;
             _lightView = lightView;
             _lightProj = lightProj;
-            _shadowTransform = s;
         }
 
         private void UpdateMainPassCB(GameTimer gt)
@@ -431,12 +430,20 @@ namespace DX12GameProgramming
 
         private void UpdateShadowPassCB()
         {
-            _shadowPassCB.View = _lightView;
-            _shadowPassCB.Proj = _lightProj;
-            _shadowPassCB.ViewProj = _shadowPassCB.View * _shadowPassCB.Proj;
-            _shadowPassCB.InvView = Matrix.Invert(_shadowPassCB.View);
-            _shadowPassCB.InvProj = Matrix.Invert(_shadowPassCB.Proj);
-            _shadowPassCB.InvViewProj = Matrix.Invert(_shadowPassCB.ViewProj);
+            Matrix view = _lightView;
+            Matrix proj = _lightProj;
+
+            Matrix viewProj = view * proj;
+            Matrix invView = Matrix.Invert(view);
+            Matrix invProj = Matrix.Invert(proj);
+            Matrix invViewProj = Matrix.Invert(viewProj);
+
+            _shadowPassCB.View = Matrix.Transpose(view);
+            _shadowPassCB.InvView = Matrix.Transpose(invView);
+            _shadowPassCB.Proj = Matrix.Transpose(proj);
+            _shadowPassCB.InvProj = Matrix.Transpose(invProj);
+            _shadowPassCB.ViewProj = Matrix.Transpose(viewProj);
+            _shadowPassCB.InvViewProj = Matrix.Transpose(invViewProj);
             _shadowPassCB.EyePosW = _lightPosW;
             _shadowPassCB.RenderTargetSize = new Vector2(_shadowMap.Width, _shadowMap.Height);
             _shadowPassCB.InvRenderTargetSize = new Vector2(1.0f / _shadowMap.Width, 1.0f / _shadowMap.Height);
@@ -823,7 +830,6 @@ namespace DX12GameProgramming
             // Otherwise, the normalized depth values at z = 1 (NDC) will 
             // fail the depth test if the depth buffer was cleared to 1.
             skyPsoDesc.DepthStencilState.DepthComparison = Comparison.LessEqual;
-            skyPsoDesc.RootSignature = _rootSignature;
             skyPsoDesc.VertexShader = _shaders["skyVS"];
             skyPsoDesc.PixelShader = _shaders["skyPS"];
 
@@ -1044,7 +1050,7 @@ namespace DX12GameProgramming
         private void DrawSceneToShadowMap()
         {
             CommandList.SetViewport(_shadowMap.Viewport);
-            CommandList.SetScissorRectangles(_shadowMap.ScissorRect);
+            CommandList.SetScissorRectangles(_shadowMap.ScissorRectangle);
 
             // Change to DEPTH_WRITE.
             CommandList.ResourceBarrierTransition(_shadowMap.Resource, ResourceStates.GenericRead, ResourceStates.DepthWrite);
