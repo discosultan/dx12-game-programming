@@ -31,6 +31,7 @@ namespace DX12GameProgramming
         public Matrix InvProj;
         public Matrix ViewProj;
         public Matrix InvViewProj;
+        public Matrix ShadowTransform;
         public Vector3 EyePosW;
         public float PerObjectPad1;
         public Vector2 RenderTargetSize;
@@ -56,6 +57,7 @@ namespace DX12GameProgramming
             InvProj = Matrix.Identity,
             ViewProj = Matrix.Identity,
             InvViewProj = Matrix.Identity,
+            ShadowTransform = Matrix.Identity,
             AmbientLight = Vector4.UnitW,
             Lights = Lights.Default
         };

@@ -517,13 +517,13 @@ namespace DX12GameProgramming
             _dynamicCubeMap.BuildDescriptors(
                 srvCpuStart + _dynamicTexHeapIndex * CbvSrvUavDescriptorSize,
                 srvGpuStart + _dynamicTexHeapIndex * CbvSrvUavDescriptorSize,
-                cubeRtvHandles);
-
-            _cubeDSV = DsvHeap.CPUDescriptorHandleForHeapStart + DsvDescriptorSize;
+                cubeRtvHandles);            
         }
 
         private void BuildCubeDepthStencil()
         {
+            _cubeDSV = DsvHeap.CPUDescriptorHandleForHeapStart + DsvDescriptorSize;
+
             // Create the depth/stencil buffer and view.
             var depthStencilDesc = new ResourceDescription
             {
@@ -1093,7 +1093,7 @@ namespace DX12GameProgramming
         private static StaticSamplerDescription[] GetStaticSamplers() => new[]
         {
             // PointWrap
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 0, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 0, 0)
             {
                 Filter = Filter.MinMagMipPoint,
                 AddressU = TextureAddressMode.Wrap,
@@ -1101,7 +1101,7 @@ namespace DX12GameProgramming
                 AddressW = TextureAddressMode.Wrap
             },
             // PointClamp
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 1, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 1, 0)
             {
                 Filter = Filter.MinMagMipPoint,
                 AddressU = TextureAddressMode.Clamp,
@@ -1109,7 +1109,7 @@ namespace DX12GameProgramming
                 AddressW = TextureAddressMode.Clamp
             },
             // LinearWrap
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 2, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 2, 0)
             {
                 Filter = Filter.MinMagMipLinear,
                 AddressU = TextureAddressMode.Wrap,
@@ -1117,7 +1117,7 @@ namespace DX12GameProgramming
                 AddressW = TextureAddressMode.Wrap
             },
             // LinearClamp
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 3, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 3, 0)
             {
                 Filter = Filter.MinMagMipLinear,
                 AddressU = TextureAddressMode.Clamp,
@@ -1125,7 +1125,7 @@ namespace DX12GameProgramming
                 AddressW = TextureAddressMode.Clamp
             },
             // AnisotropicWrap
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 4, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 4, 0)
             {
                 Filter = Filter.Anisotropic,
                 AddressU = TextureAddressMode.Wrap,
@@ -1135,7 +1135,7 @@ namespace DX12GameProgramming
                 MaxAnisotropy = 8
             },
             // AnisotropicClamp
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 5, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 5, 0)
             {
                 Filter = Filter.Anisotropic,
                 AddressU = TextureAddressMode.Clamp,

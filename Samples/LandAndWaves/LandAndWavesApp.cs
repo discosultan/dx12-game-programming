@@ -1,12 +1,12 @@
 ﻿using System;
-using SharpDX;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
+using SharpDX;
 using SharpDX.Direct3D;
 using SharpDX.Direct3D12;
 using SharpDX.DXGI;
 using Resource = SharpDX.Direct3D12.Resource;
-using System.Diagnostics;
 
 namespace DX12GameProgramming
 {
@@ -318,14 +318,12 @@ namespace DX12GameProgramming
 
         private void BuildRootSignature()
         {
-            var descriptor1 = new RootDescriptor(0, 0); // TODO: Register space default value = 0
-            var descriptor2 = new RootDescriptor(1, 0);
-
             // Root parameter can be a table, root descriptor or root constants.
             var slotRootParameters = new[]
             {
-                new RootParameter(ShaderVisibility.Vertex, descriptor1, RootParameterType.ConstantBufferView),
-                new RootParameter(ShaderVisibility.Vertex, descriptor2, RootParameterType.ConstantBufferView)
+                // TODO: Register space default value = 0
+                new RootParameter(ShaderVisibility.Vertex, new RootDescriptor(0, 0), RootParameterType.ConstantBufferView),
+                new RootParameter(ShaderVisibility.Vertex, new RootDescriptor(1, 0), RootParameterType.ConstantBufferView)
             };
 
             // A root signature is an array of root parameters.

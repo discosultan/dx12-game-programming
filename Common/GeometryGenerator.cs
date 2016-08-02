@@ -352,7 +352,45 @@ namespace DX12GameProgramming
             return meshData;
         }
 
+        public static MeshData CreateQuad(float x, float y, float w, float h, float depth)
+        {
+            var meshData = new MeshData();
 
+            // Position coordinates specified in NDC space.
+            meshData.Vertices.Add(new Vertex(
+                x, y - h, depth,
+                0.0f, 0.0f, -1.0f,
+                1.0f, 0.0f, 0.0f,
+                0.0f, 1.0f));
+
+            meshData.Vertices.Add(new Vertex(
+                x, y, depth,
+                0.0f, 0.0f, -1.0f,
+                1.0f, 0.0f, 0.0f,
+                0.0f, 0.0f));
+
+            meshData.Vertices.Add(new Vertex(
+                x + w, y, depth,
+                0.0f, 0.0f, -1.0f,
+                1.0f, 0.0f, 0.0f,
+                1.0f, 0.0f));
+
+            meshData.Vertices.Add(new Vertex(
+                x + w, y - h, depth,
+                0.0f, 0.0f, -1.0f,
+                1.0f, 0.0f, 0.0f,
+                1.0f, 1.0f));
+
+            meshData.Indices32.Add(0);
+            meshData.Indices32.Add(1);
+            meshData.Indices32.Add(2);
+
+            meshData.Indices32.Add(0);
+            meshData.Indices32.Add(2);
+            meshData.Indices32.Add(3);
+
+            return meshData;
+        }
 
         private static void Subdivide(MeshData meshData)
         {

@@ -79,12 +79,13 @@ namespace DX12GameProgramming
             {
                 Shader4ComponentMapping = D3DUtil.DefaultShader4ComponentMapping,
                 Format = Format.R24_UNorm_X8_Typeless,
-                Dimension = ShaderResourceViewDimension.TextureCube,
-                TextureCube = new ShaderResourceViewDescription.TextureCubeResource
+                Dimension = ShaderResourceViewDimension.Texture2D,
+                Texture2D = new ShaderResourceViewDescription.Texture2DResource
                 {
                     MostDetailedMip = 0,
                     MipLevels = 1,
-                    ResourceMinLODClamp = 0.0f
+                    ResourceMinLODClamp = 0.0f,
+                    PlaneSlice = 0
                 }
             };
             _device.CreateShaderResourceView(Resource, srvDesc, _cpuSrv);
@@ -116,13 +117,17 @@ namespace DX12GameProgramming
                 Format = _format,
                 SampleDescription = new SampleDescription(1, 0),
                 Layout = TextureLayout.Unknown,
-                Flags = ResourceFlags.AllowRenderTarget
+                Flags = ResourceFlags.AllowDepthStencil
             };
 
             var optClear = new ClearValue
             {
-                Format = _format,
-                Color = Color.LightSteelBlue.ToVector4()                
+                Format = Format.D24_UNorm_S8_UInt,
+                DepthStencil = new DepthStencilValue
+                {
+                    Depth = 1.0f,
+                    Stencil = 0
+                }
             };
 
             Resource = _device.CreateCommittedResource(
