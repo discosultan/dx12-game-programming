@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using SharpDX;
 using SharpDX.Direct3D;
@@ -310,11 +311,11 @@ namespace DX12GameProgramming
             _mainPassCB.DeltaTime = gt.DeltaTime;
             _mainPassCB.AmbientLight = new Vector4(0.25f, 0.25f, 0.35f, 1.0f);
             _mainPassCB.Lights.Light1.Direction = new Vector3(0.57735f, -0.57735f, 0.57735f);
-            _mainPassCB.Lights.Light1.Strength = new Vector3(0.6f);
+            _mainPassCB.Lights.Light1.Strength = new Vector3(0.8f);
             _mainPassCB.Lights.Light2.Direction = new Vector3(-0.57735f, -0.57735f, 0.57735f);
-            _mainPassCB.Lights.Light2.Strength = new Vector3(0.3f);
+            _mainPassCB.Lights.Light2.Strength = new Vector3(0.4f);
             _mainPassCB.Lights.Light3.Direction = new Vector3(0.0f, -0.707f, -0.707f);
-            _mainPassCB.Lights.Light3.Strength = new Vector3(0.15f);
+            _mainPassCB.Lights.Light3.Strength = new Vector3(0.2f);
 
             CurrFrameResource.PassCB.CopyData(0, ref _mainPassCB);
         }
@@ -449,116 +450,59 @@ namespace DX12GameProgramming
 
         private void BuildShapeGeometry()
         {
-            GeometryGenerator.MeshData box = GeometryGenerator.CreateBox(1.0f, 1.0f, 1.0f, 3);
-            GeometryGenerator.MeshData grid = GeometryGenerator.CreateGrid(20.0f, 30.0f, 60, 40);
-            GeometryGenerator.MeshData sphere = GeometryGenerator.CreateSphere(0.5f, 20, 20);
-            GeometryGenerator.MeshData cylinder = GeometryGenerator.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
-
             //
             // We are concatenating all the geometry into one big vertex/index buffer. So
             // define the regions in the buffer each submesh covers.
             //
 
-            // Cache the vertex offsets to each object in the concatenated vertex buffer.
-            int boxVertexOffset = 0;
-            int gridVertexOffset = box.Vertices.Count;
-            int sphereVertexOffset = gridVertexOffset + grid.Vertices.Count;
-            int cylinderVertexOffset = sphereVertexOffset + sphere.Vertices.Count;
+            var vertices = new List<Vertex>();
+            var indices = new List<short>();
 
-            // Cache the starting index for each object in the concatenated index buffer.
-            int boxIndexOffset = 0;
-            int gridIndexOffset = box.Indices32.Count;
-            int sphereIndexOffset = gridIndexOffset + grid.Indices32.Count;
-            int cylinderIndexOffset = sphereIndexOffset + sphere.Indices32.Count;
+            SubmeshGeometry box = AppendMeshData(GeometryGenerator.CreateBox(1.0f, 1.0f, 1.0f, 3), vertices, indices);
+            SubmeshGeometry grid = AppendMeshData(GeometryGenerator.CreateGrid(20.0f, 30.0f, 60, 40), vertices, indices);
+            SubmeshGeometry sphere = AppendMeshData(GeometryGenerator.CreateSphere(0.5f, 20, 20), vertices, indices);
+            SubmeshGeometry cylinder = AppendMeshData(GeometryGenerator.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20), vertices, indices);
 
+            var geo = MeshGeometry.New(Device, CommandList, vertices.ToArray(), indices.ToArray(), "shapeGeo");
+
+            geo.DrawArgs["box"] = box;
+            geo.DrawArgs["grid"] = grid;
+            geo.DrawArgs["sphere"] = sphere;
+            geo.DrawArgs["cylinder"] = cylinder;
+
+            _geometries[geo.Name] = geo;
+        }
+
+        private SubmeshGeometry AppendMeshData(GeometryGenerator.MeshData meshData, List<Vertex> vertices, List<short> indices)
+        {
+            //
             // Define the SubmeshGeometry that cover different 
             // regions of the vertex/index buffers.
+            //
 
-            var boxSubmesh = new SubmeshGeometry
+            var submesh = new SubmeshGeometry
             {
-                IndexCount = box.Indices32.Count,
-                StartIndexLocation = boxIndexOffset,
-                BaseVertexLocation = boxVertexOffset
-            };
-
-            var gridSubmesh = new SubmeshGeometry
-            {
-                IndexCount = grid.Indices32.Count,
-                StartIndexLocation = gridIndexOffset,
-                BaseVertexLocation = gridVertexOffset
-            };
-
-            var sphereSubmesh = new SubmeshGeometry
-            {
-                IndexCount = sphere.Indices32.Count,
-                StartIndexLocation = sphereIndexOffset,
-                BaseVertexLocation = sphereVertexOffset
-            };
-
-            var cylinderSubmesh = new SubmeshGeometry
-            {
-                IndexCount = cylinder.Indices32.Count,
-                StartIndexLocation = cylinderIndexOffset,
-                BaseVertexLocation = cylinderVertexOffset
+                IndexCount = meshData.Indices32.Count,
+                StartIndexLocation = indices.Count,
+                BaseVertexLocation = vertices.Count
             };
 
             //
             // Extract the vertex elements we are interested in and pack the
-            // vertices of all the meshes into one vertex buffer.
+            // vertices and indices of all the meshes into one vertex/index buffer.
             //
 
-            int totalVertexCount =
-                box.Vertices.Count +
-                grid.Vertices.Count +
-                sphere.Vertices.Count +
-                cylinder.Vertices.Count;
-
-            var vertices = new Vertex[totalVertexCount];
-
-            int k = 0;
-            for (int i = 0; i < box.Vertices.Count; ++i, ++k)
+            vertices.AddRange(meshData.Vertices.Select(vertex => new Vertex
             {
-                vertices[k].Pos = box.Vertices[i].Position;
-                vertices[k].Normal = box.Vertices[i].Normal;
-                vertices[k].TexC = box.Vertices[i].TexC;
-            }
+                Pos = vertex.Position,
+                Normal = vertex.Normal,
+                TexC = vertex.TexC,
+                TangentU = vertex.TangentU
+            }));
+            indices.AddRange(meshData.GetIndices16());
 
-            for (int i = 0; i < grid.Vertices.Count; ++i, ++k)
-            {
-                vertices[k].Pos = grid.Vertices[i].Position;
-                vertices[k].Normal = grid.Vertices[i].Normal;
-                vertices[k].TexC = grid.Vertices[i].TexC;
-            }
-
-            for (int i = 0; i < sphere.Vertices.Count; ++i, ++k)
-            {
-                vertices[k].Pos = sphere.Vertices[i].Position;
-                vertices[k].Normal = sphere.Vertices[i].Normal;
-                vertices[k].TexC = sphere.Vertices[i].TexC;
-            }
-
-            for (int i = 0; i < cylinder.Vertices.Count; ++i, ++k)
-            {
-                vertices[k].Pos = cylinder.Vertices[i].Position;
-                vertices[k].Normal = cylinder.Vertices[i].Normal;
-                vertices[k].TexC = cylinder.Vertices[i].TexC;
-            }
-
-            var indices = new List<short>();
-            indices.AddRange(box.GetIndices16());
-            indices.AddRange(grid.GetIndices16());
-            indices.AddRange(sphere.GetIndices16());
-            indices.AddRange(cylinder.GetIndices16());
-
-            var geo = MeshGeometry.New(Device, CommandList, vertices, indices.ToArray(), "shapeGeo");
-
-            geo.DrawArgs["box"] = boxSubmesh;
-            geo.DrawArgs["grid"] = gridSubmesh;
-            geo.DrawArgs["sphere"] = sphereSubmesh;
-            geo.DrawArgs["cylinder"] = cylinderSubmesh;
-
-            _geometries[geo.Name] = geo;
-        }       
+            return submesh;
+        }
 
         private void BuildPSOs()
         {
@@ -633,7 +577,7 @@ namespace DX12GameProgramming
                 DiffuseSrvHeapIndex = 2,
                 NormalSrvHeapIndex = 3,
                 DiffuseAlbedo = new Vector4(0.9f, 0.9f, 0.9f, 1.0f),
-                FresnelR0 = new Vector3(0.02f),
+                FresnelR0 = new Vector3(0.2f),
                 Roughness = 0.1f
             });
             AddMaterial(new Material
@@ -642,7 +586,7 @@ namespace DX12GameProgramming
                 MatCBIndex = 3,
                 DiffuseSrvHeapIndex = 4,
                 NormalSrvHeapIndex = 5,
-                DiffuseAlbedo = new Vector4(0.0f, 0.0f, 0.1f, 1.0f),
+                DiffuseAlbedo = new Vector4(0.0f, 0.0f, 0.0f, 1.0f),
                 FresnelR0 = new Vector3(0.98f, 0.97f, 0.95f),
                 Roughness = 0.1f
             });
@@ -798,7 +742,7 @@ namespace DX12GameProgramming
         private static StaticSamplerDescription[] GetStaticSamplers() => new[]
         {
             // PointWrap
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 0, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 0, 0)
             {
                 Filter = Filter.MinMagMipPoint,
                 AddressU = TextureAddressMode.Wrap,
@@ -806,7 +750,7 @@ namespace DX12GameProgramming
                 AddressW = TextureAddressMode.Wrap
             },
             // PointClamp
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 1, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 1, 0)
             {
                 Filter = Filter.MinMagMipPoint,
                 AddressU = TextureAddressMode.Clamp,
@@ -814,7 +758,7 @@ namespace DX12GameProgramming
                 AddressW = TextureAddressMode.Clamp
             },
             // LinearWrap
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 2, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 2, 0)
             {
                 Filter = Filter.MinMagMipLinear,
                 AddressU = TextureAddressMode.Wrap,
@@ -822,7 +766,7 @@ namespace DX12GameProgramming
                 AddressW = TextureAddressMode.Wrap
             },
             // LinearClamp
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 3, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 3, 0)
             {
                 Filter = Filter.MinMagMipLinear,
                 AddressU = TextureAddressMode.Clamp,
@@ -830,7 +774,7 @@ namespace DX12GameProgramming
                 AddressW = TextureAddressMode.Clamp
             },
             // AnisotropicWrap
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 4, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 4, 0)
             {
                 Filter = Filter.Anisotropic,
                 AddressU = TextureAddressMode.Wrap,
@@ -840,7 +784,7 @@ namespace DX12GameProgramming
                 MaxAnisotropy = 8
             },
             // AnisotropicClamp
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 5, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 5, 0)
             {
                 Filter = Filter.Anisotropic,
                 AddressU = TextureAddressMode.Clamp,
