@@ -446,12 +446,11 @@ namespace DX12GameProgramming
             _shadowPassCB.InvViewProj = Matrix.Transpose(invViewProj);
             _shadowPassCB.EyePosW = _lightPosW;
             _shadowPassCB.RenderTargetSize = new Vector2(_shadowMap.Width, _shadowMap.Height);
-            _shadowPassCB.InvRenderTargetSize = new Vector2(1.0f / _shadowMap.Width, 1.0f / _shadowMap.Height);
+            _shadowPassCB.InvRenderTargetSize = 1.0f / _shadowPassCB.RenderTargetSize;
             _shadowPassCB.NearZ = _lightNearZ;
             _shadowPassCB.FarZ = _lightFarZ;
 
-            UploadBuffer<PassConstants> currPassCB = CurrFrameResource.PassCB;
-            currPassCB.CopyData(1, ref _shadowPassCB);
+            CurrFrameResource.PassCB.CopyData(1, ref _shadowPassCB);
         }
 
         private void LoadTextures()
