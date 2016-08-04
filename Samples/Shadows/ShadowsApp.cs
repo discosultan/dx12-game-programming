@@ -382,13 +382,13 @@ namespace DX12GameProgramming
             Matrix lightProj = Matrix.OrthoOffCenterLH(l, r, b, t, n, f);
 
             // Transform NDC space [-1,+1]^2 to texture space [0,1]^2
-            var transform = new Matrix(
+            var ndcToTexture = new Matrix(
                 0.5f, 0.0f, 0.0f, 0.0f,
                 0.0f, -0.5f, 0.0f, 0.0f,
                 0.0f, 0.0f, 1.0f, 0.0f,
                 0.5f, 0.5f, 0.0f, 1.0f);
 
-            _shadowTransform = lightView * lightProj * transform;
+            _shadowTransform = lightView * lightProj * ndcToTexture;
             _lightView = lightView;
             _lightProj = lightProj;
         }
@@ -1084,62 +1084,45 @@ namespace DX12GameProgramming
             new StaticSamplerDescription(ShaderVisibility.All, 0, 0)
             {
                 Filter = Filter.MinMagMipPoint,
-                AddressU = TextureAddressMode.Wrap,
-                AddressV = TextureAddressMode.Wrap,
-                AddressW = TextureAddressMode.Wrap
+                AddressUVW = TextureAddressMode.Wrap
             },
             // PointClamp
             new StaticSamplerDescription(ShaderVisibility.All, 1, 0)
             {
                 Filter = Filter.MinMagMipPoint,
-                AddressU = TextureAddressMode.Clamp,
-                AddressV = TextureAddressMode.Clamp,
-                AddressW = TextureAddressMode.Clamp
+                AddressUVW = TextureAddressMode.Clamp
             },
             // LinearWrap
             new StaticSamplerDescription(ShaderVisibility.All, 2, 0)
             {
                 Filter = Filter.MinMagMipLinear,
-                AddressU = TextureAddressMode.Wrap,
-                AddressV = TextureAddressMode.Wrap,
-                AddressW = TextureAddressMode.Wrap
+                AddressUVW = TextureAddressMode.Wrap
             },
             // LinearClamp
             new StaticSamplerDescription(ShaderVisibility.All, 3, 0)
             {
                 Filter = Filter.MinMagMipLinear,
-                AddressU = TextureAddressMode.Clamp,
-                AddressV = TextureAddressMode.Clamp,
-                AddressW = TextureAddressMode.Clamp
+                AddressUVW = TextureAddressMode.Clamp
             },
             // AnisotropicWrap
             new StaticSamplerDescription(ShaderVisibility.All, 4, 0)
             {
                 Filter = Filter.Anisotropic,
-                AddressU = TextureAddressMode.Wrap,
-                AddressV = TextureAddressMode.Wrap,
-                AddressW = TextureAddressMode.Wrap,
-                MipLODBias = 0.0f,
+                AddressUVW = TextureAddressMode.Wrap,
                 MaxAnisotropy = 8
             },
             // AnisotropicClamp
             new StaticSamplerDescription(ShaderVisibility.All, 5, 0)
             {
                 Filter = Filter.Anisotropic,
-                AddressU = TextureAddressMode.Clamp,
-                AddressV = TextureAddressMode.Clamp,
-                AddressW = TextureAddressMode.Clamp,
-                MipLODBias = 0.0f,
+                AddressUVW = TextureAddressMode.Clamp,
                 MaxAnisotropy = 8
             },
-            // Shadow
+            // Shadow            
             new StaticSamplerDescription(ShaderVisibility.All, 6, 0)
             {
-                Filter = Filter.MinMagLinearMipPoint,
-                AddressU = TextureAddressMode.Border,
-                AddressV = TextureAddressMode.Border,
-                AddressW = TextureAddressMode.Border,
-                MipLODBias = 0.0f,
+                Filter = Filter.ComparisonMinMagLinearMipPoint,
+                AddressUVW = TextureAddressMode.Border,
                 MaxAnisotropy = 16,
                 ComparisonFunc = Comparison.LessEqual,
                 BorderColor = StaticBorderColor.OpaqueBlack
