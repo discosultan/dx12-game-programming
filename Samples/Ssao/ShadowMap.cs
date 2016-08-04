@@ -9,9 +9,8 @@ namespace DX12GameProgramming
 {
     internal class ShadowMap : IDisposable
     {
-        private static readonly Format Format = Format.R24G8_Typeless;
-
         private readonly Device _device;
+        private readonly Format _format = Format.R24G8_Typeless;       
 
         private CpuDescriptorHandle _cpuSrv;
         private GpuDescriptorHandle _gpuSrv;
@@ -109,7 +108,7 @@ namespace DX12GameProgramming
                 Height = Height,
                 DepthOrArraySize = 1,
                 MipLevels = 1,
-                Format = Format,
+                Format = _format,
                 SampleDescription = new SampleDescription(1, 0),
                 Layout = TextureLayout.Unknown,
                 Flags = ResourceFlags.AllowDepthStencil
