@@ -216,7 +216,7 @@ namespace DX12GameProgramming
             Resource passCB = CurrFrameResource.PassCB.Resource;
             CommandList.SetGraphicsRootConstantBufferView(1, passCB.GPUVirtualAddress);
 
-            // Bind the sky cube map.  For our demos, we just use one "world" cube map representing the environment
+            // Bind the sky cube map. For our demos, we just use one "world" cube map representing the environment
             // from far away, so all objects will use the same cube map and we only need to set it once per-frame.  
             // If we wanted to use "local" cube maps, we would have to change them per-object, or dynamically
             // index into an array of cube maps.

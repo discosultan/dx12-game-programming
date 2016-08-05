@@ -8,6 +8,7 @@ namespace DX12GameProgramming
         private static readonly Random _random = new Random();
 
         public static int Rand(int minValue, int maxValue) => _random.Next(minValue, maxValue);
+        public static float Randf() => _random.NextFloat(0.0f, 1.0f);
         public static float Randf(float minValue, float maxValue) => _random.NextFloat(minValue, maxValue);
 
         public static float Sinf(double a) => (float)Math.Sin(a);

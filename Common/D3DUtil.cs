@@ -41,7 +41,7 @@ namespace DX12GameProgramming
             // Copy the data to the upload buffer.
             IntPtr ptr = uploadBuffer.Map(0);
             Utilities.Write(ptr, initData, 0, initData.Length);
-            uploadBuffer.Unmap(0);         
+            uploadBuffer.Unmap(0);
 
             // Schedule to copy the data to the default buffer resource.
             cmdList.ResourceBarrierTransition(defaultBuffer, ResourceStates.Common, ResourceStates.CopyDestination);

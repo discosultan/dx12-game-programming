@@ -77,10 +77,10 @@ namespace DX12GameProgramming
         public Vector2 InvRenderTargetSize;
 
         // Coordinates given in view space.
-        float OcclusionRadius;
-        float OcclusionFadeStart;
-        float OcclusionFadeEnd;
-        float SurfaceEpsilon;
+        public float OcclusionRadius;
+        public float OcclusionFadeStart;
+        public float OcclusionFadeEnd;
+        public float SurfaceEpsilon;
 
         public static SsaoConstants Default => new SsaoConstants
         {            
