@@ -1,15 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Diagnostics;
 
-namespace Quaternions
+namespace DX12GameProgramming
 {
-    class Program
+    internal class Program
     {
+        [STAThread]
         static void Main(string[] args)
         {
+            using (D3DApp app = new QuaternionsApp(Process.GetCurrentProcess().Handle))
+            {
+                app.Initialize();
+                app.Run();
+            }
         }
     }
 }
