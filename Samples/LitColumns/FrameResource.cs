@@ -5,6 +5,7 @@ using SharpDX.Direct3D12;
 
 namespace DX12GameProgramming
 {
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
     internal struct ObjectConstants
     {
         public Matrix World;
@@ -15,7 +16,7 @@ namespace DX12GameProgramming
         };
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
     internal struct PassConstants
     {
         public Matrix View;
@@ -39,7 +40,8 @@ namespace DX12GameProgramming
         // indices [NUM_DIR_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHTS) are point lights;
         // indices [NUM_DIR_LIGHTS+NUM_POINT_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHT+NUM_SPOT_LIGHTS)
         // are spot lights for a maximum of MaxLights per object.
-        public Lights Lights;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = Light.MaxLights)]
+        public Light[] Lights;
 
         public static PassConstants Default => new PassConstants
         {
@@ -49,8 +51,10 @@ namespace DX12GameProgramming
             InvProj = Matrix.Identity,
             ViewProj = Matrix.Identity,
             InvViewProj = Matrix.Identity,
+            NearZ = 1.0f,
+            FarZ = 1000.0f,
             AmbientLight = Vector4.UnitW,
-            Lights = Lights.Default
+            Lights = Light.DefaultArray
         };
     }
 

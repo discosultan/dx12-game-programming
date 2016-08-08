@@ -1,5 +1,5 @@
 ﻿using System;
-using SharpDX;
+using System.Runtime.InteropServices;
 using SharpDX.Direct3D12;
 
 namespace DX12GameProgramming
@@ -20,7 +20,7 @@ namespace DX12GameProgramming
             // } D3D12_CONSTANT_BUFFER_VIEW_DESC;
             _elementByteSize = isConstantBuffer 
                 ? D3DUtil.CalcConstantBufferByteSize<T>() 
-                : Utilities.SizeOf<T>();
+                : Marshal.SizeOf(typeof(T));
 
             Resource = device.CreateCommittedResource(
                 new HeapProperties(HeapType.Upload),
@@ -30,15 +30,15 @@ namespace DX12GameProgramming
 
             _resourcePointer = Resource.Map(0);
 
-            // We do not need to unmap until we are done with the resource.  However, we must not write to
+            // We do not need to unmap until we are done with the resource. However, we must not write to
             // the resource while it is in use by the GPU (so we must use synchronization techniques).
         }
 
         public Resource Resource { get; }
 
         public void CopyData(int elementIndex, ref T data)
-        {
-            Utilities.Write(_resourcePointer + elementIndex * _elementByteSize, ref data);
+        {            
+            Marshal.StructureToPtr(data, _resourcePointer + elementIndex * _elementByteSize, true);
         }
 
         public void Dispose()

@@ -648,7 +648,7 @@ namespace DX12GameProgramming
             _geometries[geo.Name] = geo;
         }
 
-        private SubmeshGeometry AppendMeshData(GeometryGenerator.MeshData meshData, List<Vertex> vertices, List<short> indices)
+        private static SubmeshGeometry AppendMeshData(GeometryGenerator.MeshData meshData, List<Vertex> vertices, List<short> indices)
         {
             //
             // Define the SubmeshGeometry that cover different 
@@ -898,11 +898,8 @@ namespace DX12GameProgramming
             });
             
         }
-
-        private void AddMaterial(Material mat)
-        {
-            _materials[mat.Name] = mat;
-        }
+            
+        private void AddMaterial(Material mat) => _materials[mat.Name] = mat;
 
         private void BuildRenderItems()
         {

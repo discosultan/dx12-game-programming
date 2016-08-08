@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using SharpDX;
 using SharpDX.D3DCompiler;
@@ -66,7 +67,7 @@ namespace DX12GameProgramming
         // 0x022B & 0xff00
         // 0x0200
         // 512
-        public static int CalcConstantBufferByteSize<T>() where T : struct => (Utilities.SizeOf<T>() + 255) & ~255;
+        public static int CalcConstantBufferByteSize<T>() where T : struct => (Marshal.SizeOf(typeof(T)) + 255) & ~255;
 
         public static ShaderBytecode CompileShader(string fileName, string entryPoint, string profile, ShaderMacro[] defines = null)
         {
@@ -88,7 +89,7 @@ namespace DX12GameProgramming
     [StructLayout(LayoutKind.Sequential, Pack = 4)]
     public struct Light
     {
-        public const int Size = 48;
+        public const int MaxLights = 16;
 
         public Vector3 Strength;
         public float FalloffStart;  // Point/spot light only.
@@ -106,6 +107,8 @@ namespace DX12GameProgramming
             Position = Vector3.Zero,
             SpotPower = 64.0f
         };
+
+        public static Light[] DefaultArray => Enumerable.Repeat(Default, MaxLights).ToArray();
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 4)]
@@ -442,98 +445,5 @@ namespace DX12GameProgramming
         Shift = 65536,
         Control = 131072,
         Alt = 262144
-    }
-
-    // C# does not allow fixed custom struct buffers, hence we manually unroll the array.
-    // MarshalAs does not seem to work correctly through SharpDX. Haven't investigated.
-    [StructLayout(LayoutKind.Sequential, Pack = 4)]
-    public struct Lights
-    {
-        public const int MaxLights = 16;
-
-        public Light Light1;
-        public Light Light2;
-        public Light Light3;
-        public Light Light4;
-        public Light Light5;
-        public Light Light6;
-        public Light Light7;
-        public Light Light8;
-        public Light Light9;
-        public Light Light10;
-        public Light Light11;
-        public Light Light12;
-        public Light Light13;
-        public Light Light14;
-        public Light Light15;
-        public Light Light16;
-
-        public static Lights Default => new Lights
-        {
-            Light1 = Light.Default,
-            Light2 = Light.Default,
-            Light3 = Light.Default,
-            Light4 = Light.Default,
-            Light5 = Light.Default,
-            Light6 = Light.Default,
-            Light7 = Light.Default,
-            Light8 = Light.Default,
-            Light9 = Light.Default,
-            Light10 = Light.Default,
-            Light11 = Light.Default,
-            Light12 = Light.Default,
-            Light13 = Light.Default,
-            Light14 = Light.Default,
-            Light15 = Light.Default,
-            Light16 = Light.Default
-        };
-
-        public Light this[int index]
-        {
-            get
-            {
-                switch (index)
-                {
-                    case 0: return Light1;
-                    case 1: return Light2;
-                    case 2: return Light3;
-                    case 3: return Light4;
-                    case 4: return Light5;
-                    case 5: return Light6;
-                    case 6: return Light7;
-                    case 7: return Light8;
-                    case 8: return Light9;
-                    case 9: return Light10;
-                    case 10: return Light11;
-                    case 11: return Light12;
-                    case 12: return Light13;
-                    case 13: return Light14;
-                    case 14: return Light15;
-                    default: return Light16;
-                }
-            }
-            set
-            {
-                switch (index)
-                {
-                    case 0: Light1 = value; break;
-                    case 1: Light2 = value; break;
-                    case 2: Light3 = value; break;
-                    case 3: Light4 = value; break;
-                    case 4: Light5 = value; break;
-                    case 5: Light6 = value; break;
-                    case 6: Light7 = value; break;
-                    case 7: Light8 = value; break;
-                    case 8: Light9 = value; break;
-                    case 9: Light10 = value; break;
-                    case 10: Light11 = value; break;
-                    case 11: Light12 = value; break;
-                    case 12: Light13 = value; break;
-                    case 13: Light14 = value; break;
-                    case 14: Light15 = value; break;
-                    default: Light16 = value; break;
-                }
-            }
-        }
     }
 }

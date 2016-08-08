@@ -4,6 +4,7 @@ using SharpDX.DXGI;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Device = SharpDX.Direct3D12.Device;
 using Resource = SharpDX.Direct3D12.Resource;
 
@@ -71,19 +72,22 @@ namespace DX12GameProgramming
         public static MeshGeometry New<TVertex, TIndex>(
             Device device,
             GraphicsCommandList commandList,
-            TVertex[] vertices,
-            TIndex[] indices,
+            IEnumerable<TVertex> vertices,
+            IEnumerable<TIndex> indices,
             string name = "Default")
             where TVertex : struct
             where TIndex : struct
         {
-            int vertexBufferByteSize = Utilities.SizeOf(vertices);
-            Resource vertexBufferUploader;
-            Resource vertexBuffer = D3DUtil.CreateDefaultBuffer(device, commandList, vertices, vertexBufferByteSize, out vertexBufferUploader);
+            TVertex[] vertexArray = vertices.ToArray();
+            TIndex[] indexArray = indices.ToArray();
 
-            int indexBufferByteSize = Utilities.SizeOf(indices);
+            int vertexBufferByteSize = Utilities.SizeOf(vertexArray);
+            Resource vertexBufferUploader;
+            Resource vertexBuffer = D3DUtil.CreateDefaultBuffer(device, commandList, vertexArray, vertexBufferByteSize, out vertexBufferUploader);
+
+            int indexBufferByteSize = Utilities.SizeOf(indexArray);
             Resource indexBufferUploader;
-            Resource indexBuffer = D3DUtil.CreateDefaultBuffer(device, commandList, indices, indexBufferByteSize, out indexBufferUploader);
+            Resource indexBuffer = D3DUtil.CreateDefaultBuffer(device, commandList, indexArray, indexBufferByteSize, out indexBufferUploader);
 
             return new MeshGeometry
             {
@@ -91,7 +95,7 @@ namespace DX12GameProgramming
                 VertexByteStride = Utilities.SizeOf<TVertex>(),
                 VertexBufferByteSize = vertexBufferByteSize,
                 VertexBufferGPU = vertexBuffer,
-                IndexCount = indices.Length,
+                IndexCount = indexArray.Length,
                 IndexFormat = GetIndexFormat<TIndex>(),
                 IndexBufferByteSize = indexBufferByteSize,
                 IndexBufferGPU = indexBuffer,
@@ -106,18 +110,20 @@ namespace DX12GameProgramming
         public static MeshGeometry New<TIndex>(
             Device device,
             GraphicsCommandList commandList,
-            TIndex[] indices,
+            IEnumerable<TIndex> indices,
             string name = "Default")
             where TIndex : struct
         {
-            int indexBufferByteSize = Utilities.SizeOf(indices);
+            TIndex[] indexArray = indices.ToArray();
+
+            int indexBufferByteSize = Utilities.SizeOf(indexArray);
             Resource indexBufferUploader;
-            Resource indexBuffer = D3DUtil.CreateDefaultBuffer(device, commandList, indices, indexBufferByteSize, out indexBufferUploader);
+            Resource indexBuffer = D3DUtil.CreateDefaultBuffer(device, commandList, indexArray, indexBufferByteSize, out indexBufferUploader);
 
             return new MeshGeometry
             {
                 Name = name,
-                IndexCount = indices.Length,
+                IndexCount = indexArray.Length,
                 IndexFormat = GetIndexFormat<TIndex>(),
                 IndexBufferByteSize = indexBufferByteSize,
                 IndexBufferGPU = indexBuffer,

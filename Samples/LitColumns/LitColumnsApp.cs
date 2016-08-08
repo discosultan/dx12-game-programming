@@ -1,13 +1,14 @@
 ﻿using System;
-using SharpDX;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
 using System.Threading;
+using SharpDX;
 using SharpDX.Direct3D;
 using SharpDX.Direct3D12;
 using SharpDX.DXGI;
 using Resource = SharpDX.Direct3D12.Resource;
-using System.IO;
-using System.Globalization;
 
 namespace DX12GameProgramming
 {
@@ -33,7 +34,7 @@ namespace DX12GameProgramming
         // Render items divided by PSO.
         private readonly List<RenderItem> _opaqueRitems = new List<RenderItem>();
 
-        private PassConstants _mainPassCB;
+        private PassConstants _mainPassCB = PassConstants.Default;
 
         private Vector3 _eyePos;
         private Matrix _proj = Matrix.Identity;
@@ -48,6 +49,22 @@ namespace DX12GameProgramming
         public LitColumnsApp(IntPtr hInstance) : base(hInstance)
         {
             MainWindowCaption = "Lit Columns";
+
+            _mainPassCB.AmbientLight = new Vector4(0.25f, 0.25f, 0.35f, 1.0f);
+
+            Light light = Light.Default;
+
+            light.Direction = new Vector3(0.57735f, -0.57735f, 0.57735f);
+            light.Strength = new Vector3(0.6f);
+            _mainPassCB.Lights[0] = light;
+
+            light.Direction = new Vector3(-0.57735f, -0.57735f, 0.57735f);
+            light.Strength = new Vector3(0.3f);
+            _mainPassCB.Lights[1] = light;
+
+            light.Direction = new Vector3(0.0f, -0.707f, -0.707f);
+            light.Strength = new Vector3(0.15f);
+            _mainPassCB.Lights[2] = light;
         }
 
         private FrameResource CurrFrameResource => _frameResources[_currFrameResourceIndex];
@@ -274,18 +291,9 @@ namespace DX12GameProgramming
             _mainPassCB.InvViewProj = Matrix.Transpose(invViewProj);
             _mainPassCB.EyePosW = _eyePos;
             _mainPassCB.RenderTargetSize = new Vector2(ClientWidth, ClientHeight);
-            _mainPassCB.InvRenderTargetSize = 1.0f / _mainPassCB.RenderTargetSize;
-            _mainPassCB.NearZ = 1.0f;
-            _mainPassCB.FarZ = 1000.0f;
+            _mainPassCB.InvRenderTargetSize = 1.0f / _mainPassCB.RenderTargetSize;            
             _mainPassCB.TotalTime = gt.TotalTime;
             _mainPassCB.DeltaTime = gt.DeltaTime;
-            _mainPassCB.AmbientLight = new Vector4(0.25f, 0.25f, 0.35f, 1.0f);
-            _mainPassCB.Lights.Light1.Direction = new Vector3(0.57735f, -0.57735f, 0.57735f);
-            _mainPassCB.Lights.Light1.Strength = new Vector3(0.6f);
-            _mainPassCB.Lights.Light2.Direction = new Vector3(-0.57735f, -0.57735f, 0.57735f);
-            _mainPassCB.Lights.Light2.Strength = new Vector3(0.3f);
-            _mainPassCB.Lights.Light3.Direction = new Vector3(0.0f, -0.707f, -0.707f);
-            _mainPassCB.Lights.Light3.Strength = new Vector3(0.15f);
 
             CurrFrameResource.PassCB.CopyData(0, ref _mainPassCB);
         }
@@ -327,111 +335,56 @@ namespace DX12GameProgramming
 
         private void BuildShapeGeometry()
         {
-            GeometryGenerator.MeshData box = GeometryGenerator.CreateBox(1.5f, 0.5f, 1.5f, 3);
-            GeometryGenerator.MeshData grid = GeometryGenerator.CreateGrid(20.0f, 30.0f, 60, 40);
-            GeometryGenerator.MeshData sphere = GeometryGenerator.CreateSphere(0.5f, 20, 20);
-            GeometryGenerator.MeshData cylinder = GeometryGenerator.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
-
             //
             // We are concatenating all the geometry into one big vertex/index buffer. So
             // define the regions in the buffer each submesh covers.
             //
 
-            // Cache the vertex offsets to each object in the concatenated vertex buffer.
-            int boxVertexOffset = 0;
-            int gridVertexOffset = box.Vertices.Count;
-            int sphereVertexOffset = gridVertexOffset + grid.Vertices.Count;
-            int cylinderVertexOffset = sphereVertexOffset + sphere.Vertices.Count;
+            var vertices = new List<Vertex>();
+            var indices = new List<short>();
 
-            // Cache the starting index for each object in the concatenated index buffer.
-            int boxIndexOffset = 0;
-            int gridIndexOffset = box.Indices32.Count;
-            int sphereIndexOffset = gridIndexOffset + grid.Indices32.Count;
-            int cylinderIndexOffset = sphereIndexOffset + sphere.Indices32.Count;
+            SubmeshGeometry box = AppendMeshData(GeometryGenerator.CreateBox(1.5f, 0.5f, 1.5f, 3), vertices, indices);
+            SubmeshGeometry grid = AppendMeshData(GeometryGenerator.CreateGrid(20.0f, 30.0f, 60, 40), vertices, indices);
+            SubmeshGeometry sphere = AppendMeshData(GeometryGenerator.CreateSphere(0.5f, 20, 20), vertices, indices);
+            SubmeshGeometry cylinder = AppendMeshData(GeometryGenerator.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20), vertices, indices);
 
+            var geo = MeshGeometry.New(Device, CommandList, vertices.ToArray(), indices.ToArray(), "shapeGeo");
+
+            geo.DrawArgs["box"] = box;
+            geo.DrawArgs["grid"] = grid;
+            geo.DrawArgs["sphere"] = sphere;
+            geo.DrawArgs["cylinder"] = cylinder;
+
+            _geometries[geo.Name] = geo;
+        }
+
+        private static SubmeshGeometry AppendMeshData(GeometryGenerator.MeshData meshData, List<Vertex> vertices, List<short> indices)
+        {
+            //
             // Define the SubmeshGeometry that cover different 
             // regions of the vertex/index buffers.
+            //
 
-            var boxSubmesh = new SubmeshGeometry
+            var submesh = new SubmeshGeometry
             {
-                IndexCount = box.Indices32.Count,
-                StartIndexLocation = boxIndexOffset,
-                BaseVertexLocation = boxVertexOffset
-            };
-
-            var gridSubmesh = new SubmeshGeometry
-            {
-                IndexCount = grid.Indices32.Count,
-                StartIndexLocation = gridIndexOffset,
-                BaseVertexLocation = gridVertexOffset
-            };
-
-            var sphereSubmesh = new SubmeshGeometry
-            {
-                IndexCount = sphere.Indices32.Count,
-                StartIndexLocation = sphereIndexOffset,
-                BaseVertexLocation = sphereVertexOffset
-            };
-
-            var cylinderSubmesh = new SubmeshGeometry
-            {
-                IndexCount = cylinder.Indices32.Count,
-                StartIndexLocation = cylinderIndexOffset,
-                BaseVertexLocation = cylinderVertexOffset
+                IndexCount = meshData.Indices32.Count,
+                StartIndexLocation = indices.Count,
+                BaseVertexLocation = vertices.Count
             };
 
             //
             // Extract the vertex elements we are interested in and pack the
-            // vertices of all the meshes into one vertex buffer.
+            // vertices and indices of all the meshes into one vertex/index buffer.
             //
 
-            int totalVertexCount =
-                box.Vertices.Count +
-                grid.Vertices.Count +
-                sphere.Vertices.Count +
-                cylinder.Vertices.Count;
-
-            var vertices = new Vertex[totalVertexCount];
-
-            int k = 0;
-            for (int i = 0; i < box.Vertices.Count; ++i, ++k)
+            vertices.AddRange(meshData.Vertices.Select(vertex => new Vertex
             {
-                vertices[k].Pos = box.Vertices[i].Position;
-                vertices[k].Normal = box.Vertices[i].Normal;
-            }
+                Pos = vertex.Position,
+                Normal = vertex.Normal
+            }));
+            indices.AddRange(meshData.GetIndices16());
 
-            for (int i = 0; i < grid.Vertices.Count; ++i, ++k)
-            {
-                vertices[k].Pos = grid.Vertices[i].Position;
-                vertices[k].Normal = grid.Vertices[i].Normal;
-            }
-
-            for (int i = 0; i < sphere.Vertices.Count; ++i, ++k)
-            {
-                vertices[k].Pos = sphere.Vertices[i].Position;
-                vertices[k].Normal = sphere.Vertices[i].Normal;
-            }
-
-            for (int i = 0; i < cylinder.Vertices.Count; ++i, ++k)
-            {
-                vertices[k].Pos = cylinder.Vertices[i].Position;
-                vertices[k].Normal = cylinder.Vertices[i].Normal;
-            }
-
-            var indices = new List<short>();
-            indices.AddRange(box.GetIndices16());
-            indices.AddRange(grid.GetIndices16());
-            indices.AddRange(sphere.GetIndices16());
-            indices.AddRange(cylinder.GetIndices16());
-
-            var geo = MeshGeometry.New(Device, CommandList, vertices, indices.ToArray(), "shapeGeo");
-
-            geo.DrawArgs["box"] = boxSubmesh;
-            geo.DrawArgs["grid"] = gridSubmesh;
-            geo.DrawArgs["sphere"] = sphereSubmesh;
-            geo.DrawArgs["cylinder"] = cylinderSubmesh;
-
-            _geometries[geo.Name] = geo;
+            return submesh;
         }
 
         private void BuildSkullGeometry()
@@ -493,7 +446,7 @@ namespace DX12GameProgramming
                 }
             }
 
-            var geo = MeshGeometry.New(Device, CommandList, vertices.ToArray(), indices.ToArray(), "skullGeo");
+            var geo = MeshGeometry.New(Device, CommandList, vertices, indices, "skullGeo");
             var submesh = new SubmeshGeometry
             {
                 IndexCount = indices.Count,
@@ -543,7 +496,7 @@ namespace DX12GameProgramming
 
         private void BuildMaterials()
         {
-            _materials["bricks0"] = new Material
+            AddMaterial(new Material
             {
                 Name = "bricks0",
                 MatCBIndex = 0,
@@ -551,9 +504,8 @@ namespace DX12GameProgramming
                 DiffuseAlbedo = Color.ForestGreen.ToVector4(),
                 FresnelR0 = new Vector3(0.02f),
                 Roughness = 0.1f
-            };
-
-            _materials["stone0"] = new Material
+            });
+            AddMaterial(new Material
             {
                 Name = "stone0",
                 MatCBIndex = 1,
@@ -561,9 +513,8 @@ namespace DX12GameProgramming
                 DiffuseAlbedo = Color.LightSteelBlue.ToVector4(),
                 FresnelR0 = new Vector3(0.05f),
                 Roughness = 0.3f
-            };
-
-            _materials["tile0"] = new Material
+            });
+            AddMaterial(new Material
             {
                 Name = "tile0",
                 MatCBIndex = 2,
@@ -571,9 +522,8 @@ namespace DX12GameProgramming
                 DiffuseAlbedo = Color.LightGray.ToVector4(),
                 FresnelR0 = new Vector3(0.02f),
                 Roughness = 0.2f
-            };
-
-            _materials["skullMat"] = new Material
+            });
+            AddMaterial(new Material
             {
                 Name = "skullMat",
                 MatCBIndex = 3,
@@ -581,8 +531,10 @@ namespace DX12GameProgramming
                 DiffuseAlbedo = Color.White.ToVector4(),
                 FresnelR0 = new Vector3(0.05f),
                 Roughness = 0.3f
-            };
+            });
         }
+
+        private void AddMaterial(Material mat) => _materials[mat.Name] = mat;
 
         private void BuildRenderItems()
         {
