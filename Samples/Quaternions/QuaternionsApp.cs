@@ -7,6 +7,8 @@ using SharpDX.Direct3D12;
 using SharpDX.DXGI;
 using Resource = SharpDX.Direct3D12.Resource;
 using ShaderResourceViewDimension = SharpDX.Direct3D12.ShaderResourceViewDimension;
+using System.Globalization;
+using System.IO;
 
 namespace DX12GameProgramming
 {
@@ -35,15 +37,21 @@ namespace DX12GameProgramming
         // Render items divided by PSO.
         private readonly List<RenderItem> _opaqueRitems = new List<RenderItem>();
 
+        private RenderItem _skullRitem;
+
         private PassConstants _mainPassCB;
 
         private readonly Camera _camera = new Camera();
+
+        private float _animationTime = 0.0f;
+        private BoneAnimation _skullAnimation;
 
         private Point _lastMousePos;
 
         public QuaternionsApp(IntPtr hInstance) : base(hInstance)
         {
             MainWindowCaption = "Quaternions";
+            DefineSkullAnimation();
         }
 
         private FrameResource CurrFrameResource => _frameResources[_currFrameResourceIndex];
@@ -62,7 +70,8 @@ namespace DX12GameProgramming
             BuildRootSignature();
             BuildDescriptorHeaps();
             BuildShadersAndInputLayout();
-            BuildShapeGeometry();            
+            BuildShapeGeometry();
+            BuildSkullGeometry();
             BuildMaterials();
             BuildRenderItems();
             BuildFrameResources();
@@ -87,6 +96,17 @@ namespace DX12GameProgramming
         protected override void Update(GameTimer gt)
         {
             OnKeyboardInput(gt);
+
+            _animationTime += gt.DeltaTime;
+            if (_animationTime >= _skullAnimation.EndTime)
+            {
+                // Loop animation back to beginning.
+                _animationTime = 0.0f;
+            }
+
+            Matrix skullWorld = _skullAnimation.Interpolate(_animationTime);
+            _skullRitem.World = skullWorld;
+            _skullRitem.NumFramesDirty = NumFrameResources;
 
             // Cycle through the circular frame resource array.
             _currFrameResourceIndex = (_currFrameResourceIndex + 1) % NumFrameResources;
@@ -292,13 +312,61 @@ namespace DX12GameProgramming
             _mainPassCB.DeltaTime = gt.DeltaTime;
             _mainPassCB.AmbientLight = new Vector4(0.25f, 0.25f, 0.35f, 1.0f);
             _mainPassCB.Lights.Light1.Direction = new Vector3(0.57735f, -0.57735f, 0.57735f);
-            _mainPassCB.Lights.Light1.Strength = new Vector3(0.8f);
+            _mainPassCB.Lights.Light1.Strength = new Vector3(0.6f);
             _mainPassCB.Lights.Light2.Direction = new Vector3(-0.57735f, -0.57735f, 0.57735f);
-            _mainPassCB.Lights.Light2.Strength = new Vector3(0.4f);
+            _mainPassCB.Lights.Light2.Strength = new Vector3(0.3f);
             _mainPassCB.Lights.Light3.Direction = new Vector3(0.0f, -0.707f, -0.707f);
-            _mainPassCB.Lights.Light3.Strength = new Vector3(0.2f);
+            _mainPassCB.Lights.Light3.Strength = new Vector3(0.15f);
 
             CurrFrameResource.PassCB.CopyData(0, ref _mainPassCB);
+        }
+
+        private void DefineSkullAnimation()
+        {
+            //
+            // Define the animation keyframes.
+            //
+
+            Quaternion q0 = Quaternion.RotationAxis(Vector3.Up, MathUtil.DegreesToRadians(30.0f));
+            Quaternion q1 = Quaternion.RotationAxis(new Vector3(1.0f, 1.0f, 2.0f), MathUtil.DegreesToRadians(45.0f));
+            Quaternion q2 = Quaternion.RotationAxis(new Vector3(0.0f, 1.0f, 0.0f), MathUtil.DegreesToRadians(-30.0f));
+            Quaternion q3 = Quaternion.RotationAxis(new Vector3(1.0f, 0.0f, 0.0f), MathUtil.DegreesToRadians(70.0f));
+
+            _skullAnimation.Keyframes.Add(new Keyframe
+            {
+                Time = 0.0f,
+                Translation = new Vector3(-7.0f, 0.0f, 0.0f),
+                Scale = 0.25f,
+                Rotation = q0
+            });
+            _skullAnimation.Keyframes.Add(new Keyframe
+            {
+                Time = 2.0f,
+                Translation = new Vector3(0.0f, 2.0f, 10.0f),
+                Scale = 0.5f,
+                Rotation = q1
+            });
+            _skullAnimation.Keyframes.Add(new Keyframe
+            {
+                Time = 4.0f,
+                Translation = new Vector3(7.0f, 0.0f, 0.0f),
+                Scale = 0.25f,
+                Rotation = q2
+            });
+            _skullAnimation.Keyframes.Add(new Keyframe
+            {
+                Time = 6.0f,
+                Translation = new Vector3(0.0f, 1.0f, -10.0f),
+                Scale = 0.5f,
+                Rotation = q3
+            });
+            _skullAnimation.Keyframes.Add(new Keyframe
+            {
+                Time = 8.0f,
+                Translation = new Vector3(-7.0f, 0.0f, 0.0f),
+                Scale = 0.25f,
+                Rotation = q0
+            });
         }
 
         private void LoadTextures()
@@ -307,6 +375,7 @@ namespace DX12GameProgramming
             AddTexture("stoneTex", "stone.dds");
             AddTexture("tileTex", "tile.dds");
             AddTexture("crateTex", "WoodCrate01.dds");
+            AddTexture("defaultTex", "white1x1.dds");
         }
 
         private void AddTexture(string name, string filename)
@@ -329,7 +398,7 @@ namespace DX12GameProgramming
                 new RootParameter(ShaderVisibility.All, new RootDescriptor(0, 0), RootParameterType.ConstantBufferView),
                 new RootParameter(ShaderVisibility.All, new RootDescriptor(1, 0), RootParameterType.ConstantBufferView),
                 new RootParameter(ShaderVisibility.All, new RootDescriptor(0, 1), RootParameterType.ShaderResourceView),
-                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 4, 0))
+                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 5, 0))
             };
 
             // A root signature is an array of root parameters.
@@ -348,7 +417,7 @@ namespace DX12GameProgramming
             //
             var srvHeapDesc = new DescriptorHeapDescription
             {
-                DescriptorCount = 4,
+                DescriptorCount = 5,
                 Type = DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView,
                 Flags = DescriptorHeapFlags.ShaderVisible
             };
@@ -364,6 +433,7 @@ namespace DX12GameProgramming
             Resource stoneTex = _textures["stoneTex"].Resource;
             Resource tileTex = _textures["tileTex"].Resource;
             Resource crateTex = _textures["crateTex"].Resource;
+            Resource defaultTex = _textures["defaultTex"].Resource;
 
             var srvDesc = new ShaderResourceViewDescription
             {
@@ -399,6 +469,13 @@ namespace DX12GameProgramming
             srvDesc.Format = crateTex.Description.Format;
             srvDesc.Texture2D.MipLevels = crateTex.Description.MipLevels;
             Device.CreateShaderResourceView(crateTex, srvDesc, hDescriptor);
+
+            // Next descriptor.
+            hDescriptor += CbvSrvUavDescriptorSize;
+
+            srvDesc.Format = defaultTex.Description.Format;
+            srvDesc.Texture2D.MipLevels = defaultTex.Description.MipLevels;
+            Device.CreateShaderResourceView(defaultTex, srvDesc, hDescriptor);
         }
 
         private void BuildShadersAndInputLayout()
@@ -527,6 +604,83 @@ namespace DX12GameProgramming
             _geometries[geo.Name] = geo;
         }
 
+        private void BuildSkullGeometry()
+        {
+            var vertices = new List<Vertex>();
+            var indices = new List<int>();
+            int vCount = 0, tCount = 0;
+            using (var reader = new StreamReader("Models\\Skull.txt"))
+            {
+                var input = reader.ReadLine();
+                if (input != null)
+                    vCount = Convert.ToInt32(input.Split(':')[1].Trim());
+
+                input = reader.ReadLine();
+                if (input != null)
+                    tCount = Convert.ToInt32(input.Split(':')[1].Trim());
+
+                do
+                {
+                    input = reader.ReadLine();
+                } while (input != null && !input.StartsWith("{", StringComparison.Ordinal));
+
+                for (int i = 0; i < vCount; i++)
+                {
+                    input = reader.ReadLine();
+                    if (input != null)
+                    {
+                        string[] vals = input.Split(' ');
+
+                        var pos = new Vector3(
+                                Convert.ToSingle(vals[0].Trim(), CultureInfo.InvariantCulture),
+                                Convert.ToSingle(vals[1].Trim(), CultureInfo.InvariantCulture),
+                                Convert.ToSingle(vals[2].Trim(), CultureInfo.InvariantCulture));
+
+                        var normal = new Vector3(
+                                Convert.ToSingle(vals[3].Trim(), CultureInfo.InvariantCulture),
+                                Convert.ToSingle(vals[4].Trim(), CultureInfo.InvariantCulture),
+                                Convert.ToSingle(vals[5].Trim(), CultureInfo.InvariantCulture));
+
+                        vertices.Add(new Vertex
+                        {
+                            Pos = pos,
+                            Normal = normal                            
+                        });
+                    }
+                }
+
+                do
+                {
+                    input = reader.ReadLine();
+                } while (input != null && !input.StartsWith("{", StringComparison.Ordinal));
+
+                for (var i = 0; i < tCount; i++)
+                {
+                    input = reader.ReadLine();
+                    if (input == null)
+                    {
+                        break;
+                    }
+                    var m = input.Trim().Split(' ');
+                    indices.Add(Convert.ToInt32(m[0].Trim()));
+                    indices.Add(Convert.ToInt32(m[1].Trim()));
+                    indices.Add(Convert.ToInt32(m[2].Trim()));
+                }
+            }
+
+            var geo = MeshGeometry.New(Device, CommandList, vertices.ToArray(), indices.ToArray(), "skullGeo");
+            var submesh = new SubmeshGeometry
+            {
+                IndexCount = indices.Count,
+                StartIndexLocation = 0,
+                BaseVertexLocation = 0
+            };
+
+            geo.DrawArgs["skull"] = submesh;
+
+            _geometries[geo.Name] = geo;
+        }
+
         private void BuildPSOs()
         {
             //
@@ -569,9 +723,9 @@ namespace DX12GameProgramming
                 Name = "bricks0",
                 MatCBIndex = 0,
                 DiffuseSrvHeapIndex = 0,
-                DiffuseAlbedo = Color.ForestGreen.ToVector4(),
-                FresnelR0 = new Vector3(0.02f),
-                Roughness = 0.1f
+                DiffuseAlbedo = Color.White.ToVector4(),
+                FresnelR0 = new Vector3(0.2f),
+                Roughness = 0.3f
             };
 
             _materials["stone0"] = new Material
@@ -579,8 +733,8 @@ namespace DX12GameProgramming
                 Name = "stone0",
                 MatCBIndex = 1,
                 DiffuseSrvHeapIndex = 1,
-                DiffuseAlbedo = Color.LightSteelBlue.ToVector4(),
-                FresnelR0 = new Vector3(0.05f),
+                DiffuseAlbedo = Color.White.ToVector4(),
+                FresnelR0 = new Vector3(0.1f),
                 Roughness = 0.3f
             };
 
@@ -589,9 +743,9 @@ namespace DX12GameProgramming
                 Name = "tile0",
                 MatCBIndex = 2,
                 DiffuseSrvHeapIndex = 2,
-                DiffuseAlbedo = Color.LightGray.ToVector4(),
-                FresnelR0 = new Vector3(0.02f),
-                Roughness = 0.2f
+                DiffuseAlbedo = new Vector4(0.9f, 0.9f, 0.9f, 1.0f),
+                FresnelR0 = new Vector3(0.2f),
+                Roughness = 0.1f
             };
 
             _materials["crate0"] = new Material
@@ -601,15 +755,36 @@ namespace DX12GameProgramming
                 DiffuseSrvHeapIndex = 3,
                 DiffuseAlbedo = Color.White.ToVector4(),
                 FresnelR0 = new Vector3(0.05f),
+                Roughness = 0.7f
+            };
+
+            _materials["skullMat"] = new Material
+            {
+                Name = "skullMat",
+                MatCBIndex = 4,
+                DiffuseSrvHeapIndex = 4,
+                DiffuseAlbedo = new Vector4(0.9f, 0.9f, 0.9f, 1.0f),
+                FresnelR0 = new Vector3(0.2f),
                 Roughness = 0.2f
             };
         }
 
         private void BuildRenderItems()
         {
+            _skullRitem = new RenderItem();
+            _skullRitem.World = Matrix.Scaling(0.5f) * Matrix.Translation(0.0f, 1.0f, 0.0f);
+            _skullRitem.ObjCBIndex = 0;
+            _skullRitem.Mat = _materials["skullMat"];
+            _skullRitem.Geo = _geometries["skullGeo"];
+            _skullRitem.PrimitiveType = PrimitiveTopology.TriangleList;
+            _skullRitem.IndexCount = _skullRitem.Geo.DrawArgs["skull"].IndexCount;
+            _skullRitem.StartIndexLocation = _skullRitem.Geo.DrawArgs["skull"].StartIndexLocation;
+            _skullRitem.BaseVertexLocation = _skullRitem.Geo.DrawArgs["skull"].BaseVertexLocation;
+            _allRitems.Add(_skullRitem);
+
             var boxRitem = new RenderItem();
-            boxRitem.World = Matrix.Scaling(2.0f, 2.0f, 2.0f) * Matrix.Translation(0.0f, 1.0f, 0.0f);
-            boxRitem.ObjCBIndex = 0;
+            boxRitem.World = Matrix.Scaling(3.0f, 1.0f, 3.0f) * Matrix.Translation(0.0f, 0.5f, 0.0f);
+            boxRitem.ObjCBIndex = 1;
             boxRitem.Mat = _materials["crate0"];
             boxRitem.Geo = _geometries["shapeGeo"];
             boxRitem.PrimitiveType = PrimitiveTopology.TriangleList;
@@ -620,7 +795,7 @@ namespace DX12GameProgramming
 
             var gridRitem = new RenderItem();
             gridRitem.World = Matrix.Identity;
-            gridRitem.ObjCBIndex = 1;
+            gridRitem.ObjCBIndex = 2;
             gridRitem.Mat = _materials["tile0"];
             gridRitem.Geo = _geometries["shapeGeo"];
             gridRitem.PrimitiveType = PrimitiveTopology.TriangleList;
@@ -629,7 +804,8 @@ namespace DX12GameProgramming
             gridRitem.BaseVertexLocation = gridRitem.Geo.DrawArgs["grid"].BaseVertexLocation;
             _allRitems.Add(gridRitem);
 
-            int objCBIndex = 2;
+            Matrix brickTexTransform = Matrix.Scaling(1.5f, 2.0f, 1.0f);
+            int objCBIndex = 3;
             for (int i = 0; i < 5; ++i)
             {
                 var leftCylRitem = new RenderItem();
@@ -638,6 +814,7 @@ namespace DX12GameProgramming
                 var rightSphereRitem = new RenderItem();
 
                 leftCylRitem.World = Matrix.Translation(-5.0f, 1.5f, -10.0f + i * 5.0f);
+                leftCylRitem.TexTransform = brickTexTransform;
                 leftCylRitem.ObjCBIndex = objCBIndex++;
                 leftCylRitem.Mat = _materials["bricks0"];
                 leftCylRitem.Geo = _geometries["shapeGeo"];
@@ -647,6 +824,7 @@ namespace DX12GameProgramming
                 leftCylRitem.BaseVertexLocation = leftCylRitem.Geo.DrawArgs["cylinder"].BaseVertexLocation;
 
                 rightCylRitem.World = Matrix.Translation(+5.0f, 1.5f, -10.0f + i * 5.0f);
+                rightCylRitem.TexTransform = brickTexTransform;
                 rightCylRitem.ObjCBIndex = objCBIndex++;
                 rightCylRitem.Mat = _materials["bricks0"];
                 rightCylRitem.Geo = _geometries["shapeGeo"];

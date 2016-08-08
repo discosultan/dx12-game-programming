@@ -1,26 +1,18 @@
 ﻿using SharpDX;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace DX12GameProgramming
 {
     ///<summary>
     /// A Keyframe defines the bone transformation at an instant in time.
     ///</summary>
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct Keyframe
+    internal class Keyframe
     {
-        public float Time;
-        public Vector3 Translation;
-        public float Scale;
-        public Quaternion Rotation;
-
-        public static Keyframe Default => new Keyframe
-        {
-            Scale = 1.0f,
-            Rotation = Quaternion.Identity
-        };
+        public float Time { get; set; }
+        public Vector3 Translation { get; set; }
+        public float Scale { get; set; } = 1.0f;
+        public Quaternion Rotation { get; set; } = Quaternion.Identity;
     }
 
     ///<summary>
