@@ -120,18 +120,18 @@ namespace DX12GameProgramming
 
             _ambientMap0CpuSrv = cpuSrv;
             _ambientMap1CpuSrv = cpuSrv + cbvSrvUavDescriptorSize;
-            _normalMapCpuSrv = cpuSrv + cbvSrvUavDescriptorSize;
-            _depthMapCpuSrv = cpuSrv + cbvSrvUavDescriptorSize;
-            _randomVectorMapCpuSrv = cpuSrv + cbvSrvUavDescriptorSize;
+            _normalMapCpuSrv = cpuSrv + 2 * cbvSrvUavDescriptorSize;
+            _depthMapCpuSrv = cpuSrv + 3 * cbvSrvUavDescriptorSize;
+            _randomVectorMapCpuSrv = cpuSrv + 4 * cbvSrvUavDescriptorSize;
 
             _ambientMap0GpuSrv = gpuSrv;
             _ambientMap1GpuSrv = gpuSrv + cbvSrvUavDescriptorSize;
-            _normalMapGpuSrv = gpuSrv + cbvSrvUavDescriptorSize;
-            _randomVectorMapGpuSrv = gpuSrv + cbvSrvUavDescriptorSize;
+            _normalMapGpuSrv = gpuSrv + 2 *cbvSrvUavDescriptorSize;
+            _randomVectorMapGpuSrv = gpuSrv + 3 * cbvSrvUavDescriptorSize;
 
             _normalMapCpuRtv = cpuRtv;
             _ambientMap0CpuRtv = cpuRtv + rtvDescriptorSize;
-            _ambientMap1CpuRtv = cpuRtv + rtvDescriptorSize;
+            _ambientMap1CpuRtv = cpuRtv + 2 * rtvDescriptorSize;
 
             //  Create the descriptors
             RebuildDescriptors(depthStencilBuffer);
