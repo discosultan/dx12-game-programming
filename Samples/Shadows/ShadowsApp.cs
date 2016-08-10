@@ -52,8 +52,8 @@ namespace DX12GameProgramming
 
         private GpuDescriptorHandle _nullSrv;
 
-        private PassConstants _mainPassCB;   // Index 0 of pass cbuffer.
-        private PassConstants _shadowPassCB; // Index 1 of pass cbuffer.
+        private PassConstants _mainPassCB = PassConstants.Default;   // Index 0 of pass cbuffer.
+        private PassConstants _shadowPassCB = PassConstants.Default; // Index 1 of pass cbuffer.
 
         private readonly Camera _camera = new Camera();
 

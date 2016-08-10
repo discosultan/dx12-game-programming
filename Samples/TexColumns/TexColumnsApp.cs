@@ -36,7 +36,7 @@ namespace DX12GameProgramming
         // Render items divided by PSO.
         private readonly List<RenderItem> _opaqueRitems = new List<RenderItem>();
 
-        private PassConstants _mainPassCB;
+        private PassConstants _mainPassCB = PassConstants.Default;
 
         private Vector3 _eyePos;
         private Matrix _proj = Matrix.Identity;
@@ -555,36 +555,36 @@ namespace DX12GameProgramming
 
         private void BuildMaterials()
         {
-            _materials["bricks0"] = new Material
+            AddMaterial(new Material
             {
                 Name = "bricks0",
                 MatCBIndex = 0,
                 DiffuseSrvHeapIndex = 0,
-                DiffuseAlbedo = Color.ForestGreen.ToVector4(),
+                DiffuseAlbedo = Color.White.ToVector4(),
                 FresnelR0 = new Vector3(0.02f),
                 Roughness = 0.1f
-            };
-
-            _materials["stone0"] = new Material
+            });
+            AddMaterial(new Material
             {
                 Name = "stone0",
                 MatCBIndex = 1,
                 DiffuseSrvHeapIndex = 1,
-                DiffuseAlbedo = Color.LightSteelBlue.ToVector4(),
+                DiffuseAlbedo = Color.White.ToVector4(),
                 FresnelR0 = new Vector3(0.05f),
                 Roughness = 0.3f
-            };
-
-            _materials["tile0"] = new Material
+            });
+            AddMaterial(new Material
             {
                 Name = "tile0",
                 MatCBIndex = 2,
                 DiffuseSrvHeapIndex = 2,
-                DiffuseAlbedo = Color.LightGray.ToVector4(),
+                DiffuseAlbedo = Color.White.ToVector4(),
                 FresnelR0 = new Vector3(0.02f),
                 Roughness = 0.2f
-            };
+            });
         }
+
+        private void AddMaterial(Material material) => _materials[material.Name] = material;
 
         private void BuildRenderItems()
         {
@@ -593,18 +593,16 @@ namespace DX12GameProgramming
             boxRitem.ObjCBIndex = 0;
             boxRitem.Mat = _materials["stone0"];
             boxRitem.Geo = _geometries["shapeGeo"];
-            boxRitem.PrimitiveType = PrimitiveTopology.TriangleList;
             boxRitem.IndexCount = boxRitem.Geo.DrawArgs["box"].IndexCount;
             boxRitem.StartIndexLocation = boxRitem.Geo.DrawArgs["box"].StartIndexLocation;
             boxRitem.BaseVertexLocation = boxRitem.Geo.DrawArgs["box"].BaseVertexLocation;
             _allRitems.Add(boxRitem);
 
             var gridRitem = new RenderItem();
-            gridRitem.World = Matrix.Identity;
+            gridRitem.TexTransform = Matrix.Scaling(8.0f, 8.0f, 1.0f);
             gridRitem.ObjCBIndex = 1;
             gridRitem.Mat = _materials["tile0"];
             gridRitem.Geo = _geometries["shapeGeo"];
-            gridRitem.PrimitiveType = PrimitiveTopology.TriangleList;
             gridRitem.IndexCount = gridRitem.Geo.DrawArgs["grid"].IndexCount;
             gridRitem.StartIndexLocation = gridRitem.Geo.DrawArgs["grid"].StartIndexLocation;
             gridRitem.BaseVertexLocation = gridRitem.Geo.DrawArgs["grid"].BaseVertexLocation;
@@ -622,7 +620,6 @@ namespace DX12GameProgramming
                 leftCylRitem.ObjCBIndex = objCBIndex++;
                 leftCylRitem.Mat = _materials["bricks0"];
                 leftCylRitem.Geo = _geometries["shapeGeo"];
-                leftCylRitem.PrimitiveType = PrimitiveTopology.TriangleList;
                 leftCylRitem.IndexCount = leftCylRitem.Geo.DrawArgs["cylinder"].IndexCount;
                 leftCylRitem.StartIndexLocation = leftCylRitem.Geo.DrawArgs["cylinder"].StartIndexLocation;
                 leftCylRitem.BaseVertexLocation = leftCylRitem.Geo.DrawArgs["cylinder"].BaseVertexLocation;
@@ -631,7 +628,6 @@ namespace DX12GameProgramming
                 rightCylRitem.ObjCBIndex = objCBIndex++;
                 rightCylRitem.Mat = _materials["bricks0"];
                 rightCylRitem.Geo = _geometries["shapeGeo"];
-                rightCylRitem.PrimitiveType = PrimitiveTopology.TriangleList;
                 rightCylRitem.IndexCount = rightCylRitem.Geo.DrawArgs["cylinder"].IndexCount;
                 rightCylRitem.StartIndexLocation = rightCylRitem.Geo.DrawArgs["cylinder"].StartIndexLocation;
                 rightCylRitem.BaseVertexLocation = rightCylRitem.Geo.DrawArgs["cylinder"].BaseVertexLocation;
@@ -640,7 +636,6 @@ namespace DX12GameProgramming
                 leftSphereRitem.ObjCBIndex = objCBIndex++;
                 leftSphereRitem.Mat = _materials["stone0"];
                 leftSphereRitem.Geo = _geometries["shapeGeo"];
-                leftSphereRitem.PrimitiveType = PrimitiveTopology.TriangleList;
                 leftSphereRitem.IndexCount = leftSphereRitem.Geo.DrawArgs["sphere"].IndexCount;
                 leftSphereRitem.StartIndexLocation = leftSphereRitem.Geo.DrawArgs["sphere"].StartIndexLocation;
                 leftSphereRitem.BaseVertexLocation = leftSphereRitem.Geo.DrawArgs["sphere"].BaseVertexLocation;
@@ -649,7 +644,6 @@ namespace DX12GameProgramming
                 rightSphereRitem.ObjCBIndex = objCBIndex++;
                 rightSphereRitem.Mat = _materials["stone0"];
                 rightSphereRitem.Geo = _geometries["shapeGeo"];
-                rightSphereRitem.PrimitiveType = PrimitiveTopology.TriangleList;
                 rightSphereRitem.IndexCount = rightSphereRitem.Geo.DrawArgs["sphere"].IndexCount;
                 rightSphereRitem.StartIndexLocation = rightSphereRitem.Geo.DrawArgs["sphere"].StartIndexLocation;
                 rightSphereRitem.BaseVertexLocation = rightSphereRitem.Geo.DrawArgs["sphere"].BaseVertexLocation;

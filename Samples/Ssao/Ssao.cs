@@ -19,8 +19,6 @@ namespace DX12GameProgramming
 
         private readonly Device _device;
 
-        private RootSignature _ssaoRootSig;
-
         private PipelineState _ssaoPso;
         private PipelineState _blurPso;
 
@@ -35,7 +33,6 @@ namespace DX12GameProgramming
         private CpuDescriptorHandle _normalMapCpuRtv;
 
         private CpuDescriptorHandle _depthMapCpuSrv;
-        private GpuDescriptorHandle _depthMapGpuSrv;
 
         private CpuDescriptorHandle _randomVectorMapCpuSrv;
         private GpuDescriptorHandle _randomVectorMapGpuSrv;
@@ -130,7 +127,6 @@ namespace DX12GameProgramming
             _ambientMap0GpuSrv = gpuSrv;
             _ambientMap1GpuSrv = gpuSrv + cbvSrvUavDescriptorSize;
             _normalMapGpuSrv = gpuSrv + cbvSrvUavDescriptorSize;
-            _depthMapGpuSrv = gpuSrv + cbvSrvUavDescriptorSize;
             _randomVectorMapGpuSrv = gpuSrv + cbvSrvUavDescriptorSize;
 
             _normalMapCpuRtv = cpuRtv;
@@ -284,7 +280,7 @@ namespace DX12GameProgramming
 
             // Ping-pong the two ambient map textures as we apply
             // horizontal and vertical blur passes.
-            if (horzBlur == true)
+            if (horzBlur)
             {
                 output = _ambientMap1;
                 inputSrv = _ambientMap0GpuSrv;

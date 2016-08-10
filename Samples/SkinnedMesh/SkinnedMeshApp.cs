@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using SharpDX;
@@ -50,24 +48,20 @@ namespace DX12GameProgramming
         private int _skyTexHeapIndex;
         private int _shadowMapHeapIndex;
         private int _ssaoHeapIndexStart;
-        private int _ssaoAmbientMapIndex;
 
         private int _nullCubeSrvIndex;
-        private int _nullTexSrvIndex1;
-        private int _nullTexSrvIndex2;
 
         private GpuDescriptorHandle _nullSrv;
 
         private PassConstants _mainPassCB;   // Index 0 of pass cbuffer.
         private PassConstants _shadowPassCB; // Index 1 of pass cbuffer.
 
-        private int _skinnedSrvHeapStart = 0;
-        private string _skinnedModelFilename = "Models\\Soldier.m3d";
+        private int _skinnedSrvHeapStart;
         private SkinnedModelInstance _skinnedModelInst;
         private SkinnedData _skinnedInfo;
         private List<M3DLoader.Subset> _skinnedSubsets;
         private List<M3DLoader.M3dMaterial> _skinnedMats;
-        private List<string> _skinnedTextureNames;
+        private readonly List<string> _skinnedTextureNames = new List<string>();
 
         private readonly Camera _camera = new Camera();
 
@@ -747,9 +741,7 @@ namespace DX12GameProgramming
             _skyTexHeapIndex = tex2DList.Count;
             _shadowMapHeapIndex = _skyTexHeapIndex + 1;
             _ssaoHeapIndexStart = _shadowMapHeapIndex + 1;
-            _ssaoAmbientMapIndex = _ssaoHeapIndexStart + 3;
             _nullCubeSrvIndex = _ssaoHeapIndexStart + 5;
-            _nullTexSrvIndex1 = _nullCubeSrvIndex + 1;            
 
             CpuDescriptorHandle nullSrv = GetCpuSrv(_nullCubeSrvIndex);
             _nullSrv = GetGpuSrv(_nullCubeSrvIndex);
@@ -902,7 +894,7 @@ namespace DX12GameProgramming
         {
             List<M3DLoader.SkinnedVertex> vertices;
             List<short> indices;
-            M3DLoader.LoadM3D(_skinnedModelFilename, out vertices, out indices, out _skinnedSubsets, out _skinnedMats, out _skinnedInfo);
+            M3DLoader.LoadM3D("Models\\Soldier.m3d", out vertices, out indices, out _skinnedSubsets, out _skinnedMats, out _skinnedInfo);
 
             _skinnedModelInst = new SkinnedModelInstance
             {
@@ -910,7 +902,7 @@ namespace DX12GameProgramming
                 ClipName = "Take1"
             };
 
-            MeshGeometry geo = MeshGeometry.New(Device, CommandList, indices, _skinnedModelFilename);
+            MeshGeometry geo = MeshGeometry.New(Device, CommandList, indices, "soldier");
             for (int i = 0; i < _skinnedSubsets.Count; i++)
             {
                 M3DLoader.Subset skinnedSubset = _skinnedSubsets[i];
@@ -1248,7 +1240,7 @@ namespace DX12GameProgramming
 
                 ritem.ObjCBIndex = objCBIndex++;
                 ritem.Mat = _materials[_skinnedMats[i].Name];
-                ritem.Geo = _geometries[_skinnedModelFilename];
+                ritem.Geo = _geometries["soldier"];
                 ritem.IndexCount = ritem.Geo.DrawArgs[submeshName].IndexCount;
                 ritem.StartIndexLocation = ritem.Geo.DrawArgs[submeshName].StartIndexLocation;
                 ritem.BaseVertexLocation = ritem.Geo.DrawArgs[submeshName].BaseVertexLocation;

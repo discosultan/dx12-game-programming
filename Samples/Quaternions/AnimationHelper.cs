@@ -56,11 +56,11 @@ namespace DX12GameProgramming
                 for (int i = 0; i < Keyframes.Count - 1; i++)
                 {
                     Keyframe current = Keyframes[i];
-                    Keyframe next = Keyframes[i];
+                    Keyframe next = Keyframes[i + 1];
 
                     if (t >= current.Time && t <= next.Time)
                     {
-                        float lerpPercent = (t - Keyframes[i].Time) / (Keyframes[i + 1].Time - Keyframes[i].Time);
+                        float lerpPercent = (t - current.Time) / (next.Time - current.Time);
 
                         scale = MathUtil.Lerp(current.Scale, next.Scale, lerpPercent);
                         translation = Vector3.Lerp(current.Translation, next.Translation, lerpPercent);

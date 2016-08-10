@@ -43,7 +43,7 @@ namespace DX12GameProgramming
 
         private int _skyTexHeapIndex;
 
-        private PassConstants _mainPassCB;
+        private PassConstants _mainPassCB = PassConstants.Default;
 
         private readonly Camera _camera = new Camera();
 

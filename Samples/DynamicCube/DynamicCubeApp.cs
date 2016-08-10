@@ -54,7 +54,7 @@ namespace DX12GameProgramming
         private CubeRenderTarget _dynamicCubeMap;
         private CpuDescriptorHandle _cubeDSV;
 
-        private PassConstants _mainPassCB;
+        private PassConstants _mainPassCB = PassConstants.Default;
 
         private readonly Camera _camera = new Camera();
         private readonly Camera[] _cubeMapCameras = new Camera[6];

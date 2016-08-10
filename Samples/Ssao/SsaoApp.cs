@@ -49,11 +49,8 @@ namespace DX12GameProgramming
         private int _skyTexHeapIndex;
         private int _shadowMapHeapIndex;
         private int _ssaoHeapIndexStart;
-        private int _ssaoAmbientMapIndex;
 
         private int _nullCubeSrvIndex;
-        private int _nullTexSrvIndex1;
-        private int _nullTexSrvIndex2;
 
         private GpuDescriptorHandle _nullSrv;
 
@@ -701,9 +698,7 @@ namespace DX12GameProgramming
             _skyTexHeapIndex = tex2DList.Length;
             _shadowMapHeapIndex = _skyTexHeapIndex + 1;
             _ssaoHeapIndexStart = _shadowMapHeapIndex + 1;
-            _ssaoAmbientMapIndex = _ssaoHeapIndexStart + 3;
             _nullCubeSrvIndex = _ssaoHeapIndexStart + 5;
-            _nullTexSrvIndex1 = _nullCubeSrvIndex + 1;            
 
             CpuDescriptorHandle nullSrv = GetCpuSrv(_nullCubeSrvIndex);
             _nullSrv = GetGpuSrv(_nullCubeSrvIndex);

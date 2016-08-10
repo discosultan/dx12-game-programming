@@ -37,7 +37,7 @@ namespace DX12GameProgramming
         // Render items divided by PSO.
         private readonly List<RenderItem> _opaqueRitems = new List<RenderItem>();
 
-        private PassConstants _mainPassCB;
+        private PassConstants _mainPassCB = PassConstants.Default;
 
         private Vector3 _eyePos;
         private Matrix _proj = Matrix.Identity;
@@ -455,7 +455,7 @@ namespace DX12GameProgramming
 
         private void BuildMaterials()
         {
-            _materials["woodCrate"] = new Material
+            AddMaterial(new Material
             {
                 Name = "woodCrate",
                 MatCBIndex = 0,
@@ -463,8 +463,10 @@ namespace DX12GameProgramming
                 DiffuseAlbedo = Color.White.ToVector4(),
                 FresnelR0 = new Vector3(0.05f),
                 Roughness = 0.2f
-            };
+            });
         }
+
+        private void AddMaterial(Material material) => _materials[material.Name] = material;
 
         private void BuildRenderItems()
         {
