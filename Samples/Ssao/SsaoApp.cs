@@ -523,8 +523,7 @@ namespace DX12GameProgramming
             ssaoCB.InvProj = _mainPassCB.InvProj;
             ssaoCB.ProjTex = Matrix.Transpose(_camera.Proj * ndcToTexture);
 
-            // TODO: IMPLEMENT
-            //_ssao.GetOffsetVectors(ssaoCB.OffsetVectors);
+            _ssao.GetOffsetVectors(ssaoCB.OffsetVectors);
 
             float[] blurWeights = _ssao.CalcGaussWeights(2.5f);
             ssaoCB.BlurWeights[0] = new Vector4(blurWeights[0]);

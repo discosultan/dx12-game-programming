@@ -23,6 +23,20 @@ namespace DX12GameProgramming
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    internal struct SkinnedConstants
+    {
+        private const int BoneTransformsCount = 96;
+
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = BoneTransformsCount)]
+        public Matrix[] BoneTransforms;
+
+        public static SkinnedConstants Default => new SkinnedConstants
+        {
+            BoneTransforms = new Matrix[BoneTransformsCount]
+        };
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
     internal struct PassConstants
     {
         public Matrix View;
@@ -68,7 +82,7 @@ namespace DX12GameProgramming
     internal  struct SsaoConstants
     {
         private const int OffsetVectorCount = 14;
-        private const int BlurWeightCount = 14;
+        private const int BlurWeightCount = 3;
 
         public Matrix Proj;
         public Matrix InvProj;
@@ -123,7 +137,7 @@ namespace DX12GameProgramming
         };
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
     internal struct Vertex
     {
         public Vector3 Pos;
@@ -134,12 +148,13 @@ namespace DX12GameProgramming
 
     internal class FrameResource : IDisposable
     {
-        public FrameResource(Device device, int passCount, int objectCount, int materialCount)
+        public FrameResource(Device device, int passCount, int objectCount, int skinnedObjectCount, int materialCount)
         {
             CmdListAlloc = device.CreateCommandAllocator(CommandListType.Direct);
 
             PassCB = new UploadBuffer<PassConstants>(device, passCount, true);
             ObjectCB = new UploadBuffer<ObjectConstants>(device, objectCount, true);
+            SkinnedCB = new UploadBuffer<SkinnedConstants>(device, skinnedObjectCount, true);
             SsaoCB = new UploadBuffer<SsaoConstants>(device, 1, true);
             MaterialBuffer = new UploadBuffer<MaterialData>(device, materialCount, false);
         }
@@ -152,6 +167,7 @@ namespace DX12GameProgramming
         // that reference it. So each frame needs their own cbuffers.
         public UploadBuffer<PassConstants> PassCB { get; }
         public UploadBuffer<ObjectConstants> ObjectCB { get; }
+        public UploadBuffer<SkinnedConstants> SkinnedCB { get; }
         public UploadBuffer<SsaoConstants> SsaoCB { get; }
         public UploadBuffer<MaterialData> MaterialBuffer { get; }
 
@@ -163,6 +179,7 @@ namespace DX12GameProgramming
         {
             MaterialBuffer.Dispose();
             SsaoCB.Dispose();
+            SkinnedCB.Dispose();
             ObjectCB.Dispose();
             PassCB.Dispose();
             CmdListAlloc.Dispose();

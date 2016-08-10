@@ -8,7 +8,7 @@ using Resource = SharpDX.Direct3D12.Resource;
 
 namespace DX12GameProgramming
 {
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
     internal struct Data
     {
         public Vector3 V1;

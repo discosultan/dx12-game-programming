@@ -7,7 +7,7 @@ using SharpDX.DXGI;
 
 namespace DX12GameProgramming
 {
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
     struct Vertex
     {
         public Vector3 Pos;

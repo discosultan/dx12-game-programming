@@ -67,13 +67,18 @@ namespace DX12GameProgramming
     [StructLayout(LayoutKind.Sequential, Pack = 4)]
     internal  struct SsaoConstants
     {
+        private const int OffsetVectorCount = 14;
+        private const int BlurWeightCount = 3;
+
         public Matrix Proj;
         public Matrix InvProj;
         public Matrix ProjTex;
-        public OffsetVectors OffsetVectors;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = OffsetVectorCount)]
+        public Vector4[] OffsetVectors;
 
         // For SsaoBlur.hlsl
-        public BlurWeights BlurWeights;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = BlurWeightCount)]
+        public Vector4[] BlurWeights;
 
         public Vector2 InvRenderTargetSize;
 
@@ -116,7 +121,7 @@ namespace DX12GameProgramming
         };
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
     internal struct Vertex
     {
         public Vector3 Pos;
@@ -159,99 +164,6 @@ namespace DX12GameProgramming
             ObjectCB.Dispose();
             PassCB.Dispose();
             CmdListAlloc.Dispose();
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential, Pack = 4)]
-    public struct OffsetVectors
-    {
-        public Vector4 Offset1;
-        public Vector4 Offset2;
-        public Vector4 Offset3;
-        public Vector4 Offset4;
-        public Vector4 Offset5;
-        public Vector4 Offset6;
-        public Vector4 Offset7;
-        public Vector4 Offset8;
-        public Vector4 Offset9;
-        public Vector4 Offset10;
-        public Vector4 Offset11;
-        public Vector4 Offset12;
-        public Vector4 Offset13;
-        public Vector4 Offset14;
-
-        public Vector4 this[int index]
-        {
-            get
-            {
-                switch (index)
-                {
-                    case 0: return Offset1;
-                    case 1: return Offset2;
-                    case 2: return Offset3;
-                    case 3: return Offset4;
-                    case 4: return Offset5;
-                    case 5: return Offset6;
-                    case 6: return Offset7;
-                    case 7: return Offset8;
-                    case 8: return Offset9;
-                    case 9: return Offset10;
-                    case 10: return Offset11;
-                    case 11: return Offset12;
-                    case 12: return Offset13;
-                    default: return Offset14;
-                }
-            }
-            set
-            {
-                switch (index)
-                {
-                    case 0: Offset1 = value; break;
-                    case 1: Offset2 = value; break;
-                    case 2: Offset3 = value; break;
-                    case 3: Offset4 = value; break;
-                    case 4: Offset5 = value; break;
-                    case 5: Offset6 = value; break;
-                    case 6: Offset7 = value; break;
-                    case 7: Offset8 = value; break;
-                    case 8: Offset9 = value; break;
-                    case 9: Offset10 = value; break;
-                    case 10: Offset11 = value; break;
-                    case 11: Offset12 = value; break;
-                    case 12: Offset13 = value; break;
-                    default: Offset14 = value; break;
-                }
-            }
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential, Pack = 4)]
-    public struct BlurWeights
-    {
-        public Vector4 Weight1;
-        public Vector4 Weight2;
-        public Vector4 Weight3;
-
-        public Vector4 this[int index]
-        {
-            get
-            {
-                switch (index)
-                {
-                    case 0: return Weight1;
-                    case 1: return Weight2;
-                    default: return Weight3;
-                }
-            }
-            set
-            {
-                switch (index)
-                {
-                    case 0: Weight1 = value; break;
-                    case 1: Weight2 = value; break;
-                    default: Weight3 = value; break;
-                }
-            }
         }
     }
 }

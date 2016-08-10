@@ -66,7 +66,7 @@ namespace DX12GameProgramming
         };
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
     internal struct Vertex
     {
         public Vector3 Pos;
@@ -81,7 +81,7 @@ namespace DX12GameProgramming
         }
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
     public struct TreeSpriteVertex
     {
         public Vector3 Pos;

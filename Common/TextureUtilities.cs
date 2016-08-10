@@ -19,7 +19,7 @@ namespace DX12GameProgramming
     {
         const int DDS_MAGIC = 0x20534444;// "DDS "
 
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, Pack = 4)]
         struct DDS_PIXELFORMAT
         {
             public int size;
@@ -66,7 +66,7 @@ namespace DX12GameProgramming
 
         const int DDS_FLAGS_VOLUME = 0x00200000;// DDSCAPS2_VOLUME
 
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, Pack = 4)]
         struct DDS_HEADER
         {
             public int size;
@@ -90,7 +90,7 @@ namespace DX12GameProgramming
 
         }
 
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, Pack = 4)]
         struct DDS_HEADER_DXT10
         {
             public Format dxgiFormat;

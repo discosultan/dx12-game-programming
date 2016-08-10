@@ -84,8 +84,8 @@ namespace DX12GameProgramming
     {
         public List<BoneAnimation> BoneAnimations { get; } = new List<BoneAnimation>();
 
-        public float ClipStartTime => 0.0f;
-        public float ClipEndTime => 0.0f;
+        public float ClipStartTime => BoneAnimations.Min(x => x.StartTime);
+        public float ClipEndTime => BoneAnimations.Max(x => x.EndTime);
 
         public void Interpolate(float t, Matrix[] boneTransforms)
         {
@@ -104,12 +104,7 @@ namespace DX12GameProgramming
         private Matrix[] _toParentTransforms;
         private Matrix[] _toRootTransforms;
 
-        public int BoneCount => _boneHierarchy.Count;
-
-        public float GetClipStartTime(string clipName) => _animations[clipName].ClipStartTime;
-        public float GetClipEndTime(string clipName) => _animations[clipName].ClipEndTime;
-        
-        public void Set(
+        public SkinnedData(
             List<int> boneHierarchy, 
             List<Matrix> boneOffsets, 
             Dictionary<string, AnimationClip> animations)
@@ -121,6 +116,12 @@ namespace DX12GameProgramming
             _toParentTransforms = new Matrix[BoneCount];
             _toRootTransforms = new Matrix[BoneCount];
         }
+
+        public int BoneCount => _boneHierarchy.Count;
+
+        public float GetClipStartTime(string clipName) => _animations[clipName].ClipStartTime;
+        public float GetClipEndTime(string clipName) => _animations[clipName].ClipEndTime;
+       
 
         // In a real project, you'd want to cache the result if there was a chance
         // that you were calling this several times with the same clipName at 

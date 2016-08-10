@@ -8,7 +8,7 @@ namespace DX12GameProgramming
 {    
     public static class GeometryGenerator
     {
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, Pack = 4)]
         public struct Vertex
         {
             public Vector3 Position;

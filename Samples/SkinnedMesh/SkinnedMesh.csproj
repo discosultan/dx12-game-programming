@@ -58,7 +58,7 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="LoadM3d.cs" />
+    <Compile Include="M3DLoader.cs" />
     <Compile Include="SkinnedData.cs" />
     <Compile Include="FrameResource.cs" />
     <Compile Include="Program.cs" />
@@ -69,8 +69,8 @@
     <Compile Include="SkinnedMeshApp.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\Models\soldier.m3d">
-      <Link>Models\soldier.m3d</Link>
+    <None Include="..\..\Models\Soldier.m3d">
+      <Link>Models\Soldier.m3d</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="..\..\Textures\bricks2.dds">

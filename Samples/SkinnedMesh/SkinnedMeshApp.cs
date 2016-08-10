@@ -34,6 +34,7 @@ namespace DX12GameProgramming
         private readonly Dictionary<string, PipelineState> _psos = new Dictionary<string, PipelineState>();
 
         private InputLayoutDescription _inputLayout;
+        private InputLayoutDescription _skinnedInputLayout;
 
         // List of all the render items.
         private readonly List<RenderItem> _allRitems = new List<RenderItem>();
@@ -59,6 +60,14 @@ namespace DX12GameProgramming
 
         private PassConstants _mainPassCB;   // Index 0 of pass cbuffer.
         private PassConstants _shadowPassCB; // Index 1 of pass cbuffer.
+
+        private int _skinnedSrvHeapStart = 0;
+        private string _skinnedModelFilename = "Models\\Soldier.m3d";
+        private SkinnedModelInstance _skinnedModelInst;
+        private SkinnedData _skinnedInfo;
+        private List<M3DLoader.Subset> _skinnedSubsets;
+        private List<M3DLoader.M3dMaterial> _skinnedMats;
+        private List<string> _skinnedTextureNames;
 
         private readonly Camera _camera = new Camera();
 
@@ -114,13 +123,13 @@ namespace DX12GameProgramming
 
             _ssao = new Ssao(Device, CommandList, ClientWidth, ClientHeight);
 
+            LoadSkinnedModel();
             LoadTextures();
             BuildRootSignature();
             BuildSsaoRootSignature();
             BuildDescriptorHeaps();
             BuildShadersAndInputLayout();
             BuildShapeGeometry();
-            BuildSkullGeometry();
             BuildMaterials();
             BuildRenderItems();
             BuildFrameResources();
@@ -179,6 +188,7 @@ namespace DX12GameProgramming
                 _rotatedLightDirections[i] = Vector3.TransformNormal(_baseLightDirections[i], r);
 
             UpdateObjectCBs();
+            UpdateSkinnedCBs(gt);
             UpdateMaterialBuffer();
             UpdateShadowTransform();
             UpdateMainPassCB(gt);
@@ -265,10 +275,10 @@ namespace DX12GameProgramming
             // Bind all the textures used in this scene. Observe
             // that we only have to specify the first descriptor in the table.  
             // The root signature knows how many descriptors are expected in the table.
-            CommandList.SetGraphicsRootDescriptorTable(4, _srvDescriptorHeap.GPUDescriptorHandleForHeapStart);
+            CommandList.SetGraphicsRootDescriptorTable(5, _srvDescriptorHeap.GPUDescriptorHandleForHeapStart);
 
             Resource passCB = CurrFrameResource.PassCB.Resource;
-            CommandList.SetGraphicsRootConstantBufferView(1, passCB.GPUVirtualAddress);
+            CommandList.SetGraphicsRootConstantBufferView(2, passCB.GPUVirtualAddress);
 
             // Bind the sky cube map. For our demos, we just use one "world" cube map representing the environment
             // from far away, so all objects will use the same cube map and we only need to set it once per-frame.  
@@ -277,10 +287,13 @@ namespace DX12GameProgramming
 
             GpuDescriptorHandle skyTexDescriptor = _srvDescriptorHeap.GPUDescriptorHandleForHeapStart;
             skyTexDescriptor += _skyTexHeapIndex * CbvSrvUavDescriptorSize;
-            CommandList.SetGraphicsRootDescriptorTable(3, skyTexDescriptor);
+            CommandList.SetGraphicsRootDescriptorTable(4, skyTexDescriptor);
 
             CommandList.PipelineState = _psos["opaque"];
             DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Opaque]);
+
+            CommandList.PipelineState = _psos["skinnedOpaque"];
+            DrawRenderItems(CommandList, _ritemLayers[RenderLayer.SkinnedOpaque]);
 
             CommandList.PipelineState = _psos["debug"];
             DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Debug]);
@@ -383,6 +396,21 @@ namespace DX12GameProgramming
             }
         }
 
+        private void UpdateSkinnedCBs(GameTimer gt)
+        {
+            UploadBuffer<SkinnedConstants> currSkinnedCB = CurrFrameResource.SkinnedCB;
+
+            // We only have one skinned model being animated.
+            _skinnedModelInst.UpdateSkinnedAnimation(gt.DeltaTime);
+
+            var skinnedConstants = new SkinnedConstants
+            {
+                BoneTransforms = _skinnedModelInst.FinalTransforms.ToArray()
+            };
+
+            currSkinnedCB.CopyData(0, ref skinnedConstants);
+        }
+
         private void UpdateMaterialBuffer()
         {
             UploadBuffer<MaterialData> currMaterialCB = CurrFrameResource.MaterialBuffer;
@@ -472,13 +500,13 @@ namespace DX12GameProgramming
             _mainPassCB.FarZ = 1000.0f;
             _mainPassCB.TotalTime = gt.TotalTime;
             _mainPassCB.DeltaTime = gt.DeltaTime;
-            _mainPassCB.AmbientLight = new Vector4(0.4f, 0.4f, 0.6f, 1.0f);
+            _mainPassCB.AmbientLight = new Vector4(0.25f, 0.25f, 0.35f, 1.0f);
             _mainPassCB.Lights[0].Direction = _rotatedLightDirections[0];
-            _mainPassCB.Lights[0].Strength = new Vector3(0.4f, 0.4f, 0.5f);
+            _mainPassCB.Lights[0].Strength = new Vector3(0.9f, 0.9f, 0.7f);
             _mainPassCB.Lights[1].Direction = _rotatedLightDirections[1];
-            _mainPassCB.Lights[1].Strength = new Vector3(0.1f);
+            _mainPassCB.Lights[1].Strength = new Vector3(0.4f);
             _mainPassCB.Lights[2].Direction = _rotatedLightDirections[2];
-            _mainPassCB.Lights[2].Strength = new Vector3(0.0f);
+            _mainPassCB.Lights[2].Strength = new Vector3(0.2f);
 
             CurrFrameResource.PassCB.CopyData(0, ref _mainPassCB);
         }
@@ -523,8 +551,7 @@ namespace DX12GameProgramming
             ssaoCB.InvProj = _mainPassCB.InvProj;
             ssaoCB.ProjTex = Matrix.Transpose(_camera.Proj * ndcToTexture);
 
-            // TODO: IMPLEMENT
-            //_ssao.GetOffsetVectors(ssaoCB.OffsetVectors);
+            _ssao.GetOffsetVectors(ssaoCB.OffsetVectors);
 
             float[] blurWeights = _ssao.CalcGaussWeights(2.5f);
             ssaoCB.BlurWeights[0] = new Vector4(blurWeights[0]);
@@ -536,7 +563,7 @@ namespace DX12GameProgramming
             // Coordinates given in view space.
             ssaoCB.OcclusionRadius = 0.5f;
             ssaoCB.OcclusionFadeStart = 0.2f;
-            ssaoCB.OcclusionFadeEnd = 1.0f;
+            ssaoCB.OcclusionFadeEnd = 2.0f;
             ssaoCB.SurfaceEpsilon = 0.05f;
 
             CurrFrameResource.SsaoCB.CopyData(0, ref ssaoCB);
@@ -551,6 +578,16 @@ namespace DX12GameProgramming
             AddTexture("defaultDiffuseMap", "white1x1.dds");
             AddTexture("defaultNormalMap", "default_nmap.dds");
             AddTexture("skyCubeMap", "sunsetcube1024.dds");
+
+            // Add skinned model textures to list so we can reference by name later.
+            foreach (M3DLoader.M3dMaterial skinnedMat in _skinnedMats) {
+                string diffuseName = skinnedMat.DiffuseMapName.Substring(0, skinnedMat.DiffuseMapName.LastIndexOf('.'));
+                string normalName = skinnedMat.NormalMapName.Substring(0, skinnedMat.NormalMapName.LastIndexOf('.'));
+                AddTexture(diffuseName, skinnedMat.DiffuseMapName);
+                AddTexture(normalName, skinnedMat.NormalMapName);
+                _skinnedTextureNames.Add(diffuseName);
+                _skinnedTextureNames.Add(normalName);
+            }
         }
 
         private void AddTexture(string name, string filename)
@@ -572,9 +609,10 @@ namespace DX12GameProgramming
             {
                 new RootParameter(ShaderVisibility.All, new RootDescriptor(0, 0), RootParameterType.ConstantBufferView),
                 new RootParameter(ShaderVisibility.All, new RootDescriptor(1, 0), RootParameterType.ConstantBufferView),
+                new RootParameter(ShaderVisibility.All, new RootDescriptor(2, 0), RootParameterType.ConstantBufferView),
                 new RootParameter(ShaderVisibility.All, new RootDescriptor(0, 1), RootParameterType.ShaderResourceView),
                 new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 3, 0)),
-                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 10, 3))
+                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 48, 3))
             };
 
             // A root signature is an array of root parameters.
@@ -642,7 +680,7 @@ namespace DX12GameProgramming
             //
             var srvHeapDesc = new DescriptorHeapDescription
             {
-                DescriptorCount = 18,
+                DescriptorCount = 64,
                 Type = DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView,
                 Flags = DescriptorHeapFlags.ShaderVisible
             };
@@ -654,7 +692,7 @@ namespace DX12GameProgramming
             //
             CpuDescriptorHandle hDescriptor = _srvDescriptorHeap.CPUDescriptorHandleForHeapStart;
 
-            Resource[] tex2DList =
+            var tex2DList = new List<Resource>
             {
                 _textures["bricksDiffuseMap"].Resource,
                 _textures["bricksNormalMap"].Resource,
@@ -664,6 +702,13 @@ namespace DX12GameProgramming
                 _textures["defaultNormalMap"].Resource,
             };
 
+            _skinnedSrvHeapStart = tex2DList.Count;
+
+            foreach (string skinnedTextureName in _skinnedTextureNames)
+            {
+                Resource texResource = _textures[skinnedTextureName].Resource;
+                tex2DList.Add(texResource);
+            }
 
             Resource skyCubeMap = _textures["skyCubeMap"].Resource;
 
@@ -699,7 +744,7 @@ namespace DX12GameProgramming
             srvDesc.Format = skyCubeMap.Description.Format;
             Device.CreateShaderResourceView(skyCubeMap, srvDesc, hDescriptor);
 
-            _skyTexHeapIndex = tex2DList.Length;
+            _skyTexHeapIndex = tex2DList.Count;
             _shadowMapHeapIndex = _skyTexHeapIndex + 1;
             _ssaoHeapIndexStart = _shadowMapHeapIndex + 1;
             _ssaoAmbientMapIndex = _ssaoHeapIndexStart + 3;
@@ -746,10 +791,17 @@ namespace DX12GameProgramming
                 new ShaderMacro("ALPHA_TEST", "1")
             };
 
+            ShaderMacro[] skinnedDefines =
+            {
+                new ShaderMacro("SKINNED", "1")
+            };
+
             _shaders["standardVS"] = D3DUtil.CompileShader("Shaders\\Default.hlsl", "VS", "vs_5_1");
+            _shaders["standardVS"] = D3DUtil.CompileShader("Shaders\\Default.hlsl", "VS", "vs_5_1", skinnedDefines);
             _shaders["opaquePS"] = D3DUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_1");
 
             _shaders["shadowVS"] = D3DUtil.CompileShader("Shaders\\Shadows.hlsl", "VS", "vs_5_1");
+            _shaders["skinnedShadowVS"] = D3DUtil.CompileShader("Shaders\\Shadows.hlsl", "VS", "vs_5_1", skinnedDefines);
             _shaders["shadowOpaquePS"] = D3DUtil.CompileShader("Shaders\\Shadows.hlsl", "PS", "ps_5_1");
             _shaders["shadowAlphaTestedPS"] = D3DUtil.CompileShader("Shaders\\Shadows.hlsl", "PS", "ps_5_1", alphaTestDefines);
 
@@ -757,6 +809,7 @@ namespace DX12GameProgramming
             _shaders["debugPS"] = D3DUtil.CompileShader("Shaders\\ShadowDebug.hlsl", "PS", "ps_5_1");
 
             _shaders["drawNormalsVS"] = D3DUtil.CompileShader("Shaders\\DrawNormals.hlsl", "VS", "vs_5_1");
+            _shaders["skinnedDrawNormalsVS"] = D3DUtil.CompileShader("Shaders\\DrawNormals.hlsl", "VS", "vs_5_1", skinnedDefines);
             _shaders["drawNormalsPS"] = D3DUtil.CompileShader("Shaders\\DrawNormals.hlsl", "PS", "ps_5_1");
 
             _shaders["ssaoVS"] = D3DUtil.CompileShader("Shaders\\Ssao.hlsl", "VS", "vs_5_1");
@@ -774,6 +827,16 @@ namespace DX12GameProgramming
                 new InputElement("NORMAL", 0, Format.R32G32B32_Float, 12, 0),
                 new InputElement("TEXCOORD", 0, Format.R32G32_Float, 24, 0),
                 new InputElement("TANGENT", 0, Format.R32G32B32_Float, 32, 0)
+            });
+
+            _skinnedInputLayout = new InputLayoutDescription(new[]
+            {
+                new InputElement("POSITION", 0, Format.R32G32B32_Float, 0, 0),
+                new InputElement("NORMAL", 0, Format.R32G32B32_Float, 12, 0),
+                new InputElement("TEXCOORD", 0, Format.R32G32_Float, 24, 0),
+                new InputElement("TANGENT", 0, Format.R32G32B32_Float, 32, 0),
+                new InputElement("WEIGHTS", 0, Format.R32G32B32_Float, 44, 0),
+                new InputElement("BONEINDICES", 0, Format.R8G8B8A8_UInt, 56, 0)
             });
         }
 
@@ -835,88 +898,30 @@ namespace DX12GameProgramming
             return submesh;
         }
 
-        private void BuildSkullGeometry()
+        private void LoadSkinnedModel()
         {
-            var vertices = new List<Vertex>();
-            var indices = new List<int>();
-            int vCount = 0, tCount = 0;
-            using (var reader = new StreamReader("Models\\Skull.txt"))
+            List<M3DLoader.SkinnedVertex> vertices;
+            List<short> indices;
+            M3DLoader.LoadM3D(_skinnedModelFilename, out vertices, out indices, out _skinnedSubsets, out _skinnedMats, out _skinnedInfo);
+
+            _skinnedModelInst = new SkinnedModelInstance
             {
-                var input = reader.ReadLine();
-                if (input != null)
-                    vCount = Convert.ToInt32(input.Split(':')[1].Trim());
-
-                input = reader.ReadLine();
-                if (input != null)
-                    tCount = Convert.ToInt32(input.Split(':')[1].Trim());
-
-                do
-                {
-                    input = reader.ReadLine();
-                } while (input != null && !input.StartsWith("{", StringComparison.Ordinal));
-
-                for (int i = 0; i < vCount; i++)
-                {
-                    input = reader.ReadLine();
-                    if (input != null)
-                    {
-                        string[] vals = input.Split(' ');
-
-                        var pos = new Vector3(
-                                Convert.ToSingle(vals[0].Trim(), CultureInfo.InvariantCulture),
-                                Convert.ToSingle(vals[1].Trim(), CultureInfo.InvariantCulture),
-                                Convert.ToSingle(vals[2].Trim(), CultureInfo.InvariantCulture));
-
-                        var normal = new Vector3(
-                                Convert.ToSingle(vals[3].Trim(), CultureInfo.InvariantCulture),
-                                Convert.ToSingle(vals[4].Trim(), CultureInfo.InvariantCulture),
-                                Convert.ToSingle(vals[5].Trim(), CultureInfo.InvariantCulture));
-
-                        // Generate a tangent vector so normal mapping works.  We aren't applying
-                        // a texture map to the skull, so we just need any tangent vector so that
-                        // the math works out to give us the original interpolated vertex normal.
-                        Vector3 tangent = Math.Abs(Vector3.Dot(normal, Vector3.Up)) < 1.0f - 0.001f
-                            ? Vector3.Normalize(Vector3.Cross(normal, Vector3.Up))
-                            : Vector3.Normalize(Vector3.Cross(normal, Vector3.ForwardLH));
-
-                        vertices.Add(new Vertex
-                        {
-                            Pos = pos,
-                            Normal = normal,
-                            TangentU = tangent
-                        });
-                    }
-                }
-
-                do
-                {
-                    input = reader.ReadLine();
-                } while (input != null && !input.StartsWith("{", StringComparison.Ordinal));
-
-                for (var i = 0; i < tCount; i++)
-                {
-                    input = reader.ReadLine();
-                    if (input == null)
-                    {
-                        break;
-                    }
-                    var m = input.Trim().Split(' ');
-                    indices.Add(Convert.ToInt32(m[0].Trim()));
-                    indices.Add(Convert.ToInt32(m[1].Trim()));
-                    indices.Add(Convert.ToInt32(m[2].Trim()));
-                }
-            }
-
-            var geo = MeshGeometry.New(Device, CommandList, vertices.ToArray(), indices.ToArray(), "skullGeo");
-            var submesh = new SubmeshGeometry
-            {
-                IndexCount = indices.Count,
-                StartIndexLocation = 0,
-                BaseVertexLocation = 0
+                SkinnedInfo = _skinnedInfo,
+                ClipName = "Take1"
             };
 
-            geo.DrawArgs["skull"] = submesh;
-
+            MeshGeometry geo = MeshGeometry.New(Device, CommandList, indices, _skinnedModelFilename);
+            for (int i = 0; i < _skinnedSubsets.Count; i++)
+            {
+                M3DLoader.Subset skinnedSubset = _skinnedSubsets[i];
+                string name = $"sm_{i}";
+                geo.DrawArgs[name] = new SubmeshGeometry
+                {
+                    IndexCount = skinnedSubset.FaceCount * 3,
+                    StartIndexLocation = skinnedSubset.FaceStart * 3,
+                    BaseVertexLocation = 0
+                };
+            }
             _geometries[geo.Name] = geo;
         }
 
@@ -949,6 +954,15 @@ namespace DX12GameProgramming
             _psos["opaque"] = Device.CreateGraphicsPipelineState(opaquePsoDesc);
 
             //
+            // PSO for skinned pass.
+            //
+
+            GraphicsPipelineStateDescription skinnedOpaquePsoDesc = opaquePsoDesc.Copy();
+            skinnedOpaquePsoDesc.InputLayout = _skinnedInputLayout;
+            skinnedOpaquePsoDesc.VertexShader = _shaders["skinnedVS"];
+            _psos["skinnedOpaque"] = Device.CreateGraphicsPipelineState(skinnedOpaquePsoDesc);
+
+            //
             // PSO for shadow map pass.
             //
 
@@ -962,6 +976,15 @@ namespace DX12GameProgramming
             smapPsoDesc.RenderTargetFormats[0] = Format.Unknown;
             smapPsoDesc.RenderTargetCount = 0;
             _psos["shadow_opaque"] = Device.CreateGraphicsPipelineState(smapPsoDesc);
+
+            //
+            // PSO for skinned shadow map pass.
+            //
+
+            GraphicsPipelineStateDescription skinnedSmapPsoDesc = smapPsoDesc.Copy();
+            skinnedSmapPsoDesc.InputLayout = _skinnedInputLayout;
+            skinnedOpaquePsoDesc.VertexShader = _shaders["skinnedShadowVS"];
+            _psos["skinnedShadow_opaque"] = Device.CreateGraphicsPipelineState(skinnedSmapPsoDesc);
 
             //
             // PSO for debug layer.
@@ -982,6 +1005,15 @@ namespace DX12GameProgramming
             drawNormalsPsoDesc.RenderTargetFormats[0] = Ssao.NormalMapFormat;
             drawNormalsPsoDesc.SampleDescription = new SampleDescription(1, 0);
             _psos["drawNormals"] = Device.CreateGraphicsPipelineState(drawNormalsPsoDesc);
+
+            //
+            // PSO for drawing skinned normals.
+            //
+
+            GraphicsPipelineStateDescription skinnedDrawNormalsPsoDesc = drawNormalsPsoDesc.Copy();
+            skinnedDrawNormalsPsoDesc.InputLayout = _skinnedInputLayout;
+            skinnedDrawNormalsPsoDesc.VertexShader = _shaders["skinnedDrawNormalsVS"];
+            _psos["skinnedShadow_opaque"] = Device.CreateGraphicsPipelineState(skinnedDrawNormalsPsoDesc);
 
             //
             // PSO for SSAO.
@@ -1029,7 +1061,7 @@ namespace DX12GameProgramming
         {
             for (int i = 0; i < NumFrameResources; i++)
             {
-                _frameResources.Add(new FrameResource(Device, 2, _allRitems.Count, _materials.Count));
+                _frameResources.Add(new FrameResource(Device, 2, _allRitems.Count, 1, _materials.Count));
                 _fenceEvents.Add(new AutoResetEvent(false));
             }
         }
@@ -1068,24 +1100,30 @@ namespace DX12GameProgramming
             });
             AddMaterial(new Material
             {
-                Name = "skullMat",
-                MatCBIndex = 3,
-                DiffuseSrvHeapIndex = 4,
-                NormalSrvHeapIndex = 5,
-                DiffuseAlbedo = new Vector4(0.3f, 0.3f, 0.3f, 1.0f),
-                FresnelR0 = new Vector3(0.6f),
-                Roughness = 0.2f
-            });
-            AddMaterial(new Material
-            {
                 Name = "sky",
-                MatCBIndex = 4,
+                MatCBIndex = 3,
                 DiffuseSrvHeapIndex = 6,
                 NormalSrvHeapIndex = 7,
                 DiffuseAlbedo = Vector4.One,
                 FresnelR0 = new Vector3(0.1f),
                 Roughness = 1.0f
-            });            
+            });
+
+            int matCBIndex = 4;
+            int srvHeapIndex = _skinnedSrvHeapStart;
+            foreach (M3DLoader.M3dMaterial skinnedMat in _skinnedMats)
+            {
+                AddMaterial(new Material
+                {
+                    Name = skinnedMat.Name,
+                    MatCBIndex = matCBIndex++,
+                    DiffuseSrvHeapIndex = srvHeapIndex++,
+                    NormalSrvHeapIndex = srvHeapIndex++,
+                    DiffuseAlbedo = skinnedMat.DiffuseAlbedo,
+                    FresnelR0 = skinnedMat.FresnelR0,
+                    Roughness = skinnedMat.Roughness                
+                });
+            }         
         }
 
         private void AddMaterial(Material mat)
@@ -1131,22 +1169,10 @@ namespace DX12GameProgramming
             boxRitem.BaseVertexLocation = boxRitem.Geo.DrawArgs["box"].BaseVertexLocation;
             AddRenderItem(boxRitem, RenderLayer.Opaque);
 
-            var skullRitem = new RenderItem();
-            skullRitem.World = Matrix.Scaling(0.4f) * Matrix.Translation(0.0f, 1.0f, 0.0f);
-            skullRitem.TexTransform = Matrix.Scaling(1.0f, 0.5f, 1.0f);
-            skullRitem.ObjCBIndex = 3;
-            skullRitem.Mat = _materials["skullMat"];
-            skullRitem.Geo = _geometries["skullGeo"];
-            skullRitem.PrimitiveType = PrimitiveTopology.TriangleList;
-            skullRitem.IndexCount = skullRitem.Geo.DrawArgs["skull"].IndexCount;
-            skullRitem.StartIndexLocation = skullRitem.Geo.DrawArgs["skull"].StartIndexLocation;
-            skullRitem.BaseVertexLocation = skullRitem.Geo.DrawArgs["skull"].BaseVertexLocation;
-            AddRenderItem(skullRitem, RenderLayer.Opaque);
-
             var gridRitem = new RenderItem();
             gridRitem.World = Matrix.Identity;
             gridRitem.TexTransform = Matrix.Scaling(8.0f, 8.0f, 1.0f);
-            gridRitem.ObjCBIndex = 4;
+            gridRitem.ObjCBIndex = 3;
             gridRitem.Mat = _materials["tile0"];
             gridRitem.Geo = _geometries["shapeGeo"];
             gridRitem.PrimitiveType = PrimitiveTopology.TriangleList;
@@ -1156,7 +1182,7 @@ namespace DX12GameProgramming
             AddRenderItem(gridRitem, RenderLayer.Opaque);
 
             Matrix brickTexTransform = Matrix.Scaling(1.5f, 2.0f, 1.0f);
-            int objCBIndex = 5;
+            int objCBIndex = 4;
             for (int i = 0; i < 5; ++i)
             {
                 var leftCylRitem = new RenderItem();
@@ -1207,6 +1233,33 @@ namespace DX12GameProgramming
                 rightSphereRitem.BaseVertexLocation = rightSphereRitem.Geo.DrawArgs["sphere"].BaseVertexLocation;
                 AddRenderItem(rightSphereRitem, RenderLayer.Opaque);
             }
+
+            for (int i = 0; i < _skinnedMats.Count; i++)
+            {
+                string submeshName = $"sm_{i}";
+
+                var ritem = new RenderItem();
+
+                // Reflect to change coordinate system from the RHS the data was exported out as.
+                Matrix modelScale = Matrix.Scaling(0.05f, 0.05f, -0.05f);
+                Matrix modelRot = Matrix.RotationY(MathUtil.Pi);
+                Matrix modelOffset = Matrix.Translation(0.0f, 0.0f, -5.0f);
+                ritem.World = modelScale * modelRot * modelOffset;
+
+                ritem.ObjCBIndex = objCBIndex++;
+                ritem.Mat = _materials[_skinnedMats[i].Name];
+                ritem.Geo = _geometries[_skinnedModelFilename];
+                ritem.IndexCount = ritem.Geo.DrawArgs[submeshName].IndexCount;
+                ritem.StartIndexLocation = ritem.Geo.DrawArgs[submeshName].StartIndexLocation;
+                ritem.BaseVertexLocation = ritem.Geo.DrawArgs[submeshName].BaseVertexLocation;
+
+                // All render items for this solider.m3d instance share
+                // the same skinned model instance.
+                ritem.SkinnedCBIndex = 0;
+                ritem.SkinnedModelInst = _skinnedModelInst;
+
+                AddRenderItem(ritem, RenderLayer.SkinnedOpaque);
+            }
         }
 
         private void AddRenderItem(RenderItem item, RenderLayer layer)
@@ -1218,8 +1271,10 @@ namespace DX12GameProgramming
         private void DrawRenderItems(GraphicsCommandList cmdList, List<RenderItem> ritems)
         {
             int objCBByteSize = D3DUtil.CalcConstantBufferByteSize<ObjectConstants>();
+            int skinnedCBByteSize = D3DUtil.CalcConstantBufferByteSize<SkinnedConstants>();
 
             Resource objectCB = CurrFrameResource.ObjectCB.Resource;
+            Resource skinnedCB = CurrFrameResource.SkinnedCB.Resource;
 
             foreach (RenderItem ri in ritems)
             {
@@ -1230,6 +1285,16 @@ namespace DX12GameProgramming
                 long objCBAddress = objectCB.GPUVirtualAddress + ri.ObjCBIndex * objCBByteSize;
 
                 cmdList.SetGraphicsRootConstantBufferView(0, objCBAddress);
+
+                if (ri.SkinnedModelInst != null)
+                {
+                    long skinnedCBAddress = skinnedCB.GPUVirtualAddress + ri.SkinnedCBIndex * skinnedCBByteSize;
+                    cmdList.SetGraphicsRootConstantBufferView(1, skinnedCBAddress);
+                }
+                else
+                {
+                    cmdList.SetGraphicsRootConstantBufferView(1, 0);
+                }
 
                 cmdList.DrawIndexedInstanced(ri.IndexCount, 1, ri.StartIndexLocation, ri.BaseVertexLocation, 0);
             }
@@ -1261,6 +1326,9 @@ namespace DX12GameProgramming
             CommandList.PipelineState = _psos["shadow_opaque"];
             DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Opaque]);
 
+            CommandList.PipelineState = _psos["skinnedShadow_opaque"];
+            DrawRenderItems(CommandList, _ritemLayers[RenderLayer.SkinnedOpaque]);
+
             // Change back to GENERIC_READ so we can read the texture in a shader.
             CommandList.ResourceBarrierTransition(_shadowMap.Resource, ResourceStates.DepthWrite, ResourceStates.GenericRead);
         }
@@ -1288,8 +1356,10 @@ namespace DX12GameProgramming
             CommandList.SetGraphicsRootConstantBufferView(1, passCB.GPUVirtualAddress);
 
             CommandList.PipelineState = _psos["drawNormals"];
-
             DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Opaque]);
+
+            CommandList.PipelineState = _psos["skinnedDrawNormals"];
+            DrawRenderItems(CommandList, _ritemLayers[RenderLayer.SkinnedOpaque]);
 
             // Change back to GENERIC_READ so we can read the texture in a shader.
             CommandList.ResourceBarrierTransition(normalMap, ResourceStates.RenderTarget, ResourceStates.GenericRead);
