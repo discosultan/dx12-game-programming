@@ -418,12 +418,12 @@ namespace DX12GameProgramming
             _mainPassCB.TotalTime = gt.TotalTime;
             _mainPassCB.DeltaTime = gt.DeltaTime;
             _mainPassCB.AmbientLight = new Vector4(0.25f, 0.25f, 0.35f, 1.0f);
-            _mainPassCB.Lights.Light1.Direction = _rotatedLightDirections[0];
-            _mainPassCB.Lights.Light1.Strength = new Vector3(0.9f);
-            _mainPassCB.Lights.Light2.Direction = _rotatedLightDirections[1];
-            _mainPassCB.Lights.Light2.Strength = new Vector3(0.4f);
-            _mainPassCB.Lights.Light3.Direction = _rotatedLightDirections[2];
-            _mainPassCB.Lights.Light3.Strength = new Vector3(0.2f);
+            _mainPassCB.Lights[0].Direction = _rotatedLightDirections[0];
+            _mainPassCB.Lights[0].Strength = new Vector3(0.9f);
+            _mainPassCB.Lights[1].Direction = _rotatedLightDirections[1];
+            _mainPassCB.Lights[1].Strength = new Vector3(0.4f);
+            _mainPassCB.Lights[2].Direction = _rotatedLightDirections[2];
+            _mainPassCB.Lights[2].Strength = new Vector3(0.2f);
 
             CurrFrameResource.PassCB.CopyData(0, ref _mainPassCB);
         }

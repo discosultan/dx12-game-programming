@@ -52,7 +52,8 @@ namespace DX12GameProgramming
         // indices [NUM_DIR_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHTS) are point lights;
         // indices [NUM_DIR_LIGHTS+NUM_POINT_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHT+NUM_SPOT_LIGHTS)
         // are spot lights for a maximum of MaxLights per object.
-        public Lights Lights;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = Light.MaxLights)]
+		public Light[] Lights;
 
         public static PassConstants Default => new PassConstants
         {
@@ -66,7 +67,7 @@ namespace DX12GameProgramming
             FogColor = new Vector4(0.7f, 0.7f, 0.7f, 1.0f),
             FogStart = 5.0f,
             FogRange = 150.0f,
-            Lights = Lights.Default
+            Lights = Light.DefaultArray
         };
     }
 

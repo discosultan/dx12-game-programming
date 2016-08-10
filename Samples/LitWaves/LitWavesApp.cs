@@ -297,8 +297,8 @@ namespace DX12GameProgramming
 
             Vector3 lightDir = -MathHelper.SphericalToCartesian(1.0f, _sunTheta, _sunPhi);
 
-            _mainPassCB.Lights.Light1.Direction = lightDir;
-            _mainPassCB.Lights.Light1.Strength = new Vector3(1.0f, 1.0f, 0.9f);
+            _mainPassCB.Lights[0].Direction = lightDir;
+            _mainPassCB.Lights[0].Strength = new Vector3(1.0f, 1.0f, 0.9f);
 
             CurrFrameResource.PassCB.CopyData(0, ref _mainPassCB);
         }

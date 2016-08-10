@@ -47,7 +47,8 @@ namespace DX12GameProgramming
         // indices [NUM_DIR_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHTS) are point lights;
         // indices [NUM_DIR_LIGHTS+NUM_POINT_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHT+NUM_SPOT_LIGHTS)
         // are spot lights for a maximum of MaxLights per object.
-        public Lights Lights;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = Light.MaxLights)]
+		public Light[] Lights;
 
         public static PassConstants Default => new PassConstants
         {
@@ -59,7 +60,7 @@ namespace DX12GameProgramming
             InvViewProj = Matrix.Identity,
             ShadowTransform = Matrix.Identity,
             AmbientLight = Vector4.UnitW,
-            Lights = Lights.Default
+            Lights = Light.DefaultArray
         };
     }
 
