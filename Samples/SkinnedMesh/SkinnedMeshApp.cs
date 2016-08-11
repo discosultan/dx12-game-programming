@@ -693,7 +693,7 @@ namespace DX12GameProgramming
                 _textures["tileDiffuseMap"].Resource,
                 _textures["tileNormalMap"].Resource,
                 _textures["defaultDiffuseMap"].Resource,
-                _textures["defaultNormalMap"].Resource,
+                _textures["defaultNormalMap"].Resource
             };
 
             _skinnedSrvHeapStart = tex2DList.Count;

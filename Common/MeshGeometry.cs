@@ -1,10 +1,10 @@
-﻿using SharpDX;
-using SharpDX.Direct3D12;
-using SharpDX.DXGI;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using SharpDX;
+using SharpDX.Direct3D12;
+using SharpDX.DXGI;
 using Device = SharpDX.Direct3D12.Device;
 using Resource = SharpDX.Direct3D12.Resource;
 
@@ -33,6 +33,9 @@ namespace DX12GameProgramming
 
         public Resource VertexBufferGPU { get; set; }
         public Resource IndexBufferGPU { get; set; }
+
+        public object VertexBufferCPU { get; set; }
+        public object IndexBufferCPU { get; set; }
 
         // Data about the buffers.
         public int VertexByteStride { get; set; }
@@ -95,10 +98,12 @@ namespace DX12GameProgramming
                 VertexByteStride = Utilities.SizeOf<TVertex>(),
                 VertexBufferByteSize = vertexBufferByteSize,
                 VertexBufferGPU = vertexBuffer,
+                VertexBufferCPU = vertexArray,
                 IndexCount = indexArray.Length,
                 IndexFormat = GetIndexFormat<TIndex>(),
                 IndexBufferByteSize = indexBufferByteSize,
                 IndexBufferGPU = indexBuffer,
+                IndexBufferCPU = indexArray,
                 _toDispose =
                 {
                     vertexBuffer, vertexBufferUploader,
@@ -127,6 +132,7 @@ namespace DX12GameProgramming
                 IndexFormat = GetIndexFormat<TIndex>(),
                 IndexBufferByteSize = indexBufferByteSize,
                 IndexBufferGPU = indexBuffer,
+                IndexBufferCPU = indexArray,
                 _toDispose = { indexBuffer, indexBufferUploader }
             };
         }

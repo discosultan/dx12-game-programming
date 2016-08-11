@@ -122,5 +122,27 @@ namespace DX12GameProgramming
 
             _viewDirty = false;
         }
+
+        public Ray GetPickingRay(Point sp, int clientWidth, int clientHeight)
+        {
+            Matrix p = Proj;
+
+            // Convert screen pixel to view space.
+            float vx = (2f * sp.X / clientWidth - 1f) / p.M11;
+            float vy = (-2f * sp.Y / clientHeight + 1f) / p.M22;
+
+            var ray = new Ray(Vector3.Zero, new Vector3(vx, vy, 1));
+            Matrix v = View;
+            Matrix invView = Matrix.Invert(v);
+
+            Matrix toWorld = invView;
+
+            ray = new Ray(
+                Vector3.TransformCoordinate(ray.Position, toWorld),
+                Vector3.TransformNormal(ray.Direction, toWorld));
+
+            ray.Direction.Normalize(); // TODO: prolly not needed bcus transformnormal should take care of this.
+            return ray;
+        }
     }
 }
