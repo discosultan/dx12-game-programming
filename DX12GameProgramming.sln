@@ -7,61 +7,61 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csp
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{F39AB6D3-10A4-4392-99E5-B827527D2310}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Box", "Samples\Box\Box.csproj", "{F03169D5-DFF6-45C7-B67B-B9E44FF4BB43}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "06-Box", "Samples\Box\06-Box.csproj", "{F03169D5-DFF6-45C7-B67B-B9E44FF4BB43}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shapes", "Samples\Shapes\Shapes.csproj", "{68B7616F-A864-4478-BE25-7B9781102E72}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "07-Shapes", "Samples\Shapes\07-Shapes.csproj", "{68B7616F-A864-4478-BE25-7B9781102E72}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LandAndWaves", "Samples\LandAndWaves\LandAndWaves.csproj", "{8F56A509-E390-4CE0-A9E7-C8E8ACE7E4CA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "07-LandAndWaves", "Samples\LandAndWaves\07-LandAndWaves.csproj", "{8F56A509-E390-4CE0-A9E7-C8E8ACE7E4CA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LitWaves", "Samples\LitWaves\LitWaves.csproj", "{2E6D6475-F3F1-4571-B424-FAD046826FAD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "08-LitWaves", "Samples\LitWaves\08-LitWaves.csproj", "{2E6D6475-F3F1-4571-B424-FAD046826FAD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LitColumns", "Samples\LitColumns\LitColumns.csproj", "{563875A1-87AC-4349-BB9C-20085FD7496A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "08-LitColumns", "Samples\LitColumns\08-LitColumns.csproj", "{563875A1-87AC-4349-BB9C-20085FD7496A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Crate", "Samples\Crate\Crate.csproj", "{F37413BB-A85B-47D2-BEB3-F5504C22CFF4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "09-Crate", "Samples\Crate\09-Crate.csproj", "{F37413BB-A85B-47D2-BEB3-F5504C22CFF4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TexWaves", "Samples\TexWaves\TexWaves.csproj", "{2136E616-F0D8-4F55-BF31-D26F4100A072}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "09-TexWaves", "Samples\TexWaves\09-TexWaves.csproj", "{2136E616-F0D8-4F55-BF31-D26F4100A072}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TexColumns", "Samples\TexColumns\TexColumns.csproj", "{B7E332DD-A269-48C8-9A2D-DC431B71049E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "09-TexColumns", "Samples\TexColumns\09-TexColumns.csproj", "{B7E332DD-A269-48C8-9A2D-DC431B71049E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Blend", "Samples\Blend\Blend.csproj", "{29819A80-A0A5-47EC-8937-593947065CCA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "10-Blend", "Samples\Blend\10-Blend.csproj", "{29819A80-A0A5-47EC-8937-593947065CCA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stencil", "Samples\Stencil\Stencil.csproj", "{DDFE75C6-91C3-4E11-AB5E-70A2B7AB20CA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "11-Stencil", "Samples\Stencil\11-Stencil.csproj", "{DDFE75C6-91C3-4E11-AB5E-70A2B7AB20CA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TreeBillboards", "Samples\TreeBillboards\TreeBillboards.csproj", "{DECFBF35-4E24-46C9-9116-AEF842F608C5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "12-TreeBillboards", "Samples\TreeBillboards\12-TreeBillboards.csproj", "{DECFBF35-4E24-46C9-9116-AEF842F608C5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WavesCS", "Samples\WavesCS\WavesCS.csproj", "{E606D926-491E-43B9-A60D-FF0CFFE6E59E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "13-WavesCS", "Samples\WavesCS\13-WavesCS.csproj", "{E606D926-491E-43B9-A60D-FF0CFFE6E59E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VecAdd", "Samples\VecAdd\VecAdd.csproj", "{52F54CC6-5A9E-4E52-8007-BF1535AD9D31}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "13-VecAdd", "Samples\VecAdd\13-VecAdd.csproj", "{52F54CC6-5A9E-4E52-8007-BF1535AD9D31}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SobelFilter", "Samples\SobelFilter\SobelFilter.csproj", "{CE1B2D38-6F3F-430F-9313-5BD4D3C10C62}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "13-SobelFilter", "Samples\SobelFilter\13-SobelFilter.csproj", "{CE1B2D38-6F3F-430F-9313-5BD4D3C10C62}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Blur", "Samples\Blur\Blur.csproj", "{1E305AD7-C386-4331-9C8B-CBF765696A95}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "13-Blur", "Samples\Blur\13-Blur.csproj", "{1E305AD7-C386-4331-9C8B-CBF765696A95}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BasicTessellation", "Samples\BasicTessellation\BasicTessellation.csproj", "{A2DAB809-BC2A-4969-9BCA-89797D298E20}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "14-BasicTessellation", "Samples\BasicTessellation\14-BasicTessellation.csproj", "{A2DAB809-BC2A-4969-9BCA-89797D298E20}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BezierPatch", "Samples\BezierPatch\BezierPatch.csproj", "{8CC0EF52-87B8-47F5-8331-307EECFDC464}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "14-BezierPatch", "Samples\BezierPatch\14-BezierPatch.csproj", "{8CC0EF52-87B8-47F5-8331-307EECFDC464}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InitDirect3D", "Samples\InitDirect3D\InitDirect3D.csproj", "{19E7FCEF-F70C-47F3-A7C9-FAF8E073CB01}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "04-InitDirect3D", "Samples\InitDirect3D\04-InitDirect3D.csproj", "{19E7FCEF-F70C-47F3-A7C9-FAF8E073CB01}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CameraAndDynamicIndexing", "Samples\CameraAndDynamicIndexing\CameraAndDynamicIndexing.csproj", "{FDF80094-B8EF-4A18-8846-785D7AAC3FF7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "15-CameraAndDynamicIndexing", "Samples\CameraAndDynamicIndexing\15-CameraAndDynamicIndexing.csproj", "{FDF80094-B8EF-4A18-8846-785D7AAC3FF7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CubeMap", "Samples\CubeMap\CubeMap.csproj", "{5D5DB9D8-A564-4D74-AF19-FB291DAE7F11}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "18-CubeMap", "Samples\CubeMap\18-CubeMap.csproj", "{5D5DB9D8-A564-4D74-AF19-FB291DAE7F11}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicCube", "Samples\DynamicCube\DynamicCube.csproj", "{CECE954C-9008-46CB-9B75-7B04AF63E48F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "18-DynamicCube", "Samples\DynamicCube\18-DynamicCube.csproj", "{CECE954C-9008-46CB-9B75-7B04AF63E48F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NormalMap", "Samples\NormalMap\NormalMap.csproj", "{ED429735-90F7-4681-A46B-0892021BECBF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "19-NormalMap", "Samples\NormalMap\19-NormalMap.csproj", "{ED429735-90F7-4681-A46B-0892021BECBF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shadows", "Samples\Shadows\Shadows.csproj", "{04BA6790-B0B7-4BDE-81C5-D08D49CA6F61}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "20-Shadows", "Samples\Shadows\20-Shadows.csproj", "{04BA6790-B0B7-4BDE-81C5-D08D49CA6F61}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ssao", "Samples\Ssao\Ssao.csproj", "{8FB409F9-7CBE-4753-8D3A-5EB2B94E1179}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "21-Ssao", "Samples\Ssao\21-Ssao.csproj", "{8FB409F9-7CBE-4753-8D3A-5EB2B94E1179}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Quaternions", "Samples\Quaternions\Quaternions.csproj", "{4A18F0F3-7516-4561-B623-E1267BBED010}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "22-Quaternions", "Samples\Quaternions\22-Quaternions.csproj", "{4A18F0F3-7516-4561-B623-E1267BBED010}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SkinnedMesh", "Samples\SkinnedMesh\SkinnedMesh.csproj", "{546A04C1-FDCE-41C7-B7C9-3DCA73BA1BC5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "23-SkinnedMesh", "Samples\SkinnedMesh\23-SkinnedMesh.csproj", "{546A04C1-FDCE-41C7-B7C9-3DCA73BA1BC5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InstancingAndCulling", "Samples\InstancingAndCulling\InstancingAndCulling.csproj", "{9881AAB1-0FE1-4718-AF10-51DB4D8CA289}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "16-InstancingAndCulling", "Samples\InstancingAndCulling\16-InstancingAndCulling.csproj", "{9881AAB1-0FE1-4718-AF10-51DB4D8CA289}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Picking", "Samples\Picking\Picking.csproj", "{88D2163E-8C9B-4EB5-B33F-B8B573220D30}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "17-Picking", "Samples\Picking\17-Picking.csproj", "{88D2163E-8C9B-4EB5-B33F-B8B573220D30}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
