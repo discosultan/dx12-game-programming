@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Threading;
 using SharpDX;
 using SharpDX.Direct3D12;
 using SharpDX.DXGI;
 using Resource = SharpDX.Direct3D12.Resource;
 using ShaderResourceViewDimension = SharpDX.Direct3D12.ShaderResourceViewDimension;
-using System.IO;
-using System.Globalization;
 
 namespace DX12GameProgramming
 {
@@ -412,6 +412,8 @@ namespace DX12GameProgramming
             var vertices = new List<Vertex>();
             var indices = new List<int>();
             int vCount = 0, tCount = 0;
+            var vMin = new Vector3(float.MaxValue);
+            var vMax = new Vector3(float.MinValue);
             using (var reader = new StreamReader("Models\\Car.txt"))
             {
                 var input = reader.ReadLine();
@@ -449,6 +451,9 @@ namespace DX12GameProgramming
                             Pos = pos,
                             Normal = normal
                         });
+
+                        vMin = Vector3.Min(vMin, pos);
+                        vMax = Vector3.Max(vMax, pos);
                     }
                 }
 
@@ -476,7 +481,8 @@ namespace DX12GameProgramming
             {
                 IndexCount = indices.Count,
                 StartIndexLocation = 0,
-                BaseVertexLocation = 0
+                BaseVertexLocation = 0,
+                Bounds = new BoundingBox(vMin, vMax)
             };
 
             geo.DrawArgs["car"] = submesh;
@@ -499,7 +505,7 @@ namespace DX12GameProgramming
                 RasterizerState = RasterizerStateDescription.Default(),
                 BlendState = BlendStateDescription.Default(),
                 DepthStencilState = DepthStencilStateDescription.Default(),
-                SampleMask = unchecked((int)int.MaxValue),
+                SampleMask = unchecked((int)uint.MaxValue),
                 PrimitiveTopologyType = PrimitiveTopologyType.Triangle,
                 RenderTargetCount = 1,
                 SampleDescription = new SampleDescription(MsaaCount, MsaaQuality),
@@ -581,6 +587,7 @@ namespace DX12GameProgramming
             carRitem.IndexCount = carRitem.Geo.DrawArgs["car"].IndexCount;
             carRitem.StartIndexLocation = carRitem.Geo.DrawArgs["car"].StartIndexLocation;
             carRitem.BaseVertexLocation = carRitem.Geo.DrawArgs["car"].BaseVertexLocation;
+            carRitem.Bounds = carRitem.Geo.DrawArgs["car"].Bounds;
             _ritemLayer[RenderLayer.Opaque].Add(carRitem);
             _allRitems.Add(carRitem);
 
