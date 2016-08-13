@@ -37,6 +37,7 @@ namespace DX12GameProgramming
         public Matrix Proj { get; private set; } = Matrix.Identity;
 
         public Matrix ViewProj => View * Proj;
+        public BoundingFrustum Frustum => new BoundingFrustum(ViewProj);
 
         public void SetLens(float fovY, float aspect, float zn, float zf)
         {

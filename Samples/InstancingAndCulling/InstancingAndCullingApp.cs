@@ -37,7 +37,6 @@ namespace DX12GameProgramming
         private readonly List<RenderItem> _opaqueRitems = new List<RenderItem>();
 
         private bool _frustumCullingEnabled = true;
-        private BoundingFrustum _camFrustum;
 
         private PassConstants _mainPassCB = PassConstants.Default;
 
@@ -230,37 +229,24 @@ namespace DX12GameProgramming
 
         private void UpdateInstanceData()
         {
-            Matrix view = _camera.View;
-            Matrix invView = Matrix.Invert(view);
-
             UploadBuffer<InstanceData> currInstanceBuffer = CurrFrameResource.InstanceBuffer;
             foreach (RenderItem e in _allRitems)
             {
-                InstanceData[] instanceData = e.Instances;
-
                 int visibleInstanceCount = 0;
 
-                foreach (InstanceData instance in instanceData)
-                {
-                    Matrix world = instance.World;
-                    Matrix texTransform = instance.TexTransform;
-
-                    Matrix invWorld = Matrix.Invert(world);
-
-                    // View space to the object's local space.
-                    Matrix viewToLocal = invView * invWorld;
-
-                    // Transform the camera frustum from view space to the object's local space.                    
-                    var localSpaceFrustum = new BoundingFrustum();
-                    // TODO
+                foreach (InstanceData instance in e.Instances)
+                {                    
+                    var box = new BoundingBox(
+                        Vector3.TransformCoordinate(e.Bounds.Minimum, instance.World),
+                        Vector3.TransformCoordinate(e.Bounds.Maximum, instance.World));
 
                     // Perform the box/frustum intersection test in local space.
-                    if (!_frustumCullingEnabled || localSpaceFrustum.Contains(e.Bounds) != ContainmentType.Disjoint)
+                    if (!_frustumCullingEnabled || _camera.Frustum.Intersects(ref box))
                     {
                         var data = new InstanceData
                         {
-                            World = Matrix.Transpose(world),
-                            TexTransform = Matrix.Transpose(texTransform),
+                            World = Matrix.Transpose(instance.World),
+                            TexTransform = Matrix.Transpose(instance.TexTransform),
                             MaterialIndex = instance.MaterialIndex
                         };
 
@@ -449,6 +435,8 @@ namespace DX12GameProgramming
             var vertices = new List<Vertex>();
             var indices = new List<int>();
             int vCount = 0, tCount = 0;
+            var vMin = new Vector3(float.MaxValue);
+            var vMax = new Vector3(float.MinValue);
             using (var reader = new StreamReader("Models\\Skull.txt"))
             {
                 var input = reader.ReadLine();
@@ -463,7 +451,7 @@ namespace DX12GameProgramming
                 {
                     input = reader.ReadLine();
                 } while (input != null && !input.StartsWith("{", StringComparison.Ordinal));
-
+                
                 for (int i = 0; i < vCount; i++)
                 {
                     input = reader.ReadLine();
@@ -486,6 +474,9 @@ namespace DX12GameProgramming
                             Pos = pos,
                             Normal = normal
                         });
+
+                        vMin = Vector3.Min(vMin, pos);
+                        vMax = Vector3.Max(vMax, pos);
                     }
                 }
 
@@ -513,7 +504,8 @@ namespace DX12GameProgramming
             {
                 IndexCount = indices.Count,
                 StartIndexLocation = 0,
-                BaseVertexLocation = 0
+                BaseVertexLocation = 0,
+                Bounds = new BoundingBox(vMin, vMax)
             };
 
             geo.DrawArgs["skull"] = submesh;
