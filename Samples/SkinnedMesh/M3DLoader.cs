@@ -1,9 +1,8 @@
-﻿using SharpDX;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
-using System;
-using System.Globalization;
+using SharpDX;
 
 namespace DX12GameProgramming
 {
@@ -48,7 +47,7 @@ namespace DX12GameProgramming
             public Vector4 DiffuseAlbedo { get; set; } = Vector4.One;
             public Vector3 FresnelR0 { get; set; } = new Vector3(0.01f);
             public float Roughness { get; set; } = 0.8f;
-            public bool AlphaClip { get; set; } = false;
+            public bool AlphaClip { get; set; }
 
             public string MaterialTypeName { get; set; }
             public string DiffuseMapName { get; set; }
@@ -61,25 +60,17 @@ namespace DX12GameProgramming
             out List<Subset> subsets,
             out List<M3dMaterial> mats)
         {
-            int numMaterials = 0;
-            int numVertices = 0;
-            int numTriangles = 0;
-            int numBones = 0;
-            int numAnimationClips = 0;
-
             using (var reader = new StreamReader(fileName))
             {
                 reader.ReadLine(); // File header text.                
                 string[] split = ReadAndSplitLine(reader);
-                numMaterials = int.Parse(split[1]);
+                int numMaterials = int.Parse(split[1]);
                 split = ReadAndSplitLine(reader);
-                numVertices = int.Parse(split[1]);
+                int numVertices = int.Parse(split[1]);
                 split = ReadAndSplitLine(reader);
-                numTriangles = int.Parse(split[1]);
-                split = ReadAndSplitLine(reader);
-                numBones = int.Parse(split[1]);
-                split = ReadAndSplitLine(reader);
-                numAnimationClips = int.Parse(split[1]);
+                int numTriangles = int.Parse(split[1]);
+                reader.ReadLine();
+                reader.ReadLine();
 
                 ReadMaterials(reader, numMaterials, out mats);
                 ReadSubsetTable(reader, numMaterials, out subsets);
@@ -95,25 +86,19 @@ namespace DX12GameProgramming
             out List<M3dMaterial> mats,
             out SkinnedData skinInfo)
         {
-            int numMaterials = 0;
-            int numVertices = 0;
-            int numTriangles = 0;
-            int numBones = 0;
-            int numAnimationClips = 0;
-
             using (var reader = new StreamReader(fileName))
             {
                 reader.ReadLine(); // File header text.                
                 string[] split = ReadAndSplitLine(reader);
-                numMaterials = int.Parse(split[1]);
+                int numMaterials = int.Parse(split[1]);
                 split = ReadAndSplitLine(reader);
-                numVertices = int.Parse(split[1]);
+                int numVertices = int.Parse(split[1]);
                 split = ReadAndSplitLine(reader);
-                numTriangles = int.Parse(split[1]);
+                int numTriangles = int.Parse(split[1]);
                 split = ReadAndSplitLine(reader);
-                numBones = int.Parse(split[1]);
+                int numBones = int.Parse(split[1]);
                 split = ReadAndSplitLine(reader);
-                numAnimationClips = int.Parse(split[1]);
+                int numAnimationClips = int.Parse(split[1]);
                 reader.ReadLine();
 
                 List<Matrix> boneOffsets;
@@ -155,7 +140,7 @@ namespace DX12GameProgramming
                 split = ReadAndSplitLine(reader);
                 mat.Roughness = float.Parse(split[1], Culture);
                 split = ReadAndSplitLine(reader);
-                mat.AlphaClip = bool.Parse(split[1]);
+                mat.AlphaClip = split[1] == "1";
                 split = ReadAndSplitLine(reader);
                 mat.MaterialTypeName = split[1];
                 split = ReadAndSplitLine(reader);
@@ -163,8 +148,8 @@ namespace DX12GameProgramming
                 split = ReadAndSplitLine(reader);
                 mat.NormalMapName = split[1];
                 mats.Add(mat);
+                reader.ReadLine();
             }
-            reader.ReadLine();
         }
 
         private static void ReadSubsetTable(StreamReader reader, int numSubsets, out List<Subset> subsets)
@@ -213,8 +198,8 @@ namespace DX12GameProgramming
                     float.Parse(split[1], Culture),
                     float.Parse(split[2], Culture));
                 vertices.Add(vertex);
+                reader.ReadLine();
             }
-            reader.ReadLine();
         }
 
         private static void ReadSkinnedVertices(StreamReader reader, int numVertices, out List<SkinnedVertex> vertices)
@@ -256,8 +241,8 @@ namespace DX12GameProgramming
                     byte.Parse(split[3]),
                     byte.Parse(split[4]));
                 vertices.Add(vertex);
+                reader.ReadLine();
             }
-            reader.ReadLine();
         }
 
         private static void ReadTriangles(StreamReader reader, int numTriangles, out List<short> indices)
@@ -322,6 +307,7 @@ namespace DX12GameProgramming
 
                 animations[clipName] = clip;
             }
+            reader.ReadLine();
         }
 
         private static void ReadBoneKeyframe(StreamReader reader, int numBones, List<BoneAnimation> boneAnimations)
@@ -353,6 +339,7 @@ namespace DX12GameProgramming
 
             reader.ReadLine(); // }
             boneAnimations.Add(boneAnimation);
+            reader.ReadLine();
         }
 
         private static string[] ReadAndSplitLine(StreamReader reader)

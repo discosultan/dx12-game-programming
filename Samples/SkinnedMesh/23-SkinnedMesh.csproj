@@ -112,6 +112,38 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
+    <Content Include="..\..\Textures\head_diff.dds">
+      <Link>Textures\head_diff.dds</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\Textures\head_norm.dds">
+      <Link>Textures\head_norm.dds</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\Textures\jacket_diff.dds">
+      <Link>Textures\jacket_diff.dds</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\Textures\jacket_norm.dds">
+      <Link>Textures\jacket_norm.dds</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\Textures\pants_diff.dds">
+      <Link>Textures\pants_diff.dds</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\Textures\pants_norm.dds">
+      <Link>Textures\pants_norm.dds</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\Textures\upBody_diff.dds">
+      <Link>Textures\upBody_diff.dds</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\Textures\upbody_norm.dds">
+      <Link>Textures\upbody_norm.dds</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Shaders\Common.hlsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

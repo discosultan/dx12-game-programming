@@ -142,7 +142,6 @@ namespace DX12GameProgramming
                 Vector3.TransformCoordinate(ray.Position, toWorld),
                 Vector3.TransformNormal(ray.Direction, toWorld));
 
-            ray.Direction.Normalize(); // TODO: prolly not needed bcus transformnormal should take care of this.
             return ray;
         }
     }

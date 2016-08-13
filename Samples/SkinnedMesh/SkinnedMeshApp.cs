@@ -571,7 +571,7 @@ namespace DX12GameProgramming
             AddTexture("tileNormalMap", "tile_nmap.dds");
             AddTexture("defaultDiffuseMap", "white1x1.dds");
             AddTexture("defaultNormalMap", "default_nmap.dds");
-            AddTexture("skyCubeMap", "sunsetcube1024.dds");
+            AddTexture("skyCubeMap", "desertcube1024.dds");
 
             // Add skinned model textures to list so we can reference by name later.
             foreach (M3DLoader.M3dMaterial skinnedMat in _skinnedMats) {

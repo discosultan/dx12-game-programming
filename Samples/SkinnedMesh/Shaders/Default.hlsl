@@ -16,7 +16,7 @@
 #endif
 
 // Include common HLSL code.
-#include "Common.hlsl"
+#include "Shaders\Common.hlsl"
 
 struct VertexIn
 {
