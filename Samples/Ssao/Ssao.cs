@@ -346,7 +346,7 @@ namespace DX12GameProgramming
                 new HeapProperties(HeapType.Default),
                 HeapFlags.None,
                 texDesc,
-                ResourceStates.Common,
+                ResourceStates.GenericRead,
                 optClear);
 
             // Ambient occlusion maps are at half resolution.
