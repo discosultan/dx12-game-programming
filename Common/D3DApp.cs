@@ -206,16 +206,15 @@ namespace DX12GameProgramming
                 Height = ClientHeight,
                 DepthOrArraySize = 1,
                 MipLevels = 1,
-                Format = DepthStencilFormat,
+                Format = Format.R24G8_Typeless,
                 SampleDescription = new SampleDescription
                 {
-                    Count = M4xMsaaState ? 4 : 1,
-                    Quality = M4xMsaaState ? _m4xMsaaQuality - 1 : 0
+                    Count = MsaaCount,
+                    Quality = MsaaQuality
                 },
                 Layout = TextureLayout.Unknown,
                 Flags = ResourceFlags.AllowDepthStencil
             };
-
             var optClear = new ClearValue
             {
                 Format = DepthStencilFormat,
@@ -232,9 +231,14 @@ namespace DX12GameProgramming
                 ResourceStates.Common,
                 optClear);
 
+            var depthStencilViewDesc = new DepthStencilViewDescription
+            {
+                Dimension = DepthStencilViewDimension.Texture2D,
+                Format = DepthStencilFormat
+            };
             // Create descriptor to mip level 0 of entire resource using the format of the resource.
             CpuDescriptorHandle dsvHeapHandle = DsvHeap.CPUDescriptorHandleForHeapStart;
-            Device.CreateDepthStencilView(DepthStencilBuffer, null, dsvHeapHandle);
+            Device.CreateDepthStencilView(DepthStencilBuffer, depthStencilViewDesc, dsvHeapHandle);
 
             // Transition the resource from its initial state to be used as a depth buffer.
             CommandList.ResourceBarrierTransition(DepthStencilBuffer, ResourceStates.Common, ResourceStates.DepthWrite);
@@ -559,7 +563,7 @@ namespace DX12GameProgramming
         {
             _frameCount++;
 
-            if ((Timer.TotalTime - _timeElapsed) >= 1.0f)
+            if (Timer.TotalTime - _timeElapsed >= 1.0f)
             {
                 float fps = _frameCount;
                 float mspf = 1000.0f / fps;

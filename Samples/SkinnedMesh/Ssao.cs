@@ -49,7 +49,7 @@ namespace DX12GameProgramming
         private int _renderTargetWidth;
         private int _renderTargetHeight;
 
-        private readonly Vector4[] _offsets = new Vector4[16];
+        private readonly Vector4[] _offsets = new Vector4[14];
 
         private ViewportF _viewport;
         private RectangleF _scissorRectangle;

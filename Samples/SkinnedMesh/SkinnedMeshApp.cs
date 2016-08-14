@@ -41,6 +41,7 @@ namespace DX12GameProgramming
         private readonly Dictionary<RenderLayer, List<RenderItem>> _ritemLayers = new Dictionary<RenderLayer, List<RenderItem>>
         {
             [RenderLayer.Opaque] = new List<RenderItem>(),
+            [RenderLayer.SkinnedOpaque] = new List<RenderItem>(),
             [RenderLayer.Debug] = new List<RenderItem>(),
             [RenderLayer.Sky] = new List<RenderItem>()
         };
@@ -53,8 +54,10 @@ namespace DX12GameProgramming
 
         private GpuDescriptorHandle _nullSrv;
 
-        private PassConstants _mainPassCB;   // Index 0 of pass cbuffer.
-        private PassConstants _shadowPassCB; // Index 1 of pass cbuffer.
+        private PassConstants _mainPassCB = PassConstants.Default;   // Index 0 of pass cbuffer.
+        private PassConstants _shadowPassCB = PassConstants.Default; // Index 1 of pass cbuffer.
+
+        private SkinnedConstants _skinnedConstants = SkinnedConstants.Default;
 
         private int _skinnedSrvHeapStart;
         private SkinnedModelInstance _skinnedModelInst;
@@ -68,6 +71,7 @@ namespace DX12GameProgramming
         private ShadowMap _shadowMap;
 
         private Ssao _ssao;
+        private SsaoConstants _ssaoCB = SsaoConstants.Default;
 
         private BoundingSphere _sceneBounds;
 
@@ -213,15 +217,15 @@ namespace DX12GameProgramming
             // Bind all the materials used in this scene. For structured buffers, we can bypass the heap and 
             // set as a root descriptor.
             Resource matBuffer = CurrFrameResource.MaterialBuffer.Resource;
-            CommandList.SetGraphicsRootShaderResourceView(2, matBuffer.GPUVirtualAddress);
+            CommandList.SetGraphicsRootShaderResourceView(3, matBuffer.GPUVirtualAddress);
 
             // Bind null SRV for shadow map pass.
-            CommandList.SetGraphicsRootDescriptorTable(3, _nullSrv);
+            CommandList.SetGraphicsRootDescriptorTable(4, _nullSrv);
 
             // Bind all the textures used in this scene. Observe
             // that we only have to specify the first descriptor in the table. 
             // The root signature knows how many descriptors are expected in the table.
-            CommandList.SetGraphicsRootDescriptorTable(4, _srvDescriptorHeap.GPUDescriptorHandleForHeapStart);
+            CommandList.SetGraphicsRootDescriptorTable(5, _srvDescriptorHeap.GPUDescriptorHandleForHeapStart);
 
             DrawSceneToShadowMap();
 
@@ -236,7 +240,7 @@ namespace DX12GameProgramming
             // 
 
             CommandList.SetGraphicsRootSignature(_ssaoRootSignature);
-            _ssao.ComputeSsao(CommandList, CurrFrameResource, 3);
+            _ssao.ComputeSsao(CommandList, CurrFrameResource, 2);
 
             //
             // Main rendering pass.
@@ -249,7 +253,7 @@ namespace DX12GameProgramming
             // Bind all the materials used in this scene. For structured buffers, we can bypass the heap and 
             // set as a root descriptor.
             matBuffer = CurrFrameResource.MaterialBuffer.Resource;
-            CommandList.SetGraphicsRootShaderResourceView(2, matBuffer.GPUVirtualAddress);
+            CommandList.SetGraphicsRootShaderResourceView(3, matBuffer.GPUVirtualAddress);
 
             CommandList.SetViewport(Viewport);
             CommandList.SetScissorRectangles(ScissorRectangle);
@@ -397,12 +401,11 @@ namespace DX12GameProgramming
             // We only have one skinned model being animated.
             _skinnedModelInst.UpdateSkinnedAnimation(gt.DeltaTime);
 
-            var skinnedConstants = new SkinnedConstants
-            {
-                BoneTransforms = _skinnedModelInst.FinalTransforms.ToArray()
-            };
+            _skinnedModelInst.FinalTransforms.CopyTo(
+                0, _skinnedConstants.BoneTransforms, 
+                0, _skinnedModelInst.FinalTransforms.Count);
 
-            currSkinnedCB.CopyData(0, ref skinnedConstants);
+            currSkinnedCB.CopyData(0, ref _skinnedConstants);
         }
 
         private void UpdateMaterialBuffer()
@@ -532,8 +535,6 @@ namespace DX12GameProgramming
 
         private void UpdateSsaoCB()
         {
-            var ssaoCB = new SsaoConstants();
-
             // Transform NDC space [-1,+1]^2 to texture space [0,1]^2
             var ndcToTexture = new Matrix(
                 0.5f, 0.0f, 0.0f, 0.0f,
@@ -541,26 +542,26 @@ namespace DX12GameProgramming
                 0.0f, 0.0f, 1.0f, 0.0f,
                 0.5f, 0.5f, 0.0f, 1.0f);
 
-            ssaoCB.Proj = _mainPassCB.Proj;
-            ssaoCB.InvProj = _mainPassCB.InvProj;
-            ssaoCB.ProjTex = Matrix.Transpose(_camera.Proj * ndcToTexture);
+            _ssaoCB.Proj = _mainPassCB.Proj;
+            _ssaoCB.InvProj = _mainPassCB.InvProj;
+            _ssaoCB.ProjTex = Matrix.Transpose(_camera.Proj * ndcToTexture);
 
-            _ssao.GetOffsetVectors(ssaoCB.OffsetVectors);
+            _ssao.GetOffsetVectors(_ssaoCB.OffsetVectors);
 
             float[] blurWeights = _ssao.CalcGaussWeights(2.5f);
-            ssaoCB.BlurWeights[0] = new Vector4(blurWeights[0]);
-            ssaoCB.BlurWeights[1] = new Vector4(blurWeights[4]);
-            ssaoCB.BlurWeights[2] = new Vector4(blurWeights[8]);
+            _ssaoCB.BlurWeights[0] = new Vector4(blurWeights[0]);
+            _ssaoCB.BlurWeights[1] = new Vector4(blurWeights[4]);
+            _ssaoCB.BlurWeights[2] = new Vector4(blurWeights[8]);
 
-            ssaoCB.InvRenderTargetSize = new Vector2(1.0f / _ssao.Width, 1.0f / _ssao.Height);
+            _ssaoCB.InvRenderTargetSize = new Vector2(1.0f / _ssao.Width, 1.0f / _ssao.Height);
 
             // Coordinates given in view space.
-            ssaoCB.OcclusionRadius = 0.5f;
-            ssaoCB.OcclusionFadeStart = 0.2f;
-            ssaoCB.OcclusionFadeEnd = 2.0f;
-            ssaoCB.SurfaceEpsilon = 0.05f;
+            _ssaoCB.OcclusionRadius = 0.5f;
+            _ssaoCB.OcclusionFadeStart = 0.2f;
+            _ssaoCB.OcclusionFadeEnd = 2.0f;
+            _ssaoCB.SurfaceEpsilon = 0.05f;
 
-            CurrFrameResource.SsaoCB.CopyData(0, ref ssaoCB);
+            CurrFrameResource.SsaoCB.CopyData(0, ref _ssaoCB);
         }
 
         private void LoadTextures()
@@ -789,7 +790,7 @@ namespace DX12GameProgramming
             };
 
             _shaders["standardVS"] = D3DUtil.CompileShader("Shaders\\Default.hlsl", "VS", "vs_5_1");
-            _shaders["standardVS"] = D3DUtil.CompileShader("Shaders\\Default.hlsl", "VS", "vs_5_1", skinnedDefines);
+            _shaders["skinnedVS"] = D3DUtil.CompileShader("Shaders\\Default.hlsl", "VS", "vs_5_1", skinnedDefines);
             _shaders["opaquePS"] = D3DUtil.CompileShader("Shaders\\Default.hlsl", "PS", "ps_5_1");
 
             _shaders["shadowVS"] = D3DUtil.CompileShader("Shaders\\Shadows.hlsl", "VS", "vs_5_1");
@@ -848,7 +849,7 @@ namespace DX12GameProgramming
             SubmeshGeometry cylinder = AppendMeshData(GeometryGenerator.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20), vertices, indices);
             SubmeshGeometry quad = AppendMeshData(GeometryGenerator.CreateQuad(0.0f, 0.0f, 1.0f, 1.0f, 0.0f), vertices, indices);
 
-            var geo = MeshGeometry.New(Device, CommandList, vertices.ToArray(), indices.ToArray(), "shapeGeo");
+            var geo = MeshGeometry.New(Device, CommandList, vertices, indices, "shapeGeo");
 
             geo.DrawArgs["box"] = box;
             geo.DrawArgs["grid"] = grid;
@@ -902,7 +903,7 @@ namespace DX12GameProgramming
                 ClipName = "Take1"
             };
 
-            MeshGeometry geo = MeshGeometry.New(Device, CommandList, indices, "soldier");
+            MeshGeometry geo = MeshGeometry.New(Device, CommandList, vertices, indices, "soldier");
             for (int i = 0; i < _skinnedSubsets.Count; i++)
             {
                 M3DLoader.Subset skinnedSubset = _skinnedSubsets[i];
@@ -919,7 +920,11 @@ namespace DX12GameProgramming
 
         private void BuildPSOs()
         {
-            var basePsoDesc = new GraphicsPipelineStateDescription
+            //
+            // PSO for opaque objects.
+            //
+
+            var opaquePsoDesc = new GraphicsPipelineStateDescription
             {
                 InputLayout = _inputLayout,
                 RootSignature = _rootSignature,
@@ -934,15 +939,7 @@ namespace DX12GameProgramming
                 SampleDescription = new SampleDescription(MsaaCount, MsaaQuality),
                 DepthStencilFormat = DepthStencilFormat
             };
-            basePsoDesc.RenderTargetFormats[0] = BackBufferFormat;
-
-            //
-            // PSO for opaque objects.
-            //
-
-            GraphicsPipelineStateDescription opaquePsoDesc = basePsoDesc.Copy();
-            opaquePsoDesc.DepthStencilState.DepthComparison = Comparison.Equal;
-            opaquePsoDesc.DepthStencilState.DepthWriteMask = DepthWriteMask.Zero;
+            opaquePsoDesc.RenderTargetFormats[0] = BackBufferFormat;
             _psos["opaque"] = Device.CreateGraphicsPipelineState(opaquePsoDesc);
 
             //
@@ -958,7 +955,7 @@ namespace DX12GameProgramming
             // PSO for shadow map pass.
             //
 
-            GraphicsPipelineStateDescription smapPsoDesc = basePsoDesc.Copy();
+            GraphicsPipelineStateDescription smapPsoDesc = opaquePsoDesc.Copy();
             smapPsoDesc.RasterizerState.DepthBias = 100000;
             smapPsoDesc.RasterizerState.DepthBiasClamp = 0.0f;
             smapPsoDesc.RasterizerState.SlopeScaledDepthBias = 1.0f;
@@ -982,7 +979,7 @@ namespace DX12GameProgramming
             // PSO for debug layer.
             //
 
-            GraphicsPipelineStateDescription debugPsoDesc = basePsoDesc.Copy();
+            GraphicsPipelineStateDescription debugPsoDesc = opaquePsoDesc.Copy();
             debugPsoDesc.VertexShader = _shaders["debugVS"];
             debugPsoDesc.PixelShader = _shaders["debugPS"];
             _psos["debug"] = Device.CreateGraphicsPipelineState(debugPsoDesc);
@@ -991,7 +988,7 @@ namespace DX12GameProgramming
             // PSO for drawing normals.
             //
 
-            GraphicsPipelineStateDescription drawNormalsPsoDesc = basePsoDesc.Copy();
+            GraphicsPipelineStateDescription drawNormalsPsoDesc = opaquePsoDesc.Copy();
             drawNormalsPsoDesc.VertexShader = _shaders["drawNormalsVS"];
             drawNormalsPsoDesc.PixelShader = _shaders["drawNormalsPS"];
             drawNormalsPsoDesc.RenderTargetFormats[0] = Ssao.NormalMapFormat;
@@ -1005,13 +1002,13 @@ namespace DX12GameProgramming
             GraphicsPipelineStateDescription skinnedDrawNormalsPsoDesc = drawNormalsPsoDesc.Copy();
             skinnedDrawNormalsPsoDesc.InputLayout = _skinnedInputLayout;
             skinnedDrawNormalsPsoDesc.VertexShader = _shaders["skinnedDrawNormalsVS"];
-            _psos["skinnedShadow_opaque"] = Device.CreateGraphicsPipelineState(skinnedDrawNormalsPsoDesc);
+            _psos["skinnedDrawNormals"] = Device.CreateGraphicsPipelineState(skinnedDrawNormalsPsoDesc);
 
             //
             // PSO for SSAO.
             //
 
-            GraphicsPipelineStateDescription ssaoPsoDesc = basePsoDesc.Copy();
+            GraphicsPipelineStateDescription ssaoPsoDesc = opaquePsoDesc.Copy();
             ssaoPsoDesc.InputLayout = null;
             ssaoPsoDesc.RootSignature = _ssaoRootSignature;
             ssaoPsoDesc.VertexShader = _shaders["ssaoVS"];
@@ -1037,7 +1034,7 @@ namespace DX12GameProgramming
             // PSO for sky.
             //
 
-            GraphicsPipelineStateDescription skyPsoDesc = basePsoDesc.Copy();
+            GraphicsPipelineStateDescription skyPsoDesc = opaquePsoDesc.Copy();
             // The camera is inside the sky sphere, so just turn off culling.
             skyPsoDesc.RasterizerState.CullMode = CullMode.None;
             // Make sure the depth function is LESS_EQUAL and not just LESS.  

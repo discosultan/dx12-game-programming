@@ -54,14 +54,15 @@ namespace DX12GameProgramming
 
         private GpuDescriptorHandle _nullSrv;
 
-        private PassConstants _mainPassCB;   // Index 0 of pass cbuffer.
-        private PassConstants _shadowPassCB; // Index 1 of pass cbuffer.
+        private PassConstants _mainPassCB = PassConstants.Default;   // Index 0 of pass cbuffer.
+        private PassConstants _shadowPassCB = PassConstants.Default; // Index 1 of pass cbuffer.
 
         private readonly Camera _camera = new Camera();
 
         private ShadowMap _shadowMap;
 
         private Ssao _ssao;
+        private SsaoConstants _ssaoCB = SsaoConstants.Default;
 
         private BoundingSphere _sceneBounds;
 
@@ -507,8 +508,6 @@ namespace DX12GameProgramming
 
         private void UpdateSsaoCB()
         {
-            var ssaoCB = new SsaoConstants();
-
             // Transform NDC space [-1,+1]^2 to texture space [0,1]^2
             var ndcToTexture = new Matrix(
                 0.5f, 0.0f, 0.0f, 0.0f,
@@ -516,26 +515,26 @@ namespace DX12GameProgramming
                 0.0f, 0.0f, 1.0f, 0.0f,
                 0.5f, 0.5f, 0.0f, 1.0f);
 
-            ssaoCB.Proj = _mainPassCB.Proj;
-            ssaoCB.InvProj = _mainPassCB.InvProj;
-            ssaoCB.ProjTex = Matrix.Transpose(_camera.Proj * ndcToTexture);
+            _ssaoCB.Proj = _mainPassCB.Proj;
+            _ssaoCB.InvProj = _mainPassCB.InvProj;
+            _ssaoCB.ProjTex = Matrix.Transpose(_camera.Proj * ndcToTexture);
 
-            _ssao.GetOffsetVectors(ssaoCB.OffsetVectors);
+            _ssao.GetOffsetVectors(_ssaoCB.OffsetVectors);
 
             float[] blurWeights = _ssao.CalcGaussWeights(2.5f);
-            ssaoCB.BlurWeights[0] = new Vector4(blurWeights[0]);
-            ssaoCB.BlurWeights[1] = new Vector4(blurWeights[4]);
-            ssaoCB.BlurWeights[2] = new Vector4(blurWeights[8]);
+            _ssaoCB.BlurWeights[0] = new Vector4(blurWeights[0]);
+            _ssaoCB.BlurWeights[1] = new Vector4(blurWeights[4]);
+            _ssaoCB.BlurWeights[2] = new Vector4(blurWeights[8]);
 
-            ssaoCB.InvRenderTargetSize = new Vector2(1.0f / _ssao.Width, 1.0f / _ssao.Height);
+            _ssaoCB.InvRenderTargetSize = new Vector2(1.0f / _ssao.Width, 1.0f / _ssao.Height);
 
             // Coordinates given in view space.
-            ssaoCB.OcclusionRadius = 0.5f;
-            ssaoCB.OcclusionFadeStart = 0.2f;
-            ssaoCB.OcclusionFadeEnd = 1.0f;
-            ssaoCB.SurfaceEpsilon = 0.05f;
+            _ssaoCB.OcclusionRadius = 0.5f;
+            _ssaoCB.OcclusionFadeStart = 0.2f;
+            _ssaoCB.OcclusionFadeEnd = 1.0f;
+            _ssaoCB.SurfaceEpsilon = 0.05f;
 
-            CurrFrameResource.SsaoCB.CopyData(0, ref ssaoCB);
+            CurrFrameResource.SsaoCB.CopyData(0, ref _ssaoCB);
         }
 
         private void LoadTextures()
@@ -787,7 +786,7 @@ namespace DX12GameProgramming
             SubmeshGeometry cylinder = AppendMeshData(GeometryGenerator.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20), vertices, indices);
             SubmeshGeometry quad = AppendMeshData(GeometryGenerator.CreateQuad(0.0f, 0.0f, 1.0f, 1.0f, 0.0f), vertices, indices);
 
-            var geo = MeshGeometry.New(Device, CommandList, vertices.ToArray(), indices.ToArray(), "shapeGeo");
+            var geo = MeshGeometry.New(Device, CommandList, vertices, indices, "shapeGeo");
 
             geo.DrawArgs["box"] = box;
             geo.DrawArgs["grid"] = grid;

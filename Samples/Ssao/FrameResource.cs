@@ -93,7 +93,9 @@ namespace DX12GameProgramming
             OcclusionRadius = 0.5f,
             OcclusionFadeStart = 0.2f,
             OcclusionFadeEnd = 2.0f,
-            SurfaceEpsilon = 0.05f
+            SurfaceEpsilon = 0.05f,
+            OffsetVectors = new Vector4[OffsetVectorCount],
+            BlurWeights = new Vector4[BlurWeightCount]
         };
     }
 

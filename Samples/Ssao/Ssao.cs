@@ -49,7 +49,7 @@ namespace DX12GameProgramming
         private int _renderTargetWidth;
         private int _renderTargetHeight;
 
-        private readonly Vector4[] _offsets = new Vector4[16];
+        private readonly Vector4[] _offsets = new Vector4[14];
 
         private ViewportF _viewport;
         private RectangleF _scissorRectangle;
@@ -151,7 +151,7 @@ namespace DX12GameProgramming
                 }
             };
             _device.CreateShaderResourceView(_normalMap, srvDesc, _normalMapCpuSrv);
-
+            
             srvDesc.Format = Format.R24_UNorm_X8_Typeless;
             _device.CreateShaderResourceView(depthStencilBuffer, srvDesc, _depthMapCpuSrv);
 

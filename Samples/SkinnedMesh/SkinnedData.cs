@@ -97,12 +97,12 @@ namespace DX12GameProgramming
     internal class SkinnedData
     {
         // Gives parentIndex of ith bone.
-        private List<int> _boneHierarchy;
-        private List<Matrix> _boneOffsets;
-        private Dictionary<string, AnimationClip> _animations;
+        private readonly List<int> _boneHierarchy;
+        private readonly List<Matrix> _boneOffsets;
+        private readonly Dictionary<string, AnimationClip> _animations;
 
-        private Matrix[] _toParentTransforms;
-        private Matrix[] _toRootTransforms;
+        private readonly Matrix[] _toParentTransforms;
+        private readonly Matrix[] _toRootTransforms;
 
         public SkinnedData(
             List<int> boneHierarchy, 
@@ -128,6 +128,8 @@ namespace DX12GameProgramming
         // the same timePos.
         public void GetFinalTransforms(string clipName, float time, List<Matrix> finalTransforms)
         {
+            finalTransforms.Clear();
+
             // Interpolate all the bones of this clip at the given time instance.
             AnimationClip clip = _animations[clipName];
             clip.Interpolate(time, _toParentTransforms);
@@ -157,7 +159,7 @@ namespace DX12GameProgramming
             for (int i = 0; i < BoneCount; i++)
             {
                 Matrix finalTransform = _boneOffsets[i] * _toRootTransforms[i];
-                finalTransforms[i] = Matrix.Transpose(finalTransform);
+                finalTransforms.Add(Matrix.Transpose(finalTransform));
             }
         }
     }
