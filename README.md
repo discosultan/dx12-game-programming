@@ -1,12 +1,10 @@
 # What is this sorcery?
 
-A collection of *DirectX 12 C# samples* from Frank D. Luna's book [Introduction to 3D Game Programming with Direct3D 12.0](http://d3dcoder.net/d3d12.htm). Samples have been ported to the .NET environment using [SharpDX](http://sharpdx.org/).
-
-This repo contains all the samples from part 2 of the book - *Direct3D foundations*. There are no plans to port samples from part 3.
+A collection of *DirectX 12 C# samples* from Frank D. Luna's book [Introduction to 3D Game Programming with Direct3D 12.0](http://d3dcoder.net/d3d12.htm). All the samples have been ported to .NET using [SharpDX](http://sharpdx.org/).
 
 # Building
 
-All the samples will compile with Visual Studio 2015+ and run on Windows 10 with DirectX 12 capable graphics hardware.
+The samples will compile with Visual Studio 2015+ and run on Windows 10 with DirectX 12 capable graphics hardware.
 
 # Samples
 
@@ -103,3 +101,53 @@ Tessellates a quad using 4 control points. Introduces programmable hull and doma
 <img src="./Images/BezierPatch.jpg" height="96px" align="right">
 
 Tessellates a quad using 16 control points cubic Bézier surface.
+
+## [CameraAndDynamicIndexing](Samples/CameraAndDynamicIndexing)
+<img src="./Images/CameraAndDynamicIndexing.jpg" height="96px" align="right">
+
+WIP
+
+## [InstancingAndCulling](Samples/InstancingAndCulling)
+<img src="./Images/InstancingAndCulling.jpg" height="96px" align="right">
+
+WIP
+
+## [Picking](Samples/Picking)
+<img src="./Images/Picking.jpg" height="96px" align="right">
+
+WIP
+
+## [CubeMap](Samples/CubeMap)
+<img src="./Images/CubeMap.jpg" height="96px" align="right">
+
+WIP
+
+## [DynamicCube](Samples/DynamicCube)
+<img src="./Images/DynamicCube.jpg" height="96px" align="right">
+
+WIP
+
+## [NormalMap](Samples/NormalMap)
+<img src="./Images/NormalMap.jpg" height="96px" align="right">
+
+WIP
+
+## [Shadows](Samples/Shadows)
+<img src="./Images/Shadows.jpg" height="96px" align="right">
+
+WIP
+
+## [Ssao](Samples/Ssao)
+<img src="./Images/Ssao.jpg" height="96px" align="right">
+
+WIP
+
+## [Quaternions](Samples/Quaternions)
+<img src="./Images/Quaternions.jpg" height="96px" align="right">
+
+WIP
+
+## [SkinnedMesh](Samples/SkinnedMesh)
+<img src="./Images/SkinnedMesh.jpg" height="96px" align="right">
+
+WIP
