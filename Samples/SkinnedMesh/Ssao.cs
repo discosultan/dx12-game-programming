@@ -75,7 +75,7 @@ namespace DX12GameProgramming
 
         public void GetOffsetVectors(Vector4[] offsets) => Array.Copy(_offsets, offsets, _offsets.Length);
 
-        public float[] CalcGaussWeights(float sigma)
+        public void CalcGaussWeights(float sigma, float[] weights)
         {
             float twoSigma2 = 2.0f * sigma * sigma;
 
@@ -84,8 +84,6 @@ namespace DX12GameProgramming
             int blurRadius = (int)Math.Ceiling(2.0f * sigma);
 
             Debug.Assert(blurRadius <= MaxBlurRadius);
-
-            var weights = new float[2 * blurRadius + 1];
 
             float weightSum = 0.0f;
 
@@ -103,8 +101,6 @@ namespace DX12GameProgramming
             {
                 weights[i] /= weightSum;
             }
-
-            return weights;
         }
 
         public void BuildDescriptors(
@@ -120,18 +116,18 @@ namespace DX12GameProgramming
 
             _ambientMap0CpuSrv = cpuSrv;
             _ambientMap1CpuSrv = cpuSrv + cbvSrvUavDescriptorSize;
-            _normalMapCpuSrv = cpuSrv + cbvSrvUavDescriptorSize;
-            _depthMapCpuSrv = cpuSrv + cbvSrvUavDescriptorSize;
-            _randomVectorMapCpuSrv = cpuSrv + cbvSrvUavDescriptorSize;
+            _normalMapCpuSrv = cpuSrv + 2 * cbvSrvUavDescriptorSize;
+            _depthMapCpuSrv = cpuSrv + 3 * cbvSrvUavDescriptorSize;
+            _randomVectorMapCpuSrv = cpuSrv + 4 * cbvSrvUavDescriptorSize;
 
             _ambientMap0GpuSrv = gpuSrv;
             _ambientMap1GpuSrv = gpuSrv + cbvSrvUavDescriptorSize;
-            _normalMapGpuSrv = gpuSrv + cbvSrvUavDescriptorSize;
-            _randomVectorMapGpuSrv = gpuSrv + cbvSrvUavDescriptorSize;
+            _normalMapGpuSrv = gpuSrv + 2 * cbvSrvUavDescriptorSize;
+            _randomVectorMapGpuSrv = gpuSrv + 3 * cbvSrvUavDescriptorSize;
 
             _normalMapCpuRtv = cpuRtv;
             _ambientMap0CpuRtv = cpuRtv + rtvDescriptorSize;
-            _ambientMap1CpuRtv = cpuRtv + rtvDescriptorSize;
+            _ambientMap1CpuRtv = cpuRtv + 2 * rtvDescriptorSize;
 
             //  Create the descriptors
             RebuildDescriptors(depthStencilBuffer);
@@ -437,8 +433,8 @@ namespace DX12GameProgramming
 
         private void BuildOffsetVectors()
         {
-            // Start with 14 uniformly distributed vectors.  We choose the 8 corners of the cube
-            // and the 6 center points along each cube face.  We always alternate the points on 
+            // Start with 14 uniformly distributed vectors. We choose the 8 corners of the cube
+            // and the 6 center points along each cube face. We always alternate the points on 
             // opposites sides of the cubes.  This way we still get the vectors spread out even
             // if we choose to use less than 14 samples.
 
@@ -465,7 +461,7 @@ namespace DX12GameProgramming
             _offsets[12] = new Vector4(0.0f, 0.0f, -1.0f, 0.0f);
             _offsets[13] = new Vector4(0.0f, 0.0f, +1.0f, 0.0f);
 
-            for (int i = 0; i < 14; ++i)
+            for (int i = 0; i < _offsets.Length; ++i)
             {
                 // Create random lengths in [0.25, 1.0].
                 float s = MathHelper.Randf(0.25f, 1.0f);

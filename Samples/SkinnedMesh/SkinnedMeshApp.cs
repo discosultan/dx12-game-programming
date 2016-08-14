@@ -72,6 +72,7 @@ namespace DX12GameProgramming
 
         private Ssao _ssao;
         private SsaoConstants _ssaoCB = SsaoConstants.Default;
+        private readonly float[] _blurWeights = new float[12];
 
         private BoundingSphere _sceneBounds;
 
@@ -548,10 +549,10 @@ namespace DX12GameProgramming
 
             _ssao.GetOffsetVectors(_ssaoCB.OffsetVectors);
 
-            float[] blurWeights = _ssao.CalcGaussWeights(2.5f);
-            _ssaoCB.BlurWeights[0] = new Vector4(blurWeights[0]);
-            _ssaoCB.BlurWeights[1] = new Vector4(blurWeights[4]);
-            _ssaoCB.BlurWeights[2] = new Vector4(blurWeights[8]);
+            _ssao.CalcGaussWeights(2.5f, _blurWeights);
+            _ssaoCB.BlurWeights[0] = new Vector4(_blurWeights[0], _blurWeights[1], _blurWeights[2], _blurWeights[3]);
+            _ssaoCB.BlurWeights[1] = new Vector4(_blurWeights[4], _blurWeights[5], _blurWeights[6], _blurWeights[7]);
+            _ssaoCB.BlurWeights[2] = new Vector4(_blurWeights[8], _blurWeights[9], _blurWeights[10], _blurWeights[11]);
 
             _ssaoCB.InvRenderTargetSize = new Vector2(1.0f / _ssao.Width, 1.0f / _ssao.Height);
 
