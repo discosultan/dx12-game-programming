@@ -554,7 +554,7 @@ namespace DX12GameProgramming
             _ssaoCB.BlurWeights[1] = new Vector4(_blurWeights[4], _blurWeights[5], _blurWeights[6], _blurWeights[7]);
             _ssaoCB.BlurWeights[2] = new Vector4(_blurWeights[8], _blurWeights[9], _blurWeights[10], _blurWeights[11]);
 
-            _ssaoCB.InvRenderTargetSize = new Vector2(1.0f / _ssao.Width, 1.0f / _ssao.Height);
+            _ssaoCB.InvRenderTargetSize = new Vector2(1.0f / _ssao.SsaoMapWidth, 1.0f / _ssao.SsaoMapHeight);
 
             // Coordinates given in view space.
             _ssaoCB.OcclusionRadius = 0.5f;
