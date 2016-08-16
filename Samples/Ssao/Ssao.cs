@@ -64,8 +64,8 @@ namespace DX12GameProgramming
             BuildRandomVectorTexture(cmdList);
         }
 
-        public int Width => _renderTargetWidth / 2;
-        public int Height => _renderTargetHeight / 2;
+        public int SsaoMapWidth => _renderTargetWidth / 2;
+        public int SsaoMapHeight => _renderTargetHeight / 2;
 
         public Resource NormalMap => _normalMap;
         public Resource AmbientMap => _ambientMap0;
@@ -87,7 +87,7 @@ namespace DX12GameProgramming
 
             float weightSum = 0.0f;
 
-            for (int i = -blurRadius; i <= blurRadius; ++i)
+            for (int i = -blurRadius; i <= blurRadius; i++)
             {
                 float x = i;
 
@@ -97,7 +97,7 @@ namespace DX12GameProgramming
             }
 
             // Divide by the sum so all the weights add up to 1.0.
-            for (int i = 0; i < weights.Length; ++i)
+            for (int i = 0; i < weights.Length; i++)
             {
                 weights[i] /= weightSum;
             }
@@ -122,7 +122,7 @@ namespace DX12GameProgramming
 
             _ambientMap0GpuSrv = gpuSrv;
             _ambientMap1GpuSrv = gpuSrv + cbvSrvUavDescriptorSize;
-            _normalMapGpuSrv = gpuSrv + 2 *cbvSrvUavDescriptorSize;
+            _normalMapGpuSrv = gpuSrv + 2 * cbvSrvUavDescriptorSize;
             _randomVectorMapGpuSrv = gpuSrv + 3 * cbvSrvUavDescriptorSize;
 
             _normalMapCpuRtv = cpuRtv;
@@ -191,12 +191,12 @@ namespace DX12GameProgramming
                 // We render to ambient map at half the resolution.
                 _viewport.X = 0.0f;
                 _viewport.Y = 0.0f;
-                _viewport.Width = _renderTargetWidth / 2.0f;
-                _viewport.Height = _renderTargetHeight / 2.0f;
+                _viewport.Width = SsaoMapWidth;
+                _viewport.Height = SsaoMapHeight;
                 _viewport.MinDepth = 0.0f;
                 _viewport.MaxDepth = 1.0f;
 
-                _scissorRectangle = new RectangleF(0, 0, _renderTargetWidth / 2.0f, _renderTargetHeight / 2.0f);
+                _scissorRectangle = new RectangleF(0, 0, SsaoMapWidth, SsaoMapHeight);
 
                 Dispose();
 
@@ -335,7 +335,7 @@ namespace DX12GameProgramming
             var optClear = new ClearValue
             {                
                 Format = NormalMapFormat,
-                Color = Color.Blue.ToVector4()
+                Color = Vector4.UnitZ
             };
 
             _normalMap = _device.CreateCommittedResource(
@@ -346,8 +346,8 @@ namespace DX12GameProgramming
                 optClear);
 
             // Ambient occlusion maps are at half resolution.
-            texDesc.Width = _renderTargetWidth / 2;
-            texDesc.Height = _renderTargetHeight / 2;
+            texDesc.Width = SsaoMapWidth;
+            texDesc.Height = SsaoMapHeight;
             texDesc.Format = AmbientMapFormat;
 
             optClear = new ClearValue
