@@ -91,7 +91,7 @@ namespace DX12GameProgramming
 
             // Estimate the scene bounding sphere manually since we know how the scene was constructed.
             // The grid is the "widest object" with a width of 20 and depth of 30.0f, and centered at
-            // the world space origin.  In general, you need to loop over every world space vertex
+            // the world space origin. In general, you need to loop over every world space vertex
             // position and compute the bounding sphere.
             _sceneBounds.Center = Vector3.Zero;
             _sceneBounds.Radius = MathHelper.Sqrtf(10.0f * 10.0f + 15.0f * 15.0f);
@@ -416,12 +416,12 @@ namespace DX12GameProgramming
             Vector3 lightPos = -2.0f * _sceneBounds.Radius * lightDir;
             Vector3 targetPos = _sceneBounds.Center;
             Vector3 lightUp = Vector3.Up;
-            Matrix lightView = Matrix.LookAtLH(lightPos, targetPos, lightUp);
+            _lightView = Matrix.LookAtLH(lightPos, targetPos, lightUp);
 
             _lightPosW = lightPos;
 
             // Transform bounding sphere to light space.
-            Vector3 sphereCenterLS = Vector3.TransformCoordinate(targetPos, lightView);
+            Vector3 sphereCenterLS = Vector3.TransformCoordinate(targetPos, _lightView);
 
             // Ortho frustum in light space encloses scene.
             float l = sphereCenterLS.X - _sceneBounds.Radius;
@@ -433,7 +433,7 @@ namespace DX12GameProgramming
 
             _lightNearZ = n;
             _lightFarZ = f;
-            Matrix lightProj = Matrix.OrthoOffCenterLH(l, r, b, t, n, f);
+            _lightProj = Matrix.OrthoOffCenterLH(l, r, b, t, n, f);
 
             // Transform NDC space [-1,+1]^2 to texture space [0,1]^2
             var ndcToTexture = new Matrix(
@@ -442,9 +442,7 @@ namespace DX12GameProgramming
                 0.0f, 0.0f, 1.0f, 0.0f,
                 0.5f, 0.5f, 0.0f, 1.0f);
 
-            _shadowTransform = lightView * lightProj * ndcToTexture;
-            _lightView = lightView;
-            _lightProj = lightProj;
+            _shadowTransform = _lightView * _lightProj * ndcToTexture;
         }
 
         private void UpdateMainPassCB(GameTimer gt)
@@ -526,8 +524,8 @@ namespace DX12GameProgramming
             _ssaoCB.BlurWeights[0] = new Vector4(_blurWeights[0], _blurWeights[1], _blurWeights[2], _blurWeights[3]);
             _ssaoCB.BlurWeights[1] = new Vector4(_blurWeights[4], _blurWeights[5], _blurWeights[6], _blurWeights[7]);
             _ssaoCB.BlurWeights[2] = new Vector4(_blurWeights[8], _blurWeights[9], _blurWeights[10], _blurWeights[11]);
-
-            _ssaoCB.InvRenderTargetSize = new Vector2(1.0f / _ssao.SsaoMapWidth, 1.0f / _ssao.SsaoMapHeight);
+            
+            _ssaoCB.InvRenderTargetSize = 1.0f / new Vector2(_ssao.SsaoMapWidth, _ssao.SsaoMapHeight);
 
             // Coordinates given in view space.
             _ssaoCB.OcclusionRadius = 0.5f;
@@ -834,6 +832,8 @@ namespace DX12GameProgramming
             var vertices = new List<Vertex>();
             var indices = new List<int>();
             int vCount = 0, tCount = 0;
+            var vMin = new Vector3(float.MaxValue);
+            var vMax = new Vector3(float.MinValue);
             using (var reader = new StreamReader("Models\\Skull.txt"))
             {
                 var input = reader.ReadLine();
@@ -866,7 +866,7 @@ namespace DX12GameProgramming
                                 Convert.ToSingle(vals[4].Trim(), CultureInfo.InvariantCulture),
                                 Convert.ToSingle(vals[5].Trim(), CultureInfo.InvariantCulture));
 
-                        // Generate a tangent vector so normal mapping works.  We aren't applying
+                        // Generate a tangent vector so normal mapping works. We aren't applying
                         // a texture map to the skull, so we just need any tangent vector so that
                         // the math works out to give us the original interpolated vertex normal.
                         Vector3 tangent = Math.Abs(Vector3.Dot(normal, Vector3.Up)) < 1.0f - 0.001f
@@ -879,6 +879,9 @@ namespace DX12GameProgramming
                             Normal = normal,
                             TangentU = tangent
                         });
+
+                        vMin = Vector3.Min(vMin, pos);
+                        vMax = Vector3.Max(vMax, pos);
                     }
                 }
 
@@ -906,7 +909,8 @@ namespace DX12GameProgramming
             {
                 IndexCount = indices.Count,
                 StartIndexLocation = 0,
-                BaseVertexLocation = 0
+                BaseVertexLocation = 0,
+                Bounds = new BoundingBox(vMin, vMax)
             };
 
             geo.DrawArgs["skull"] = submesh;
@@ -1043,7 +1047,7 @@ namespace DX12GameProgramming
             AddMaterial(new Material
             {
                 Name = "tile0",
-                MatCBIndex = 1,
+                MatCBIndex = 2,
                 DiffuseSrvHeapIndex = 2,
                 NormalSrvHeapIndex = 3,
                 DiffuseAlbedo = new Vector4(0.9f, 0.9f, 0.9f, 1.0f),
@@ -1053,7 +1057,7 @@ namespace DX12GameProgramming
             AddMaterial(new Material
             {
                 Name = "mirror0",
-                MatCBIndex = 2,
+                MatCBIndex = 3,
                 DiffuseSrvHeapIndex = 4,
                 NormalSrvHeapIndex = 5,
                 DiffuseAlbedo = new Vector4(0.0f, 0.0f, 0.0f, 1.0f),
@@ -1091,23 +1095,18 @@ namespace DX12GameProgramming
         {
             var skyRitem = new RenderItem();
             skyRitem.World = Matrix.Scaling(5000.0f);
-            skyRitem.TexTransform = Matrix.Identity;
             skyRitem.ObjCBIndex = 0;
             skyRitem.Mat = _materials["sky"];
             skyRitem.Geo = _geometries["shapeGeo"];
-            skyRitem.PrimitiveType = PrimitiveTopology.TriangleList;
             skyRitem.IndexCount = skyRitem.Geo.DrawArgs["sphere"].IndexCount;
             skyRitem.StartIndexLocation = skyRitem.Geo.DrawArgs["sphere"].StartIndexLocation;
             skyRitem.BaseVertexLocation = skyRitem.Geo.DrawArgs["sphere"].BaseVertexLocation;
             AddRenderItem(skyRitem, RenderLayer.Sky);
 
             var quadRitem = new RenderItem();
-            quadRitem.World = Matrix.Identity;
-            quadRitem.TexTransform = Matrix.Identity;
             quadRitem.ObjCBIndex = 1;
             quadRitem.Mat = _materials["bricks0"];
             quadRitem.Geo = _geometries["shapeGeo"];
-            quadRitem.PrimitiveType = PrimitiveTopology.TriangleList;
             quadRitem.IndexCount = quadRitem.Geo.DrawArgs["quad"].IndexCount;
             quadRitem.StartIndexLocation = quadRitem.Geo.DrawArgs["quad"].StartIndexLocation;
             quadRitem.BaseVertexLocation = quadRitem.Geo.DrawArgs["quad"].BaseVertexLocation;
@@ -1119,7 +1118,6 @@ namespace DX12GameProgramming
             boxRitem.ObjCBIndex = 2;
             boxRitem.Mat = _materials["bricks0"];
             boxRitem.Geo = _geometries["shapeGeo"];
-            boxRitem.PrimitiveType = PrimitiveTopology.TriangleList;
             boxRitem.IndexCount = boxRitem.Geo.DrawArgs["box"].IndexCount;
             boxRitem.StartIndexLocation = boxRitem.Geo.DrawArgs["box"].StartIndexLocation;
             boxRitem.BaseVertexLocation = boxRitem.Geo.DrawArgs["box"].BaseVertexLocation;
@@ -1127,23 +1125,19 @@ namespace DX12GameProgramming
 
             var skullRitem = new RenderItem();
             skullRitem.World = Matrix.Scaling(0.4f) * Matrix.Translation(0.0f, 1.0f, 0.0f);
-            skullRitem.TexTransform = Matrix.Scaling(1.0f, 0.5f, 1.0f);
             skullRitem.ObjCBIndex = 3;
             skullRitem.Mat = _materials["skullMat"];
             skullRitem.Geo = _geometries["skullGeo"];
-            skullRitem.PrimitiveType = PrimitiveTopology.TriangleList;
             skullRitem.IndexCount = skullRitem.Geo.DrawArgs["skull"].IndexCount;
             skullRitem.StartIndexLocation = skullRitem.Geo.DrawArgs["skull"].StartIndexLocation;
             skullRitem.BaseVertexLocation = skullRitem.Geo.DrawArgs["skull"].BaseVertexLocation;
             AddRenderItem(skullRitem, RenderLayer.Opaque);
 
             var gridRitem = new RenderItem();
-            gridRitem.World = Matrix.Identity;
             gridRitem.TexTransform = Matrix.Scaling(8.0f, 8.0f, 1.0f);
             gridRitem.ObjCBIndex = 4;
             gridRitem.Mat = _materials["tile0"];
             gridRitem.Geo = _geometries["shapeGeo"];
-            gridRitem.PrimitiveType = PrimitiveTopology.TriangleList;
             gridRitem.IndexCount = gridRitem.Geo.DrawArgs["grid"].IndexCount;
             gridRitem.StartIndexLocation = gridRitem.Geo.DrawArgs["grid"].StartIndexLocation;
             gridRitem.BaseVertexLocation = gridRitem.Geo.DrawArgs["grid"].BaseVertexLocation;
@@ -1159,7 +1153,6 @@ namespace DX12GameProgramming
                 leftCylRitem.ObjCBIndex = objCBIndex++;
                 leftCylRitem.Mat = _materials["bricks0"];
                 leftCylRitem.Geo = _geometries["shapeGeo"];
-                leftCylRitem.PrimitiveType = PrimitiveTopology.TriangleList;
                 leftCylRitem.IndexCount = leftCylRitem.Geo.DrawArgs["cylinder"].IndexCount;
                 leftCylRitem.StartIndexLocation = leftCylRitem.Geo.DrawArgs["cylinder"].StartIndexLocation;
                 leftCylRitem.BaseVertexLocation = leftCylRitem.Geo.DrawArgs["cylinder"].BaseVertexLocation;
@@ -1171,7 +1164,6 @@ namespace DX12GameProgramming
                 rightCylRitem.ObjCBIndex = objCBIndex++;
                 rightCylRitem.Mat = _materials["bricks0"];
                 rightCylRitem.Geo = _geometries["shapeGeo"];
-                rightCylRitem.PrimitiveType = PrimitiveTopology.TriangleList;
                 rightCylRitem.IndexCount = rightCylRitem.Geo.DrawArgs["cylinder"].IndexCount;
                 rightCylRitem.StartIndexLocation = rightCylRitem.Geo.DrawArgs["cylinder"].StartIndexLocation;
                 rightCylRitem.BaseVertexLocation = rightCylRitem.Geo.DrawArgs["cylinder"].BaseVertexLocation;
@@ -1179,11 +1171,9 @@ namespace DX12GameProgramming
 
                 var leftSphereRitem = new RenderItem();
                 leftSphereRitem.World = Matrix.Translation(-5.0f, 3.5f, -10.0f + i * 5.0f);
-                leftSphereRitem.TexTransform = Matrix.Identity;
                 leftSphereRitem.ObjCBIndex = objCBIndex++;
                 leftSphereRitem.Mat = _materials["mirror0"];
                 leftSphereRitem.Geo = _geometries["shapeGeo"];
-                leftSphereRitem.PrimitiveType = PrimitiveTopology.TriangleList;
                 leftSphereRitem.IndexCount = leftSphereRitem.Geo.DrawArgs["sphere"].IndexCount;
                 leftSphereRitem.StartIndexLocation = leftSphereRitem.Geo.DrawArgs["sphere"].StartIndexLocation;
                 leftSphereRitem.BaseVertexLocation = leftSphereRitem.Geo.DrawArgs["sphere"].BaseVertexLocation;
@@ -1191,11 +1181,9 @@ namespace DX12GameProgramming
 
                 var rightSphereRitem = new RenderItem();
                 rightSphereRitem.World = Matrix.Translation(+5.0f, 3.5f, -10.0f + i * 5.0f);
-                rightSphereRitem.TexTransform = Matrix.Identity;
                 rightSphereRitem.ObjCBIndex = objCBIndex++;
                 rightSphereRitem.Mat = _materials["mirror0"];
                 rightSphereRitem.Geo = _geometries["shapeGeo"];
-                rightSphereRitem.PrimitiveType = PrimitiveTopology.TriangleList;
                 rightSphereRitem.IndexCount = rightSphereRitem.Geo.DrawArgs["sphere"].IndexCount;
                 rightSphereRitem.StartIndexLocation = rightSphereRitem.Geo.DrawArgs["sphere"].StartIndexLocation;
                 rightSphereRitem.BaseVertexLocation = rightSphereRitem.Geo.DrawArgs["sphere"].BaseVertexLocation;
@@ -1235,9 +1223,7 @@ namespace DX12GameProgramming
             CommandList.SetScissorRectangles(_shadowMap.ScissorRectangle);
 
             // Change to DEPTH_WRITE.
-            CommandList.ResourceBarrierTransition(_shadowMap.Resource, ResourceStates.GenericRead, ResourceStates.DepthWrite);
-
-            int passCBByteSize = D3DUtil.CalcConstantBufferByteSize<PassConstants>();
+            CommandList.ResourceBarrierTransition(_shadowMap.Resource, ResourceStates.GenericRead, ResourceStates.DepthWrite);            
 
             // Clear the depth buffer.
             CommandList.ClearDepthStencilView(_shadowMap.Dsv, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
@@ -1248,6 +1234,7 @@ namespace DX12GameProgramming
             CommandList.SetRenderTargets((CpuDescriptorHandle?)null, _shadowMap.Dsv);
 
             // Bind the pass constant buffer for shadow map pass.
+            int passCBByteSize = D3DUtil.CalcConstantBufferByteSize<PassConstants>();
             Resource passCB = CurrFrameResource.PassCB.Resource;
             long passCBAddress = passCB.GPUVirtualAddress + passCBByteSize;
             CommandList.SetGraphicsRootConstantBufferView(1, passCBAddress);
@@ -1271,7 +1258,7 @@ namespace DX12GameProgramming
             CommandList.ResourceBarrierTransition(normalMap, ResourceStates.GenericRead, ResourceStates.RenderTarget);
 
             // Clear the screen normal map and depth buffer.
-            CommandList.ClearRenderTargetView(normalMapRtv, Color.Blue);
+            CommandList.ClearRenderTargetView(normalMapRtv, new Color4(0.0f, 0.0f, 1.0f, 0.0f));
             CommandList.ClearDepthStencilView(CurrentDepthStencilView, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
 
             // Specify the buffers we are going to render to.

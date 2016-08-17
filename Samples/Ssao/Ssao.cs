@@ -20,7 +20,7 @@ namespace DX12GameProgramming
         private readonly Device _device;
 
         private PipelineState _ssaoPso;
-        private PipelineState _blurPso;
+        private PipelineState _ssaoBlurPso;
 
         private Resource _randomVectorMap;
         private Resource _randomVectorMapUploadBuffer;
@@ -73,7 +73,7 @@ namespace DX12GameProgramming
         public GpuDescriptorHandle NormalMapSrv => _normalMapGpuSrv;
         public GpuDescriptorHandle AmbientMapSrv => _ambientMap0GpuSrv;
 
-        public void GetOffsetVectors(Vector4[] offsets) => Array.Copy(_offsets, offsets, _offsets.Length);
+        public void GetOffsetVectors(Vector4[] offsets) => Array.Copy(_offsets, offsets, offsets.Length);
 
         public void CalcGaussWeights(float sigma, float[] weights)
         {
@@ -123,7 +123,8 @@ namespace DX12GameProgramming
             _ambientMap0GpuSrv = gpuSrv;
             _ambientMap1GpuSrv = gpuSrv + cbvSrvUavDescriptorSize;
             _normalMapGpuSrv = gpuSrv + 2 * cbvSrvUavDescriptorSize;
-            _randomVectorMapGpuSrv = gpuSrv + 3 * cbvSrvUavDescriptorSize;
+            // We skip a depth map gpu srv.
+            _randomVectorMapGpuSrv = gpuSrv + 4 * cbvSrvUavDescriptorSize;
 
             _normalMapCpuRtv = cpuRtv;
             _ambientMap0CpuRtv = cpuRtv + rtvDescriptorSize;
@@ -178,7 +179,7 @@ namespace DX12GameProgramming
         public void SetPSOs(PipelineState ssaoPso, PipelineState ssaoBlurPso)
         {
             _ssaoPso = ssaoPso;
-            _blurPso = ssaoBlurPso;
+            _ssaoBlurPso = ssaoBlurPso;
         }
 
         public void OnResize(int newWidth, int newHeight)
@@ -214,8 +215,7 @@ namespace DX12GameProgramming
             // Change to RENDER_TARGET.
             cmdList.ResourceBarrierTransition(_ambientMap0, ResourceStates.GenericRead, ResourceStates.RenderTarget);
 
-            var clearValue = Color.White;
-            cmdList.ClearRenderTargetView(_ambientMap0CpuRtv, clearValue);
+            cmdList.ClearRenderTargetView(_ambientMap0CpuRtv, Color4.White);
 
             // Specify the buffers we are going to render to.
             cmdList.SetRenderTargets(_ambientMap0CpuRtv, null);
@@ -256,7 +256,7 @@ namespace DX12GameProgramming
 
         private void BlurAmbientMap(GraphicsCommandList cmdList, FrameResource currFrame, int blurCount)
         {
-            cmdList.PipelineState = _blurPso;
+            cmdList.PipelineState = _ssaoBlurPso;
 
             long ssaoCBAddress = currFrame.SsaoCB.Resource.GPUVirtualAddress;
             cmdList.SetGraphicsRootConstantBufferView(0, ssaoCBAddress);
@@ -293,8 +293,7 @@ namespace DX12GameProgramming
 
             cmdList.ResourceBarrierTransition(output, ResourceStates.GenericRead, ResourceStates.RenderTarget);
 
-            var clearValue = Color.White;
-            cmdList.ClearRenderTargetView(outputRtv, clearValue);
+            cmdList.ClearRenderTargetView(outputRtv, Color4.White);
 
             cmdList.SetRenderTargets(outputRtv, null);
 
@@ -335,7 +334,7 @@ namespace DX12GameProgramming
             var optClear = new ClearValue
             {                
                 Format = NormalMapFormat,
-                Color = Vector4.UnitZ
+                Color = Vector4.UnitZ                
             };
 
             _normalMap = _device.CreateCommittedResource(
@@ -353,7 +352,7 @@ namespace DX12GameProgramming
             optClear = new ClearValue
             {
                 Format = AmbientMapFormat,
-                Color = Color.White.ToVector4()
+                Color = Vector4.One
             };
 
             _ambientMap0 = _device.CreateCommittedResource(
