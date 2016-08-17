@@ -8,18 +8,19 @@ using SharpDX.DXGI;
 namespace DX12GameProgramming
 {
     [StructLayout(LayoutKind.Sequential, Pack = 4)]
-    struct Vertex
+    internal struct Vertex
     {
         public Vector3 Pos;
         public Vector4 Color;
     }
 
-    struct ObjectConstants
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    internal struct ObjectConstants
     {
         public Matrix WorldViewProj;
     }
 
-    class BoxApp : D3DApp
+    internal class BoxApp : D3DApp
     {
         private RootSignature _rootSignature;
         private DescriptorHeap _cbvHeap;

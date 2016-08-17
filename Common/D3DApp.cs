@@ -1,13 +1,13 @@
-﻿using SharpDX;
-using SharpDX.Direct3D;
-using SharpDX.Direct3D12;
-using SharpDX.DXGI;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Threading;
 using System.Windows.Forms;
 using System.Windows.Input;
+using SharpDX;
+using SharpDX.Direct3D;
+using SharpDX.Direct3D12;
+using SharpDX.DXGI;
 using Device = SharpDX.Direct3D12.Device;
 using Point = SharpDX.Point;
 using Resource = SharpDX.Direct3D12.Resource;
@@ -154,14 +154,17 @@ namespace DX12GameProgramming
             {
                 FlushCommandQueue();
 
-                DirectCmdListAlloc.Dispose();
-                CommandQueue.Dispose();
-                CommandList.Dispose();
-                RtvHeap.Dispose();
-                DsvHeap.Dispose();
-                Fence.Dispose();
-                SwapChain.Dispose();
-                Device.Dispose();
+                RtvHeap?.Dispose();
+                DsvHeap?.Dispose();
+                SwapChain?.Dispose();
+                foreach (Resource buffer in _swapChainBuffers)
+                    buffer?.Dispose();
+                DepthStencilBuffer?.Dispose();
+                CommandList?.Dispose();
+                DirectCmdListAlloc?.Dispose();
+                CommandQueue?.Dispose();                
+                Fence?.Dispose();
+                Device?.Dispose();
             }
         }
 
