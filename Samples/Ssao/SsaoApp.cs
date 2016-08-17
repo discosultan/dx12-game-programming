@@ -569,8 +569,8 @@ namespace DX12GameProgramming
                 new RootParameter(ShaderVisibility.All, new RootDescriptor(0, 0), RootParameterType.ConstantBufferView),
                 new RootParameter(ShaderVisibility.All, new RootDescriptor(1, 0), RootParameterType.ConstantBufferView),
                 new RootParameter(ShaderVisibility.All, new RootDescriptor(0, 1), RootParameterType.ShaderResourceView),
-                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 3, 0)),
-                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 10, 3))
+                new RootParameter(ShaderVisibility.Pixel, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 3, 0)),
+                new RootParameter(ShaderVisibility.Pixel, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 10, 3))
             };
 
             // A root signature is an array of root parameters.
@@ -590,8 +590,8 @@ namespace DX12GameProgramming
             {
                 new RootParameter(ShaderVisibility.All, new RootDescriptor(0, 0), RootParameterType.ConstantBufferView),
                 new RootParameter(ShaderVisibility.All, new RootConstants(1, 0, 1)),
-                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 2, 0)),
-                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 1, 2))
+                new RootParameter(ShaderVisibility.Pixel, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 2, 0)),
+                new RootParameter(ShaderVisibility.Pixel, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 1, 2))
             };            
 
             StaticSamplerDescription[] staticSamplers =
@@ -638,7 +638,7 @@ namespace DX12GameProgramming
             //
             var srvHeapDesc = new DescriptorHeapDescription
             {
-                DescriptorCount = 18,
+                DescriptorCount = 18, // TODO: It's 16 actually
                 Type = DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView,
                 Flags = DescriptorHeapFlags.ShaderVisible
             };

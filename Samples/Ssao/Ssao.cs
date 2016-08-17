@@ -130,7 +130,7 @@ namespace DX12GameProgramming
             _ambientMap0CpuRtv = cpuRtv + rtvDescriptorSize;
             _ambientMap1CpuRtv = cpuRtv + 2 * rtvDescriptorSize;
 
-            //  Create the descriptors
+            // Create the descriptors
             RebuildDescriptors(depthStencilBuffer);
         }
 
@@ -160,7 +160,7 @@ namespace DX12GameProgramming
             _device.CreateShaderResourceView(_ambientMap1, srvDesc, _ambientMap1CpuSrv);
 
             var rtvDesc = new RenderTargetViewDescription
-            {
+            {                
                 Dimension = RenderTargetViewDimension.Texture2D,
                 Format = NormalMapFormat,
                 Texture2D = new RenderTargetViewDescription.Texture2DResource
@@ -413,9 +413,11 @@ namespace DX12GameProgramming
                 for (int j = 0; j < 256; j++)
                 {
                     // Random vector in [0,1]. We will decompress in shader to [-1,1].
-                    var v = new Vector3(MathHelper.Randf(), MathHelper.Randf(), MathHelper.Randf());
-
-                    initData[i * 256 + j] = new Color(v.X, v.Y, v.Z, 0.0f);
+                    initData[i * 256 + j] = new Color(
+                        MathHelper.Randf(),
+                        MathHelper.Randf(),
+                        MathHelper.Randf(), 
+                        0.0f);
                 }
             }
 
@@ -434,7 +436,7 @@ namespace DX12GameProgramming
         {
             // Start with 14 uniformly distributed vectors. We choose the 8 corners of the cube
             // and the 6 center points along each cube face. We always alternate the points on 
-            // opposites sides of the cubes.  This way we still get the vectors spread out even
+            // opposites sides of the cubes. This way we still get the vectors spread out even
             // if we choose to use less than 14 samples.
 
             // 8 cube corners

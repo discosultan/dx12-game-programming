@@ -9,8 +9,9 @@ namespace DX12GameProgramming
 {
     internal class ShadowMap : IDisposable
     {
+        private static readonly Format Format = Format.R24G8_Typeless;
+
         private readonly Device _device;
-        private readonly Format _format = Format.R24G8_Typeless;       
 
         private CpuDescriptorHandle _cpuSrv;
         private GpuDescriptorHandle _gpuSrv;
@@ -40,7 +41,7 @@ namespace DX12GameProgramming
         public RectangleF ScissorRectangle { get; private set; }
 
         public void BuildDescriptors(
-            CpuDescriptorHandle cpuSrv, 
+            CpuDescriptorHandle cpuSrv,
             GpuDescriptorHandle gpuSrv,
             CpuDescriptorHandle cpuDsv)
         {
@@ -86,7 +87,7 @@ namespace DX12GameProgramming
 
             // Create DSV to resource so we can render to the shadow map.
             var dsvDesc = new DepthStencilViewDescription
-            {                                
+            {
                 Flags = DepthStencilViewFlags.None,
                 Dimension = DepthStencilViewDimension.Texture2D,
                 Format = Format.D24_UNorm_S8_UInt,
@@ -108,7 +109,7 @@ namespace DX12GameProgramming
                 Height = Height,
                 DepthOrArraySize = 1,
                 MipLevels = 1,
-                Format = _format,
+                Format = Format,
                 SampleDescription = new SampleDescription(1, 0),
                 Layout = TextureLayout.Unknown,
                 Flags = ResourceFlags.AllowDepthStencil
