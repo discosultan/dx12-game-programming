@@ -93,13 +93,12 @@ namespace DX12GameProgramming
             Utilities.Pin(weights, ptr => cmdList.SetComputeRoot32BitConstants(0, weights.Length, ptr, 1));
 
             cmdList.ResourceBarrierTransition(input, ResourceStates.RenderTarget, ResourceStates.CopySource);
-            cmdList.ResourceBarrierTransition(_blurMap0, ResourceStates.Common, ResourceStates.CopyDestination);
+            cmdList.ResourceBarrierTransition(_blurMap0, ResourceStates.GenericRead, ResourceStates.CopyDestination);
 
             // Copy the input (back-buffer in this example) to BlurMap0.
             cmdList.CopyResource(_blurMap0, input);
 
             cmdList.ResourceBarrierTransition(_blurMap0, ResourceStates.CopyDestination, ResourceStates.GenericRead);
-            cmdList.ResourceBarrierTransition(_blurMap1, ResourceStates.Common, ResourceStates.UnorderedAccess);
 
             for (int i = 0; i < blurCount; i++)
             {
@@ -234,13 +233,13 @@ namespace DX12GameProgramming
                 new HeapProperties(HeapType.Default),
                 HeapFlags.None,
                 texDesc,
-                ResourceStates.Common);
+                ResourceStates.GenericRead);
 
             _blurMap1 = _device.CreateCommittedResource(
                 new HeapProperties(HeapType.Default),
                 HeapFlags.None,
                 texDesc,
-                ResourceStates.Common);
+                ResourceStates.UnorderedAccess);
         }
     }
 }
