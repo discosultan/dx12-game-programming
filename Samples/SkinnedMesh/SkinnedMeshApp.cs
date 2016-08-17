@@ -349,10 +349,10 @@ namespace DX12GameProgramming
                 _ssao?.Dispose();
                 _shadowMap?.Dispose();
                 _srvDescriptorHeap?.Dispose();
-                foreach (Texture texture in _textures.Values) texture.Dispose();
-                foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();
                 _ssaoRootSignature?.Dispose();
                 _rootSignature?.Dispose();
+                foreach (Texture texture in _textures.Values) texture.Dispose();
+                foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();                
                 foreach (MeshGeometry geometry in _geometries.Values) geometry.Dispose();
                 foreach (PipelineState pso in _psos.Values) pso.Dispose();
             }

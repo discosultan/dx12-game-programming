@@ -197,11 +197,11 @@ namespace DX12GameProgramming
         {
             if (disposing)
             {
-                _rootSignature.Dispose();
-                _cbvHeap.Dispose();
-                _objectCB.Dispose();             
-                _boxGeo.Dispose();
-                _pso.Dispose();
+                _rootSignature?.Dispose();
+                _cbvHeap?.Dispose();
+                _objectCB?.Dispose();             
+                _boxGeo?.Dispose();
+                _pso?.Dispose();
             }
 
             base.Dispose(disposing);

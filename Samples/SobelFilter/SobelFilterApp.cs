@@ -275,11 +275,12 @@ namespace DX12GameProgramming
         {
             if (disposing)
             {
+                _srvDescriptorHeap?.Dispose();
+                _rootSignature?.Dispose();
+                _wavesRootSignature?.Dispose();
+                _postProcessRootSignature?.Dispose();
                 foreach (Texture texture in _textures.Values) texture.Dispose();
-                foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();
-                _rootSignature.Dispose();
-                _wavesRootSignature.Dispose();
-                _postProcessRootSignature.Dispose();
+                foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();                
                 foreach (MeshGeometry geometry in _geometries.Values) geometry.Dispose();
                 foreach (PipelineState pso in _psos.Values) pso.Dispose();
             }

@@ -200,10 +200,10 @@ namespace DX12GameProgramming
         {
             if (disposing)
             {
-                foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();
-                _rootSignature.Dispose();
+                _rootSignature?.Dispose();
+                _opaquePso?.Dispose();
+                foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();                
                 foreach (MeshGeometry geometry in _geometries.Values) geometry.Dispose();
-                _opaquePso.Dispose();
             }
             base.Dispose(disposing);
         }

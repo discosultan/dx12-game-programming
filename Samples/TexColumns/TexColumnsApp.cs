@@ -205,11 +205,12 @@ namespace DX12GameProgramming
         {
             if (disposing)
             {
+                _srvDescriptorHeap?.Dispose();
+                _rootSignature?.Dispose();
+                _opaquePso?.Dispose();
                 foreach (Texture texture in _textures.Values) texture.Dispose();
                 foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();
-                _rootSignature.Dispose();
                 foreach (MeshGeometry geometry in _geometries.Values) geometry.Dispose();                
-                _opaquePso.Dispose();
             }
             base.Dispose(disposing);
         }

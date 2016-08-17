@@ -217,9 +217,9 @@ namespace DX12GameProgramming
         {
             if (disposing)
             {
-                foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();
-                _rootSignature.Dispose();
-                _cbvHeap.Dispose();
+                _rootSignature?.Dispose();
+                _cbvHeap?.Dispose();
+                foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();                
                 foreach (MeshGeometry geometry in _geometries.Values) geometry.Dispose();
                 foreach (PipelineState pso in _psos.Values) pso.Dispose();
             }
