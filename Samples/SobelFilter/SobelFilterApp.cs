@@ -169,10 +169,10 @@ namespace DX12GameProgramming
 
             // Clear the back buffer and depth buffer.
             CommandList.ClearRenderTargetView(_offscreenRT.Rtv, new Color(_mainPassCB.FogColor));
-            CommandList.ClearDepthStencilView(CurrentDepthStencilView, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
+            CommandList.ClearDepthStencilView(DepthStencilView, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
 
             // Specify the buffers we are going to render to.            
-            CommandList.SetRenderTargets(_offscreenRT.Rtv, CurrentDepthStencilView);
+            CommandList.SetRenderTargets(_offscreenRT.Rtv, DepthStencilView);
 
             CommandList.SetGraphicsRootSignature(_rootSignature);            
 
@@ -205,7 +205,7 @@ namespace DX12GameProgramming
             CommandList.ResourceBarrierTransition(CurrentBackBuffer, ResourceStates.Present, ResourceStates.RenderTarget);
 
             // Specify the buffers we are going to render to.
-            CommandList.SetRenderTargets(CurrentBackBufferView, CurrentDepthStencilView);
+            CommandList.SetRenderTargets(CurrentBackBufferView, DepthStencilView);
 
             CommandList.SetGraphicsRootSignature(_postProcessRootSignature);
             CommandList.PipelineState = _psos["composite"];

@@ -50,8 +50,6 @@ namespace DX12GameProgramming
         private int _shadowMapHeapIndex;
         private int _ssaoHeapIndexStart;
 
-        private int _nullCubeSrvIndex;
-
         private GpuDescriptorHandle _nullSrv;
 
         private PassConstants _mainPassCB = PassConstants.Default;   // Index 0 of pass cbuffer.
@@ -259,7 +257,7 @@ namespace DX12GameProgramming
             // SO DO NOT CLEAR DEPTH.
 
             // Specify the buffers we are going to render to.            
-            CommandList.SetRenderTargets(CurrentBackBufferView, CurrentDepthStencilView);
+            CommandList.SetRenderTargets(1, CurrentBackBufferView, DepthStencilView);
 
             // Bind all the textures used in this scene. Observe
             // that we only have to specify the first descriptor in the table.  
@@ -336,10 +334,10 @@ namespace DX12GameProgramming
                 _ssao?.Dispose();
                 _shadowMap?.Dispose();
                 _srvDescriptorHeap?.Dispose();
-                foreach (Texture texture in _textures.Values) texture.Dispose();
-                foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();
                 _rootSignature?.Dispose();
                 _ssaoRootSignature?.Dispose();
+                foreach (Texture texture in _textures.Values) texture.Dispose();
+                foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();                
                 foreach (MeshGeometry geometry in _geometries.Values) geometry.Dispose();
                 foreach (PipelineState pso in _psos.Values) pso.Dispose();
             }
@@ -455,7 +453,16 @@ namespace DX12GameProgramming
             Matrix viewProj = view * proj;
             Matrix invView = Matrix.Invert(view);
             Matrix invProj = Matrix.Invert(proj);
-            Matrix invViewProj = Matrix.Invert(viewProj);            
+            Matrix invViewProj = Matrix.Invert(viewProj);
+
+            // Transform NDC space [-1,+1]^2 to texture space [0,1]^2
+            var ndcToTexture = new Matrix(
+                0.5f, 0.0f, 0.0f, 0.0f,
+                0.0f, -0.5f, 0.0f, 0.0f,
+                0.0f, 0.0f, 1.0f, 0.0f,
+                0.5f, 0.5f, 0.0f, 1.0f);
+
+            Matrix viewProjTex = viewProj * ndcToTexture;
 
             _mainPassCB.View = Matrix.Transpose(view);
             _mainPassCB.InvView = Matrix.Transpose(invView);
@@ -463,6 +470,7 @@ namespace DX12GameProgramming
             _mainPassCB.InvProj = Matrix.Transpose(invProj);
             _mainPassCB.ViewProj = Matrix.Transpose(viewProj);
             _mainPassCB.InvViewProj = Matrix.Transpose(invViewProj);
+            _mainPassCB.ViewProjTex = Matrix.Transpose(viewProjTex);
             _mainPassCB.ShadowTransform = Matrix.Transpose(_shadowTransform);
             _mainPassCB.EyePosW = _camera.Position;
             _mainPassCB.RenderTargetSize = new Vector2(ClientWidth, ClientHeight);
@@ -569,8 +577,8 @@ namespace DX12GameProgramming
                 new RootParameter(ShaderVisibility.All, new RootDescriptor(0, 0), RootParameterType.ConstantBufferView),
                 new RootParameter(ShaderVisibility.All, new RootDescriptor(1, 0), RootParameterType.ConstantBufferView),
                 new RootParameter(ShaderVisibility.All, new RootDescriptor(0, 1), RootParameterType.ShaderResourceView),
-                new RootParameter(ShaderVisibility.Pixel, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 3, 0)),
-                new RootParameter(ShaderVisibility.Pixel, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 10, 3))
+                new RootParameter(ShaderVisibility.Pixel, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 3, 0, 0, -1)),
+                new RootParameter(ShaderVisibility.Pixel, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 10, 3, 0 , -1))
             };
 
             // A root signature is an array of root parameters.
@@ -590,8 +598,8 @@ namespace DX12GameProgramming
             {
                 new RootParameter(ShaderVisibility.All, new RootDescriptor(0, 0), RootParameterType.ConstantBufferView),
                 new RootParameter(ShaderVisibility.All, new RootConstants(1, 0, 1)),
-                new RootParameter(ShaderVisibility.Pixel, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 2, 0)),
-                new RootParameter(ShaderVisibility.Pixel, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 1, 2))
+                new RootParameter(ShaderVisibility.Pixel, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 2, 0, 0, -1)),
+                new RootParameter(ShaderVisibility.Pixel, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 1, 2, 0, -1))
             };            
 
             StaticSamplerDescription[] staticSamplers =
@@ -599,18 +607,22 @@ namespace DX12GameProgramming
                 new StaticSamplerDescription(ShaderVisibility.All, 0, 0)
                 {
                     Filter = Filter.MinMagMipPoint,
-                    AddressUVW = TextureAddressMode.Clamp
+                    AddressUVW = TextureAddressMode.Clamp,
+                    MinLOD = 0.0f,
+                    ComparisonFunc = Comparison.LessEqual
                 },
                 new StaticSamplerDescription(ShaderVisibility.All, 1, 0)
                 {
                     Filter = Filter.MinMagMipLinear,
-                    AddressUVW = TextureAddressMode.Clamp
+                    AddressUVW = TextureAddressMode.Clamp,
+                    ComparisonFunc = Comparison.LessEqual
                 },
                 new StaticSamplerDescription(ShaderVisibility.All, 2, 0)
                 {
                     Filter = Filter.MinMagMipLinear,
                     AddressUVW = TextureAddressMode.Border,
                     MipLODBias = 0.0f,
+                    MinLOD = 0.0f,
                     MaxAnisotropy = 0,
                     ComparisonFunc = Comparison.LessEqual,
                     BorderColor = StaticBorderColor.OpaqueWhite
@@ -618,7 +630,9 @@ namespace DX12GameProgramming
                 new StaticSamplerDescription(ShaderVisibility.All, 3, 0)
                 {
                     Filter = Filter.MinMagMipLinear,
-                    AddressUVW = TextureAddressMode.Wrap
+                    AddressUVW = TextureAddressMode.Wrap,
+                    MinLOD = 0.0f,
+                    ComparisonFunc = Comparison.LessEqual
                 }
             };
 
@@ -698,10 +712,10 @@ namespace DX12GameProgramming
             _skyTexHeapIndex = tex2DList.Length;
             _shadowMapHeapIndex = _skyTexHeapIndex + 1;
             _ssaoHeapIndexStart = _shadowMapHeapIndex + 1;
-            _nullCubeSrvIndex = _ssaoHeapIndexStart + 5;
+            int nullCubeSrvIndex = _ssaoHeapIndexStart + 5;
 
-            CpuDescriptorHandle nullSrv = GetCpuSrv(_nullCubeSrvIndex);
-            _nullSrv = GetGpuSrv(_nullCubeSrvIndex);
+            CpuDescriptorHandle nullSrv = GetCpuSrv(nullCubeSrvIndex);
+            _nullSrv = GetGpuSrv(nullCubeSrvIndex);
 
             Device.CreateShaderResourceView(null, srvDesc, nullSrv);
             nullSrv += CbvSrvUavDescriptorSize;
@@ -1261,10 +1275,10 @@ namespace DX12GameProgramming
 
             // Clear the screen normal map and depth buffer.
             CommandList.ClearRenderTargetView(normalMapRtv, new Color4(0.0f, 0.0f, 1.0f, 0.0f));
-            CommandList.ClearDepthStencilView(CurrentDepthStencilView, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
+            CommandList.ClearDepthStencilView(DepthStencilView, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
 
             // Specify the buffers we are going to render to.
-            CommandList.SetRenderTargets(normalMapRtv, CurrentDepthStencilView);
+            CommandList.SetRenderTargets(1, normalMapRtv, DepthStencilView);
 
             // Bind the constant buffer for this pass.
             Resource passCB = CurrFrameResource.PassCB.Resource;

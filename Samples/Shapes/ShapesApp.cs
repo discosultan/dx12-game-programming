@@ -126,10 +126,10 @@ namespace DX12GameProgramming
 
             // Clear the back buffer and depth buffer.
             CommandList.ClearRenderTargetView(CurrentBackBufferView, Color.LightSteelBlue);
-            CommandList.ClearDepthStencilView(CurrentDepthStencilView, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
+            CommandList.ClearDepthStencilView(DepthStencilView, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
 
             // Specify the buffers we are going to render to.            
-            CommandList.SetRenderTargets(CurrentBackBufferView, CurrentDepthStencilView);
+            CommandList.SetRenderTargets(CurrentBackBufferView, DepthStencilView);
 
             CommandList.SetDescriptorHeaps(_descriptorHeaps.Length, _descriptorHeaps);
 

@@ -107,7 +107,7 @@ namespace DX12GameProgramming
 
         protected Resource CurrentBackBuffer => _swapChainBuffers[SwapChain.CurrentBackBufferIndex];
         protected CpuDescriptorHandle CurrentBackBufferView => RtvHeap.CPUDescriptorHandleForHeapStart + SwapChain.CurrentBackBufferIndex * RtvDescriptorSize;
-        protected CpuDescriptorHandle CurrentDepthStencilView => DsvHeap.CPUDescriptorHandleForHeapStart;
+        protected CpuDescriptorHandle DepthStencilView => DsvHeap.CPUDescriptorHandleForHeapStart;
 
         public virtual void Initialize()
         {

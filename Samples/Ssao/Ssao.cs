@@ -218,7 +218,7 @@ namespace DX12GameProgramming
             cmdList.ClearRenderTargetView(_ambientMap0CpuRtv, Color4.White);
 
             // Specify the buffers we are going to render to.
-            cmdList.SetRenderTargets(_ambientMap0CpuRtv, null);
+            cmdList.SetRenderTargets(1, _ambientMap0CpuRtv, null);
 
             // Bind the constant buffer for this pass.
             long ssaoCBAddress = currFrame.SsaoCB.Resource.GPUVirtualAddress;
@@ -295,7 +295,7 @@ namespace DX12GameProgramming
 
             cmdList.ClearRenderTargetView(outputRtv, Color4.White);
 
-            cmdList.SetRenderTargets(outputRtv, null);
+            cmdList.SetRenderTargets(1, outputRtv, null);
 
             // Normal/depth map still bound.
 

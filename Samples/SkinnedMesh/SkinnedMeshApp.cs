@@ -269,7 +269,7 @@ namespace DX12GameProgramming
             // SO DO NOT CLEAR DEPTH.
 
             // Specify the buffers we are going to render to.            
-            CommandList.SetRenderTargets(CurrentBackBufferView, CurrentDepthStencilView);
+            CommandList.SetRenderTargets(CurrentBackBufferView, DepthStencilView);
 
             // Bind all the textures used in this scene. Observe
             // that we only have to specify the first descriptor in the table.  
@@ -484,7 +484,16 @@ namespace DX12GameProgramming
             Matrix viewProj = view * proj;
             Matrix invView = Matrix.Invert(view);
             Matrix invProj = Matrix.Invert(proj);
-            Matrix invViewProj = Matrix.Invert(viewProj);            
+            Matrix invViewProj = Matrix.Invert(viewProj);
+
+            // Transform NDC space [-1,+1]^2 to texture space [0,1]^2
+            var ndcToTexture = new Matrix(
+                0.5f, 0.0f, 0.0f, 0.0f,
+                0.0f, -0.5f, 0.0f, 0.0f,
+                0.0f, 0.0f, 1.0f, 0.0f,
+                0.5f, 0.5f, 0.0f, 1.0f);
+
+            Matrix viewProjTex = viewProj * ndcToTexture;
 
             _mainPassCB.View = Matrix.Transpose(view);
             _mainPassCB.InvView = Matrix.Transpose(invView);
@@ -492,6 +501,7 @@ namespace DX12GameProgramming
             _mainPassCB.InvProj = Matrix.Transpose(invProj);
             _mainPassCB.ViewProj = Matrix.Transpose(viewProj);
             _mainPassCB.InvViewProj = Matrix.Transpose(invViewProj);
+            _mainPassCB.ViewProjTex = Matrix.Transpose(viewProjTex);
             _mainPassCB.ShadowTransform = Matrix.Transpose(_shadowTransform);
             _mainPassCB.EyePosW = _camera.Position;
             _mainPassCB.RenderTargetSize = new Vector2(ClientWidth, ClientHeight);
@@ -1338,10 +1348,10 @@ namespace DX12GameProgramming
 
             // Clear the screen normal map and depth buffer.
             CommandList.ClearRenderTargetView(normalMapRtv, Color.Blue);
-            CommandList.ClearDepthStencilView(CurrentDepthStencilView, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
+            CommandList.ClearDepthStencilView(DepthStencilView, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
 
             // Specify the buffers we are going to render to.
-            CommandList.SetRenderTargets(normalMapRtv, CurrentDepthStencilView);
+            CommandList.SetRenderTargets(normalMapRtv, DepthStencilView);
 
             // Bind the constant buffer for this pass.
             Resource passCB = CurrFrameResource.PassCB.Resource;

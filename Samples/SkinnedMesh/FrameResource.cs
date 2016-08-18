@@ -45,6 +45,7 @@ namespace DX12GameProgramming
         public Matrix InvProj;
         public Matrix ViewProj;
         public Matrix InvViewProj;
+        public Matrix ViewProjTex;
         public Matrix ShadowTransform;
         public Vector3 EyePosW;
         public float PerObjectPad1;
@@ -72,6 +73,7 @@ namespace DX12GameProgramming
             InvProj = Matrix.Identity,
             ViewProj = Matrix.Identity,
             InvViewProj = Matrix.Identity,
+            ViewProjTex = Matrix.Identity,
             ShadowTransform = Matrix.Identity,
             AmbientLight = Vector4.UnitW,
             Lights = Light.DefaultArray
@@ -79,7 +81,7 @@ namespace DX12GameProgramming
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 4)]
-    internal  struct SsaoConstants
+    internal struct SsaoConstants
     {
         private const int OffsetVectorCount = 14;
         private const int BlurWeightCount = 3;
