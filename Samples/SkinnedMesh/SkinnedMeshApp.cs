@@ -11,6 +11,7 @@ using ShaderResourceViewDimension = SharpDX.Direct3D12.ShaderResourceViewDimensi
 
 namespace DX12GameProgramming
 {
+    // TODO: Fix ssao computation.
     public class SkinnedMeshApp : D3DApp
     {
         private const int ShadowMapSize = 2048;

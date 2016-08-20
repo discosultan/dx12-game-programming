@@ -12,6 +12,7 @@ using ShaderResourceViewDimension = SharpDX.Direct3D12.ShaderResourceViewDimensi
 
 namespace DX12GameProgramming
 {
+    // TODO: Fix gpu waves disturbance.
     public class SobelFilterApp : D3DApp
     {
         private readonly List<FrameResource> _frameResources = new List<FrameResource>(NumFrameResources);

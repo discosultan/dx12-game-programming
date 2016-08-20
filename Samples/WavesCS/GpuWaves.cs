@@ -254,7 +254,7 @@ namespace DX12GameProgramming
             cmdList.SetComputeRootDescriptorTable(3, _currSolUav);
 
             // The current solution is in the GENERIC_READ state so it can be read by the vertex shader.
-            // Change it to UNORDERED_ACCESS for the compute shader.  Note that a UAV can still be
+            // Change it to UNORDERED_ACCESS for the compute shader. Note that a UAV can still be
             // read in a compute shader.
             cmdList.ResourceBarrierTransition(_currSol, ResourceStates.GenericRead, ResourceStates.UnorderedAccess);
 

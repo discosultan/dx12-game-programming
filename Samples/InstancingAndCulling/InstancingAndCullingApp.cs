@@ -11,6 +11,8 @@ using ShaderResourceViewDimension = SharpDX.Direct3D12.ShaderResourceViewDimensi
 
 namespace DX12GameProgramming
 {
+    // TODO: Fix crash when a large number of skulls become visible in the camera frustum.
+    // TODO: https://github.com/d3dcoder/d3d12book/issues/8
     public class InstancingAndCullingApp : D3DApp
     {
         private readonly List<FrameResource> _frameResources = new List<FrameResource>(NumFrameResources);
