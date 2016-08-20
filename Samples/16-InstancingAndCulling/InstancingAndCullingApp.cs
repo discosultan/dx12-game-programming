@@ -36,7 +36,10 @@ namespace DX12GameProgramming
         private readonly List<RenderItem> _allRitems = new List<RenderItem>();
 
         // Render items divided by PSO.
-        private readonly List<RenderItem> _opaqueRitems = new List<RenderItem>();
+        private readonly Dictionary<RenderLayer, List<RenderItem>> _ritemLayers = new Dictionary<RenderLayer, List<RenderItem>>
+        {
+            [RenderLayer.Opaque] = new List<RenderItem>()
+        };
 
         private bool _frustumCullingEnabled = true;
 
@@ -151,7 +154,7 @@ namespace DX12GameProgramming
             // The root signature knows how many descriptors are expected in the table.
             CommandList.SetGraphicsRootDescriptorTable(3, _srvDescriptorHeap.GPUDescriptorHandleForHeapStart);
 
-            DrawRenderItems(CommandList, _opaqueRitems);
+            DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Opaque]);
 
             // Indicate a state transition on the resource usage.
             CommandList.ResourceBarrierTransition(CurrentBackBuffer, ResourceStates.RenderTarget, ResourceStates.Present);
@@ -618,34 +621,38 @@ namespace DX12GameProgramming
             });
         }
 
-        private void AddMaterial(Material material) => _materials[material.Name] = material;
+        private void AddMaterial(Material mat) => _materials[mat.Name] = mat;
 
         private void BuildRenderItems()
         {
-            var skullRitem = new RenderItem();
-            skullRitem.ObjCBIndex = 0;
-            skullRitem.Mat = _materials["tile0"];
-            skullRitem.Geo = _geometries["skullGeo"];
-            skullRitem.IndexCount = skullRitem.Geo.DrawArgs["skull"].IndexCount;
-            skullRitem.StartIndexLocation = skullRitem.Geo.DrawArgs["skull"].StartIndexLocation;
-            skullRitem.BaseVertexLocation = skullRitem.Geo.DrawArgs["skull"].BaseVertexLocation;
-            skullRitem.Bounds = skullRitem.Geo.DrawArgs["skull"].Bounds;
+            MeshGeometry geo = _geometries["skullGeo"];
+            SubmeshGeometry submesh = geo.DrawArgs["skull"];
+            var skullRitem = new RenderItem
+            {
+                ObjCBIndex = 0,
+                Mat = _materials["tile0"],
+                Geo = _geometries["skullGeo"],
+                IndexCount = submesh.IndexCount,
+                StartIndexLocation = submesh.StartIndexLocation,
+                BaseVertexLocation = submesh.BaseVertexLocation,
+                Bounds = submesh.Bounds
+            };
             // Instance count for the render item is set during update based on frustum culling.
 
             // Generate instance data.
             const int n = 5;
             skullRitem.Instances = new InstanceData[n * n * n];
 
-            float width = 200.0f;
-            float height = 200.0f;
-            float depth = 200.0f;
+            const float width = 200.0f;
+            const float height = 200.0f;
+            const float depth = 200.0f;
 
-            float x = -0.5f * width;
-            float y = -0.5f * height;
-            float z = -0.5f * depth;
-            float dx = width / (n - 1);
-            float dy = height / (n - 1);
-            float dz = depth / (n - 1);
+            const float x = -0.5f * width;
+            const float y = -0.5f * height;
+            const float z = -0.5f * depth;
+            const float dx = width / (n - 1);
+            const float dy = height / (n - 1);
+            const float dz = depth / (n - 1);
             for (int k = 0; k < n; k++)
             {
                 for (int i = 0; i < n; i++)
@@ -669,7 +676,7 @@ namespace DX12GameProgramming
             _allRitems.Add(skullRitem);
 
             // All the render items are opaque.
-            _opaqueRitems.AddRange(_allRitems);
+            _ritemLayers[RenderLayer.Opaque].AddRange(_allRitems);
         }
 
         private void DrawRenderItems(GraphicsCommandList cmdList, List<RenderItem> ritems)
@@ -694,54 +701,42 @@ namespace DX12GameProgramming
         private static StaticSamplerDescription[] GetStaticSamplers() => new[]
         {
             // PointWrap
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 0, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 0, 0)
             {
                 Filter = Filter.MinMagMipPoint,
-                AddressU = TextureAddressMode.Wrap,
-                AddressV = TextureAddressMode.Wrap,
-                AddressW = TextureAddressMode.Wrap
+                AddressUVW = TextureAddressMode.Wrap
             },
             // PointClamp
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 1, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 1, 0)
             {
                 Filter = Filter.MinMagMipPoint,
-                AddressU = TextureAddressMode.Clamp,
-                AddressV = TextureAddressMode.Clamp,
-                AddressW = TextureAddressMode.Clamp
+                AddressUVW = TextureAddressMode.Clamp
             },
             // LinearWrap
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 2, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 2, 0)
             {
                 Filter = Filter.MinMagMipLinear,
-                AddressU = TextureAddressMode.Wrap,
-                AddressV = TextureAddressMode.Wrap,
-                AddressW = TextureAddressMode.Wrap
+                AddressUVW = TextureAddressMode.Wrap
             },
             // LinearClamp
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 3, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 3, 0)
             {
                 Filter = Filter.MinMagMipLinear,
-                AddressU = TextureAddressMode.Clamp,
-                AddressV = TextureAddressMode.Clamp,
-                AddressW = TextureAddressMode.Clamp
+                AddressUVW = TextureAddressMode.Clamp
             },
             // AnisotropicWrap
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 4, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 4, 0)
             {
                 Filter = Filter.Anisotropic,
-                AddressU = TextureAddressMode.Wrap,
-                AddressV = TextureAddressMode.Wrap,
-                AddressW = TextureAddressMode.Wrap,
+                AddressUVW = TextureAddressMode.Wrap,
                 MipLODBias = 0.0f,
                 MaxAnisotropy = 8
             },
             // AnisotropicClamp
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 5, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 5, 0)
             {
                 Filter = Filter.Anisotropic,
-                AddressU = TextureAddressMode.Clamp,
-                AddressV = TextureAddressMode.Clamp,
-                AddressW = TextureAddressMode.Clamp,
+                AddressUVW = TextureAddressMode.Clamp,
                 MipLODBias = 0.0f,
                 MaxAnisotropy = 8
             }

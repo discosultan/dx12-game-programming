@@ -603,10 +603,7 @@ namespace DX12GameProgramming
             });
         }
 
-        private void AddMaterial(Material mat)
-        {
-            _materials[mat.Name] = mat;
-        }
+        private void AddMaterial(Material mat) => _materials[mat.Name] = mat;
 
         private void BuildRenderItems()
         {

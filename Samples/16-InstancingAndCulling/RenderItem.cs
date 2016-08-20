@@ -1,6 +1,5 @@
 ﻿using SharpDX;
 using SharpDX.Direct3D;
-using System.Collections.Generic;
 
 namespace DX12GameProgramming
 {
@@ -38,5 +37,10 @@ namespace DX12GameProgramming
         public int InstanceCount { get; set; }
         public int StartIndexLocation { get; set; }
         public int BaseVertexLocation { get; set; }
+    }
+
+    internal enum RenderLayer
+    {
+        Opaque
     }
 }

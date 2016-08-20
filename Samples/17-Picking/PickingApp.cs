@@ -576,35 +576,39 @@ namespace DX12GameProgramming
             });
         }
 
-        private void AddMaterial(Material material) => _materials[material.Name] = material;
+        private void AddMaterial(Material mat) => _materials[mat.Name] = mat;
 
         private void BuildRenderItems()
         {
-            var carRitem = new RenderItem();
-            carRitem.World = Matrix.Translation(0.0f, 1.0f, 0.0f);
-            carRitem.ObjCBIndex = 0;
-            carRitem.Mat = _materials["gray0"];
-            carRitem.Geo = _geometries["carGeo"];
-            carRitem.IndexCount = carRitem.Geo.DrawArgs["car"].IndexCount;
-            carRitem.StartIndexLocation = carRitem.Geo.DrawArgs["car"].StartIndexLocation;
-            carRitem.BaseVertexLocation = carRitem.Geo.DrawArgs["car"].BaseVertexLocation;
-            carRitem.Bounds = carRitem.Geo.DrawArgs["car"].Bounds;
+            MeshGeometry geo = _geometries["carGeo"];
+            SubmeshGeometry submesh = geo.DrawArgs["car"];
+
+            var carRitem = new RenderItem
+            {
+                World = Matrix.Translation(0.0f, 1.0f, 0.0f),
+                ObjCBIndex = 0,
+                Mat = _materials["gray0"],
+                Geo = geo,
+                IndexCount = submesh.IndexCount,
+                StartIndexLocation = submesh.StartIndexLocation,
+                BaseVertexLocation = submesh.BaseVertexLocation,
+                Bounds = submesh.Bounds
+            };
             _ritemLayer[RenderLayer.Opaque].Add(carRitem);
             _allRitems.Add(carRitem);
 
-            _pickedRitem = new RenderItem();
-            _pickedRitem.ObjCBIndex = 1;
-            _pickedRitem.Mat = _materials["highlight0"];
-            _pickedRitem.Geo = _geometries["carGeo"];
-
-            // Picked triangle is not visible until one is picked.
-            _pickedRitem.Visible = false;
-
-            // DrawCall parameters are filled out when a triangle is picked.
-            _pickedRitem.IndexCount = 0;
-            _pickedRitem.StartIndexLocation = 0;
-            _pickedRitem.BaseVertexLocation = 0;
-
+            _pickedRitem = new RenderItem
+            {
+                ObjCBIndex = 1,
+                Mat = _materials["highlight0"],
+                Geo = geo,
+                // Picked triangle is not visible until one is picked.
+                Visible = false,
+                // DrawCall parameters are filled out when a triangle is picked.
+                IndexCount = 0,
+                StartIndexLocation = 0,
+                BaseVertexLocation = 0
+            };
             _ritemLayer[RenderLayer.Highlight].Add(_pickedRitem);
             _allRitems.Add(_pickedRitem);            
         }

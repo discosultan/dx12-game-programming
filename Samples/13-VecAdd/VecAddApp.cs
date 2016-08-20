@@ -196,7 +196,7 @@ namespace DX12GameProgramming
 
         private void BuildPSOs()
         {
-            var computePsoDesc = new ComputePipelineStateDescription // TODO: desc to struct
+            var computePsoDesc = new ComputePipelineStateDescription // TODO: API suggestion: class to struct.
             {
                 RootSignature = _rootSignature,
                 ComputeShader = _shaders["vecAddCS"],

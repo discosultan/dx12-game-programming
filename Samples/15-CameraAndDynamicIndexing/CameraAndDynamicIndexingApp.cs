@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using SharpDX;
-using SharpDX.Direct3D;
 using SharpDX.Direct3D12;
 using SharpDX.DXGI;
 using Resource = SharpDX.Direct3D12.Resource;
@@ -33,7 +33,10 @@ namespace DX12GameProgramming
         private readonly List<RenderItem> _allRitems = new List<RenderItem>();
 
         // Render items divided by PSO.
-        private readonly List<RenderItem> _opaqueRitems = new List<RenderItem>();
+        private readonly Dictionary<RenderLayer, List<RenderItem>> _ritemLayers = new Dictionary<RenderLayer, List<RenderItem>>
+        {
+            [RenderLayer.Opaque] = new List<RenderItem>()
+        };
 
         private PassConstants _mainPassCB = PassConstants.Default;
 
@@ -146,7 +149,7 @@ namespace DX12GameProgramming
             // The root signature knows how many descriptors are expected in the table.
             CommandList.SetGraphicsRootDescriptorTable(3, _srvDescriptorHeap.GPUDescriptorHandleForHeapStart);
 
-            DrawRenderItems(CommandList, _opaqueRitems);
+            DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Opaque]);
 
             // Indicate a state transition on the resource usage.
             CommandList.ResourceBarrierTransition(CurrentBackBuffer, ResourceStates.RenderTarget, ResourceStates.Present);
@@ -361,45 +364,34 @@ namespace DX12GameProgramming
             //
             CpuDescriptorHandle hDescriptor = _srvDescriptorHeap.CPUDescriptorHandleForHeapStart;
 
-            Resource bricksTex = _textures["bricksTex"].Resource;
-            Resource stoneTex = _textures["stoneTex"].Resource;
-            Resource tileTex = _textures["tileTex"].Resource;
-            Resource crateTex = _textures["crateTex"].Resource;
+            Resource[] tex2DList =
+            {
+                _textures["bricksTex"].Resource,
+                _textures["stoneTex"].Resource,
+                _textures["tileTex"].Resource,
+                _textures["crateTex"].Resource
+            };
 
             var srvDesc = new ShaderResourceViewDescription
             {
                 Shader4ComponentMapping = D3DUtil.DefaultShader4ComponentMapping,
-                Format = bricksTex.Description.Format,
                 Dimension = ShaderResourceViewDimension.Texture2D,
                 Texture2D = new ShaderResourceViewDescription.Texture2DResource
                 {
                     MostDetailedMip = 0,
-                    MipLevels = bricksTex.Description.MipLevels,
                     ResourceMinLODClamp = 0.0f
                 }
             };
-            Device.CreateShaderResourceView(bricksTex, srvDesc, hDescriptor);
 
-            // Next descriptor.
-            hDescriptor += CbvSrvUavDescriptorSize;
+            foreach (Resource tex2D in tex2DList)
+            {
+                srvDesc.Format = tex2D.Description.Format;
+                srvDesc.Texture2D.MipLevels = tex2D.Description.MipLevels;
+                Device.CreateShaderResourceView(tex2D, srvDesc, hDescriptor);
 
-            srvDesc.Format = stoneTex.Description.Format;
-            srvDesc.Texture2D.MipLevels = stoneTex.Description.MipLevels;
-            Device.CreateShaderResourceView(stoneTex, srvDesc, hDescriptor);
-
-            // Next descriptor.
-            hDescriptor += CbvSrvUavDescriptorSize;
-
-            srvDesc.Format = tileTex.Description.Format;
-            srvDesc.Texture2D.MipLevels = tileTex.Description.MipLevels;
-            Device.CreateShaderResourceView(tileTex, srvDesc, hDescriptor);
-
-            // Next descriptor.
-            hDescriptor += CbvSrvUavDescriptorSize;
-
-            srvDesc.Format = crateTex.Description.Format;
-            srvDesc.Texture2D.MipLevels = crateTex.Description.MipLevels;
-            Device.CreateShaderResourceView(crateTex, srvDesc, hDescriptor);
+                // Next descriptor.
+                hDescriptor += CbvSrvUavDescriptorSize;
+            }            
         }
 
         private void BuildShadersAndInputLayout()
@@ -417,115 +409,57 @@ namespace DX12GameProgramming
 
         private void BuildShapeGeometry()
         {
-            GeometryGenerator.MeshData box = GeometryGenerator.CreateBox(1.0f, 1.0f, 1.0f, 3);
-            GeometryGenerator.MeshData grid = GeometryGenerator.CreateGrid(20.0f, 30.0f, 60, 40);
-            GeometryGenerator.MeshData sphere = GeometryGenerator.CreateSphere(0.5f, 20, 20);
-            GeometryGenerator.MeshData cylinder = GeometryGenerator.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
-
             //
             // We are concatenating all the geometry into one big vertex/index buffer. So
             // define the regions in the buffer each submesh covers.
             //
 
-            // Cache the vertex offsets to each object in the concatenated vertex buffer.
-            int boxVertexOffset = 0;
-            int gridVertexOffset = box.Vertices.Count;
-            int sphereVertexOffset = gridVertexOffset + grid.Vertices.Count;
-            int cylinderVertexOffset = sphereVertexOffset + sphere.Vertices.Count;
+            var vertices = new List<Vertex>();
+            var indices = new List<short>();
 
-            // Cache the starting index for each object in the concatenated index buffer.
-            int boxIndexOffset = 0;
-            int gridIndexOffset = box.Indices32.Count;
-            int sphereIndexOffset = gridIndexOffset + grid.Indices32.Count;
-            int cylinderIndexOffset = sphereIndexOffset + sphere.Indices32.Count;
+            SubmeshGeometry box = AppendMeshData(GeometryGenerator.CreateBox(1.0f, 1.0f, 1.0f, 3), vertices, indices);
+            SubmeshGeometry grid = AppendMeshData(GeometryGenerator.CreateGrid(20.0f, 30.0f, 60, 40), vertices, indices);
+            SubmeshGeometry sphere = AppendMeshData(GeometryGenerator.CreateSphere(0.5f, 20, 20), vertices, indices);
+            SubmeshGeometry cylinder = AppendMeshData(GeometryGenerator.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20), vertices, indices);
 
+            var geo = MeshGeometry.New(Device, CommandList, vertices, indices.ToArray(), "shapeGeo");
+
+            geo.DrawArgs["box"] = box;
+            geo.DrawArgs["grid"] = grid;
+            geo.DrawArgs["sphere"] = sphere;
+            geo.DrawArgs["cylinder"] = cylinder;
+
+            _geometries[geo.Name] = geo;
+        }
+
+        private SubmeshGeometry AppendMeshData(GeometryGenerator.MeshData meshData, List<Vertex> vertices, List<short> indices)
+        {
+            //
             // Define the SubmeshGeometry that cover different 
             // regions of the vertex/index buffers.
+            //
 
-            var boxSubmesh = new SubmeshGeometry
+            var submesh = new SubmeshGeometry
             {
-                IndexCount = box.Indices32.Count,
-                StartIndexLocation = boxIndexOffset,
-                BaseVertexLocation = boxVertexOffset
-            };
-
-            var gridSubmesh = new SubmeshGeometry
-            {
-                IndexCount = grid.Indices32.Count,
-                StartIndexLocation = gridIndexOffset,
-                BaseVertexLocation = gridVertexOffset
-            };
-
-            var sphereSubmesh = new SubmeshGeometry
-            {
-                IndexCount = sphere.Indices32.Count,
-                StartIndexLocation = sphereIndexOffset,
-                BaseVertexLocation = sphereVertexOffset
-            };
-
-            var cylinderSubmesh = new SubmeshGeometry
-            {
-                IndexCount = cylinder.Indices32.Count,
-                StartIndexLocation = cylinderIndexOffset,
-                BaseVertexLocation = cylinderVertexOffset
+                IndexCount = meshData.Indices32.Count,
+                StartIndexLocation = indices.Count,
+                BaseVertexLocation = vertices.Count
             };
 
             //
             // Extract the vertex elements we are interested in and pack the
-            // vertices of all the meshes into one vertex buffer.
+            // vertices and indices of all the meshes into one vertex/index buffer.
             //
 
-            int totalVertexCount =
-                box.Vertices.Count +
-                grid.Vertices.Count +
-                sphere.Vertices.Count +
-                cylinder.Vertices.Count;
-
-            var vertices = new Vertex[totalVertexCount];
-
-            int k = 0;
-            for (int i = 0; i < box.Vertices.Count; ++i, ++k)
+            vertices.AddRange(meshData.Vertices.Select(vertex => new Vertex
             {
-                vertices[k].Pos = box.Vertices[i].Position;
-                vertices[k].Normal = box.Vertices[i].Normal;
-                vertices[k].TexC = box.Vertices[i].TexC;
-            }
+                Pos = vertex.Position,
+                Normal = vertex.Normal,
+                TexC = vertex.TexC
+            }));
+            indices.AddRange(meshData.GetIndices16());
 
-            for (int i = 0; i < grid.Vertices.Count; ++i, ++k)
-            {
-                vertices[k].Pos = grid.Vertices[i].Position;
-                vertices[k].Normal = grid.Vertices[i].Normal;
-                vertices[k].TexC = grid.Vertices[i].TexC;
-            }
-
-            for (int i = 0; i < sphere.Vertices.Count; ++i, ++k)
-            {
-                vertices[k].Pos = sphere.Vertices[i].Position;
-                vertices[k].Normal = sphere.Vertices[i].Normal;
-                vertices[k].TexC = sphere.Vertices[i].TexC;
-            }
-
-            for (int i = 0; i < cylinder.Vertices.Count; ++i, ++k)
-            {
-                vertices[k].Pos = cylinder.Vertices[i].Position;
-                vertices[k].Normal = cylinder.Vertices[i].Normal;
-                vertices[k].TexC = cylinder.Vertices[i].TexC;
-            }
-
-            var indices = new List<short>();
-            indices.AddRange(box.GetIndices16());
-            indices.AddRange(grid.GetIndices16());
-            indices.AddRange(sphere.GetIndices16());
-            indices.AddRange(cylinder.GetIndices16());
-
-            var geo = MeshGeometry.New(Device, CommandList, vertices, indices.ToArray(), "shapeGeo");
-
-            geo.DrawArgs["box"] = boxSubmesh;
-            geo.DrawArgs["grid"] = gridSubmesh;
-            geo.DrawArgs["sphere"] = sphereSubmesh;
-            geo.DrawArgs["cylinder"] = cylinderSubmesh;
-
-            _geometries[geo.Name] = geo;
+            return submesh;
         }
 
         private void BuildPSOs()
@@ -603,78 +537,48 @@ namespace DX12GameProgramming
             });
         }
 
-        private void AddMaterial(Material material) => _materials[material.Name] = material;
+        private void AddMaterial(Material mat) => _materials[mat.Name] = mat;
 
         private void BuildRenderItems()
         {
-            var boxRitem = new RenderItem();
-            boxRitem.World = Matrix.Scaling(2.0f, 2.0f, 2.0f) * Matrix.Translation(0.0f, 1.0f, 0.0f);
-            boxRitem.ObjCBIndex = 0;
-            boxRitem.Mat = _materials["crate0"];
-            boxRitem.Geo = _geometries["shapeGeo"];
-            boxRitem.IndexCount = boxRitem.Geo.DrawArgs["box"].IndexCount;
-            boxRitem.StartIndexLocation = boxRitem.Geo.DrawArgs["box"].StartIndexLocation;
-            boxRitem.BaseVertexLocation = boxRitem.Geo.DrawArgs["box"].BaseVertexLocation;
-            _allRitems.Add(boxRitem);
-
-            var gridRitem = new RenderItem();
-            gridRitem.TexTransform = Matrix.Scaling(8.0f, 8.0f, 1.0f);            
-            gridRitem.ObjCBIndex = 1;
-            gridRitem.Mat = _materials["tile0"];
-            gridRitem.Geo = _geometries["shapeGeo"];
-            gridRitem.IndexCount = gridRitem.Geo.DrawArgs["grid"].IndexCount;
-            gridRitem.StartIndexLocation = gridRitem.Geo.DrawArgs["grid"].StartIndexLocation;
-            gridRitem.BaseVertexLocation = gridRitem.Geo.DrawArgs["grid"].BaseVertexLocation;
-            _allRitems.Add(gridRitem);
+            AddRenderItem(RenderLayer.Opaque, 0, "stone0", "shapeGeo", "box",
+                world: Matrix.Scaling(2.0f, 2.0f, 2.0f) * Matrix.Translation(0.0f, 1.0f, 0.0f));
+            AddRenderItem(RenderLayer.Opaque, 1, "tile0", "shapeGeo", "grid",
+                texTransform: Matrix.Scaling(8.0f, 8.0f, 1.0f));
 
             int objCBIndex = 2;
             for (int i = 0; i < 5; ++i)
             {
-                var leftCylRitem = new RenderItem();
-                var rightCylRitem = new RenderItem();
-                var leftSphereRitem = new RenderItem();
-                var rightSphereRitem = new RenderItem();
+                AddRenderItem(RenderLayer.Opaque, objCBIndex++, "bricks0", "shapeGeo", "cylinder",
+                    world: Matrix.Translation(-5.0f, 1.5f, -10.0f + i * 5.0f));
+                AddRenderItem(RenderLayer.Opaque, objCBIndex++, "bricks0", "shapeGeo", "cylinder",
+                    world: Matrix.Translation(+5.0f, 1.5f, -10.0f + i * 5.0f));
 
-                leftCylRitem.World = Matrix.Translation(-5.0f, 1.5f, -10.0f + i * 5.0f);
-                leftCylRitem.ObjCBIndex = objCBIndex++;
-                leftCylRitem.Mat = _materials["bricks0"];
-                leftCylRitem.Geo = _geometries["shapeGeo"];
-                leftCylRitem.IndexCount = leftCylRitem.Geo.DrawArgs["cylinder"].IndexCount;
-                leftCylRitem.StartIndexLocation = leftCylRitem.Geo.DrawArgs["cylinder"].StartIndexLocation;
-                leftCylRitem.BaseVertexLocation = leftCylRitem.Geo.DrawArgs["cylinder"].BaseVertexLocation;
-
-                rightCylRitem.World = Matrix.Translation(+5.0f, 1.5f, -10.0f + i * 5.0f);
-                rightCylRitem.ObjCBIndex = objCBIndex++;
-                rightCylRitem.Mat = _materials["bricks0"];
-                rightCylRitem.Geo = _geometries["shapeGeo"];
-                rightCylRitem.IndexCount = rightCylRitem.Geo.DrawArgs["cylinder"].IndexCount;
-                rightCylRitem.StartIndexLocation = rightCylRitem.Geo.DrawArgs["cylinder"].StartIndexLocation;
-                rightCylRitem.BaseVertexLocation = rightCylRitem.Geo.DrawArgs["cylinder"].BaseVertexLocation;
-
-                leftSphereRitem.World = Matrix.Translation(-5.0f, 3.5f, -10.0f + i * 5.0f);
-                leftSphereRitem.ObjCBIndex = objCBIndex++;
-                leftSphereRitem.Mat = _materials["stone0"];
-                leftSphereRitem.Geo = _geometries["shapeGeo"];
-                leftSphereRitem.IndexCount = leftSphereRitem.Geo.DrawArgs["sphere"].IndexCount;
-                leftSphereRitem.StartIndexLocation = leftSphereRitem.Geo.DrawArgs["sphere"].StartIndexLocation;
-                leftSphereRitem.BaseVertexLocation = leftSphereRitem.Geo.DrawArgs["sphere"].BaseVertexLocation;
-
-                rightSphereRitem.World = Matrix.Translation(+5.0f, 3.5f, -10.0f + i * 5.0f);
-                rightSphereRitem.ObjCBIndex = objCBIndex++;
-                rightSphereRitem.Mat = _materials["stone0"];
-                rightSphereRitem.Geo = _geometries["shapeGeo"];
-                rightSphereRitem.IndexCount = rightSphereRitem.Geo.DrawArgs["sphere"].IndexCount;
-                rightSphereRitem.StartIndexLocation = rightSphereRitem.Geo.DrawArgs["sphere"].StartIndexLocation;
-                rightSphereRitem.BaseVertexLocation = rightSphereRitem.Geo.DrawArgs["sphere"].BaseVertexLocation;
-
-                _allRitems.Add(leftCylRitem);
-                _allRitems.Add(rightCylRitem);
-                _allRitems.Add(leftSphereRitem);
-                _allRitems.Add(rightSphereRitem);
+                AddRenderItem(RenderLayer.Opaque, objCBIndex++, "stone0", "shapeGeo", "sphere",
+                    world: Matrix.Translation(-5.0f, 3.5f, -10.0f + i * 5.0f));
+                AddRenderItem(RenderLayer.Opaque, objCBIndex++, "stone0", "shapeGeo", "sphere",
+                    world: Matrix.Translation(+5.0f, 3.5f, -10.0f + i * 5.0f));
             }
+        }
 
-            // All the render items are opaque.
-            _opaqueRitems.AddRange(_allRitems);
+        private void AddRenderItem(RenderLayer layer, int objCBIndex, string matName, string geoName, string submeshName,
+            Matrix? world = null, Matrix? texTransform = null)
+        {
+            MeshGeometry geo = _geometries[geoName];
+            SubmeshGeometry submesh = geo.DrawArgs[submeshName];
+            var renderItem = new RenderItem
+            {
+                ObjCBIndex = objCBIndex,
+                Mat = _materials[matName],
+                Geo = geo,
+                IndexCount = submesh.IndexCount,
+                StartIndexLocation = submesh.StartIndexLocation,
+                BaseVertexLocation = submesh.BaseVertexLocation,
+                World = world ?? Matrix.Identity,
+                TexTransform = texTransform ?? Matrix.Identity
+            };
+            _ritemLayers[layer].Add(renderItem);
+            _allRitems.Add(renderItem);
         }
 
         private void DrawRenderItems(GraphicsCommandList cmdList, List<RenderItem> ritems)
@@ -702,54 +606,42 @@ namespace DX12GameProgramming
         private static StaticSamplerDescription[] GetStaticSamplers() => new[]
         {
             // PointWrap
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 0, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 0, 0)
             {
                 Filter = Filter.MinMagMipPoint,
-                AddressU = TextureAddressMode.Wrap,
-                AddressV = TextureAddressMode.Wrap,
-                AddressW = TextureAddressMode.Wrap
+                AddressUVW = TextureAddressMode.Wrap
             },
             // PointClamp
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 1, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 1, 0)
             {
                 Filter = Filter.MinMagMipPoint,
-                AddressU = TextureAddressMode.Clamp,
-                AddressV = TextureAddressMode.Clamp,
-                AddressW = TextureAddressMode.Clamp
+                AddressUVW = TextureAddressMode.Clamp
             },
             // LinearWrap
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 2, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 2, 0)
             {
                 Filter = Filter.MinMagMipLinear,
-                AddressU = TextureAddressMode.Wrap,
-                AddressV = TextureAddressMode.Wrap,
-                AddressW = TextureAddressMode.Wrap
+                AddressUVW = TextureAddressMode.Wrap
             },
             // LinearClamp
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 3, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 3, 0)
             {
                 Filter = Filter.MinMagMipLinear,
-                AddressU = TextureAddressMode.Clamp,
-                AddressV = TextureAddressMode.Clamp,
-                AddressW = TextureAddressMode.Clamp
+                AddressUVW = TextureAddressMode.Clamp
             },
             // AnisotropicWrap
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 4, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 4, 0)
             {
                 Filter = Filter.Anisotropic,
-                AddressU = TextureAddressMode.Wrap,
-                AddressV = TextureAddressMode.Wrap,
-                AddressW = TextureAddressMode.Wrap,
+                AddressUVW = TextureAddressMode.Wrap,
                 MipLODBias = 0.0f,
                 MaxAnisotropy = 8
             },
             // AnisotropicClamp
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 5, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 5, 0)
             {
                 Filter = Filter.Anisotropic,
-                AddressU = TextureAddressMode.Clamp,
-                AddressV = TextureAddressMode.Clamp,
-                AddressW = TextureAddressMode.Clamp,
+                AddressUVW = TextureAddressMode.Clamp,
                 MipLODBias = 0.0f,
                 MaxAnisotropy = 8
             }

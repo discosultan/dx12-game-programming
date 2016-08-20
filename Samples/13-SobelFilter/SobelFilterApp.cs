@@ -537,14 +537,16 @@ namespace DX12GameProgramming
             //
             CpuDescriptorHandle hDescriptor = _srvDescriptorHeap.CPUDescriptorHandleForHeapStart;
 
-            Resource grassTex = _textures["grassTex"].Resource;
-            Resource waterTex = _textures["waterTex"].Resource;
-            Resource fenceTex = _textures["fenceTex"].Resource;
+            Resource[] tex2DList =
+            {
+                _textures["grassTex"].Resource,
+                _textures["waterTex"].Resource,
+                _textures["fenceTex"].Resource
+            };            
 
             var srvDesc = new ShaderResourceViewDescription
             {
                 Shader4ComponentMapping = D3DUtil.DefaultShader4ComponentMapping,
-                Format = grassTex.Description.Format,
                 Dimension = ShaderResourceViewDimension.Texture2D,
                 Texture2D = new ShaderResourceViewDescription.Texture2DResource
                 {
@@ -553,19 +555,14 @@ namespace DX12GameProgramming
                 }
             };
 
-            Device.CreateShaderResourceView(grassTex, srvDesc, hDescriptor);
+            foreach (Resource tex2D in tex2DList)
+            {
+                srvDesc.Format = tex2D.Description.Format;
+                Device.CreateShaderResourceView(tex2D, srvDesc, hDescriptor);
 
-            // Next descriptor.
-            hDescriptor += CbvSrvUavDescriptorSize;
-
-            srvDesc.Format = waterTex.Description.Format;
-            Device.CreateShaderResourceView(waterTex, srvDesc, hDescriptor);
-
-            // Next descriptor.
-            hDescriptor += CbvSrvUavDescriptorSize;
-
-            srvDesc.Format = fenceTex.Description.Format;
-            Device.CreateShaderResourceView(fenceTex, srvDesc, hDescriptor);
+                // Next descriptor.
+                hDescriptor += CbvSrvUavDescriptorSize;
+            }
 
             CpuDescriptorHandle srvCpuStart = _srvDescriptorHeap.CPUDescriptorHandleForHeapStart;
             GpuDescriptorHandle srvGpuStart = _srvDescriptorHeap.GPUDescriptorHandleForHeapStart;
@@ -789,6 +786,7 @@ namespace DX12GameProgramming
 
             GraphicsPipelineStateDescription alphaTestedPsoDesc = opaquePsoDesc.Copy();
             alphaTestedPsoDesc.PixelShader = _shaders["alphaTestedPS"];
+            alphaTestedPsoDesc.RasterizerState.CullMode = CullMode.None;
             _psos["alphaTested"] = Device.CreateGraphicsPipelineState(alphaTestedPsoDesc);
 
             //
@@ -893,52 +891,36 @@ namespace DX12GameProgramming
             });
         }
 
-        private void AddMaterial(Material mat)
-        {
-            _materials[mat.Name] = mat;
-        }
+        private void AddMaterial(Material mat) => _materials[mat.Name] = mat;
 
         private void BuildRenderItems()
         {
-            var wavesRitem = new RenderItem();
-            wavesRitem.World = Matrix.Identity;
-            wavesRitem.TexTransform = Matrix.Scaling(5.0f, 5.0f, 1.0f);
-            wavesRitem.DisplacementMapTexelSize = new Vector2(1.0f / _waves.ColumnCount, 1.0f / _waves.RowCount);
-            wavesRitem.GridSpatialStep = _waves.SpatialStep;
-            wavesRitem.ObjCBIndex = 0;
-            wavesRitem.Mat = _materials["water"];
-            wavesRitem.Geo = _geometries["waterGeo"];
-            wavesRitem.PrimitiveType = PrimitiveTopology.TriangleList;
-            wavesRitem.IndexCount = wavesRitem.Geo.DrawArgs["grid"].IndexCount;
-            wavesRitem.StartIndexLocation = wavesRitem.Geo.DrawArgs["grid"].StartIndexLocation;
-            wavesRitem.BaseVertexLocation = wavesRitem.Geo.DrawArgs["grid"].BaseVertexLocation;
-            _ritemLayers[RenderLayer.Transparent].Add(wavesRitem);
-            _allRitems.Add(wavesRitem);
+            AddRenderItem(RenderLayer.Transparent, 0, "water", "waterGeo", "grid",
+                texTransform: Matrix.Scaling(5.0f, 5.0f, 1.0f));
+            AddRenderItem(RenderLayer.Opaque, 1, "grass", "landGeo", "grid",
+                texTransform: Matrix.Scaling(5.0f, 5.0f, 1.0f));
+            AddRenderItem(RenderLayer.AlphaTested, 2, "wirefence", "boxGeo", "box",
+                world: Matrix.Translation(3.0f, 2.0f, -9.0f));
+        }
 
-            var gridRitem = new RenderItem();
-            gridRitem.World = Matrix.Identity;
-            gridRitem.TexTransform = Matrix.Scaling(5.0f, 5.0f, 1.0f);
-            gridRitem.ObjCBIndex = 1;
-            gridRitem.Mat = _materials["grass"];
-            gridRitem.Geo = _geometries["landGeo"];
-            gridRitem.PrimitiveType = PrimitiveTopology.TriangleList;
-            gridRitem.IndexCount = gridRitem.Geo.DrawArgs["grid"].IndexCount;
-            gridRitem.StartIndexLocation = gridRitem.Geo.DrawArgs["grid"].StartIndexLocation;
-            gridRitem.BaseVertexLocation = gridRitem.Geo.DrawArgs["grid"].BaseVertexLocation;
-            _ritemLayers[RenderLayer.Opaque].Add(gridRitem);
-            _allRitems.Add(gridRitem);
-
-            var boxItem = new RenderItem();
-            boxItem.World = Matrix.Translation(3.0f, 2.0f, -9.0f);            
-            boxItem.ObjCBIndex = 2;
-            boxItem.Mat = _materials["wirefence"];
-            boxItem.Geo = _geometries["boxGeo"];
-            boxItem.PrimitiveType = PrimitiveTopology.TriangleList;
-            boxItem.IndexCount = boxItem.Geo.DrawArgs["box"].IndexCount;
-            boxItem.StartIndexLocation = boxItem.Geo.DrawArgs["box"].StartIndexLocation;
-            boxItem.BaseVertexLocation = boxItem.Geo.DrawArgs["box"].BaseVertexLocation;
-            _ritemLayers[RenderLayer.AlphaTested].Add(boxItem);
-            _allRitems.Add(boxItem);
+        private void AddRenderItem(RenderLayer layer, int objCBIndex, string matName, string geoName, string submeshName, 
+            Matrix? world = null, Matrix? texTransform = null)
+        {
+            MeshGeometry geo = _geometries[geoName];
+            SubmeshGeometry submesh = geo.DrawArgs[submeshName];
+            var renderItem = new RenderItem
+            {
+                ObjCBIndex = objCBIndex,
+                Mat = _materials[matName],
+                Geo = geo,
+                IndexCount = submesh.IndexCount,
+                StartIndexLocation = submesh.StartIndexLocation,
+                BaseVertexLocation = submesh.BaseVertexLocation,
+                World = world ?? Matrix.Identity,
+                TexTransform = texTransform ?? Matrix.Identity
+            };
+            _ritemLayers[layer].Add(renderItem);
+            _allRitems.Add(renderItem);
         }
 
         private void DrawRenderItems(GraphicsCommandList cmdList, List<RenderItem> ritems)

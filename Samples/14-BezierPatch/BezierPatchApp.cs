@@ -140,9 +140,6 @@ namespace DX12GameProgramming
 
             CommandList.SetGraphicsRootSignature(_rootSignature);
 
-            var passCBByteSize = D3DUtil.CalcConstantBufferByteSize<PassConstants>();
-
-            // Draw opaque items--floors, walls, skull.
             Resource passCB = CurrFrameResource.PassCB.Resource;
             CommandList.SetGraphicsRootConstantBufferView(2, passCB.GPUVirtualAddress);
 
@@ -368,15 +365,17 @@ namespace DX12GameProgramming
             //
             CpuDescriptorHandle hDescriptor = _srvDescriptorHeap.CPUDescriptorHandleForHeapStart;
 
-            Resource bricksTex = _textures["bricksTex"].Resource;
-            Resource checkboardTex = _textures["checkboardTex"].Resource;
-            Resource iceTex = _textures["iceTex"].Resource;
-            Resource white1x1Tex = _textures["white1x1Tex"].Resource;
+            Resource[] tex2DList =
+            {
+                _textures["bricksTex"].Resource,
+                _textures["checkboardTex"].Resource,
+                _textures["iceTex"].Resource,
+                _textures["white1x1Tex"].Resource
+            };
 
             var srvDesc = new ShaderResourceViewDescription
             {
                 Shader4ComponentMapping = D3DUtil.DefaultShader4ComponentMapping,
-                Format = bricksTex.Description.Format,
                 Dimension = ShaderResourceViewDimension.Texture2D,
                 Texture2D = new ShaderResourceViewDescription.Texture2DResource
                 {
@@ -385,25 +384,14 @@ namespace DX12GameProgramming
                 }
             };
 
-            Device.CreateShaderResourceView(bricksTex, srvDesc, hDescriptor);
+            foreach (Resource tex2D in tex2DList)
+            {
+                srvDesc.Format = tex2D.Description.Format;
+                Device.CreateShaderResourceView(tex2D, srvDesc, hDescriptor);
 
-            // Next descriptor.
-            hDescriptor += CbvSrvUavDescriptorSize;
-
-            srvDesc.Format = checkboardTex.Description.Format;
-            Device.CreateShaderResourceView(checkboardTex, srvDesc, hDescriptor);
-
-            // Next descriptor.
-            hDescriptor += CbvSrvUavDescriptorSize;
-
-            srvDesc.Format = iceTex.Description.Format;
-            Device.CreateShaderResourceView(iceTex, srvDesc, hDescriptor);
-
-            // Next descriptor.
-            hDescriptor += CbvSrvUavDescriptorSize;
-
-            srvDesc.Format = white1x1Tex.Description.Format;
-            Device.CreateShaderResourceView(white1x1Tex, srvDesc, hDescriptor);
+                // Next descriptor.
+                hDescriptor += CbvSrvUavDescriptorSize;
+            }
         }
 
         private void BuildShadersAndInputLayout()
@@ -521,16 +509,20 @@ namespace DX12GameProgramming
 
         private void BuildRenderItems()
         {
-            var quadPatchRitem = new RenderItem();
-            quadPatchRitem.World = Matrix.Identity;
-            quadPatchRitem.TexTransform = Matrix.Identity;
-            quadPatchRitem.ObjCBIndex = 0;
-            quadPatchRitem.Mat = _materials["whiteMat"];
-            quadPatchRitem.Geo = _geometries["quadpatchGeo"];
-            quadPatchRitem.PrimitiveType = PrimitiveTopology.PatchListWith16ControlPoints;
-            quadPatchRitem.IndexCount = quadPatchRitem.Geo.DrawArgs["quadpatch"].IndexCount;
-            quadPatchRitem.StartIndexLocation = quadPatchRitem.Geo.DrawArgs["quadpatch"].StartIndexLocation;
-            quadPatchRitem.BaseVertexLocation = quadPatchRitem.Geo.DrawArgs["quadpatch"].BaseVertexLocation;
+            MeshGeometry geo = _geometries["quadpatchGeo"];
+            SubmeshGeometry submesh = geo.DrawArgs["quadpatch"];
+            var quadPatchRitem = new RenderItem
+            {
+                World = Matrix.Identity,
+                TexTransform = Matrix.Identity,
+                ObjCBIndex = 0,
+                Mat = _materials["whiteMat"],
+                Geo = geo,
+                PrimitiveType = PrimitiveTopology.PatchListWith16ControlPoints,
+                IndexCount = submesh.IndexCount,
+                StartIndexLocation = submesh.StartIndexLocation,
+                BaseVertexLocation = submesh.BaseVertexLocation
+            };
             _ritemLayers[RenderLayer.Opaque].Add(quadPatchRitem);
             _allRitems.Add(quadPatchRitem);
         }
@@ -567,54 +559,42 @@ namespace DX12GameProgramming
         private static StaticSamplerDescription[] GetStaticSamplers() => new[]
         {
             // PointWrap
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 0, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 0, 0)
             {
                 Filter = Filter.MinMagMipPoint,
-                AddressU = TextureAddressMode.Wrap,
-                AddressV = TextureAddressMode.Wrap,
-                AddressW = TextureAddressMode.Wrap
+                AddressUVW = TextureAddressMode.Wrap
             },
             // PointClamp
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 1, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 1, 0)
             {
                 Filter = Filter.MinMagMipPoint,
-                AddressU = TextureAddressMode.Clamp,
-                AddressV = TextureAddressMode.Clamp,
-                AddressW = TextureAddressMode.Clamp
+                AddressUVW = TextureAddressMode.Clamp
             },
             // LinearWrap
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 2, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 2, 0)
             {
                 Filter = Filter.MinMagMipLinear,
-                AddressU = TextureAddressMode.Wrap,
-                AddressV = TextureAddressMode.Wrap,
-                AddressW = TextureAddressMode.Wrap
+                AddressUVW = TextureAddressMode.Wrap
             },
             // LinearClamp
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 3, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 3, 0)
             {
                 Filter = Filter.MinMagMipLinear,
-                AddressU = TextureAddressMode.Clamp,
-                AddressV = TextureAddressMode.Clamp,
-                AddressW = TextureAddressMode.Clamp
+                AddressUVW = TextureAddressMode.Clamp
             },
             // AnisotropicWrap
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 4, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 4, 0)
             {
                 Filter = Filter.Anisotropic,
-                AddressU = TextureAddressMode.Wrap,
-                AddressV = TextureAddressMode.Wrap,
-                AddressW = TextureAddressMode.Wrap,
+                AddressUVW = TextureAddressMode.Wrap,
                 MipLODBias = 0.0f,
                 MaxAnisotropy = 8
             },
             // AnisotropicClamp
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 5, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 5, 0)
             {
                 Filter = Filter.Anisotropic,
-                AddressU = TextureAddressMode.Clamp,
-                AddressV = TextureAddressMode.Clamp,
-                AddressW = TextureAddressMode.Clamp,
+                AddressUVW = TextureAddressMode.Clamp,
                 MipLODBias = 0.0f,
                 MaxAnisotropy = 8
             }
