@@ -23,7 +23,6 @@ namespace DX12GameProgramming
         private PipelineState _ssaoBlurPso;
 
         private Resource _randomVectorMap;
-        private Resource _randomVectorMapUploadBuffer;
         private Resource _normalMap;
         private Resource _ambientMap0;
         private Resource _ambientMap1;
@@ -215,7 +214,7 @@ namespace DX12GameProgramming
             // Change to RENDER_TARGET.
             cmdList.ResourceBarrierTransition(_ambientMap0, ResourceStates.GenericRead, ResourceStates.RenderTarget);
 
-            cmdList.ClearRenderTargetView(_ambientMap0CpuRtv, Color4.White);
+            cmdList.ClearRenderTargetView(_ambientMap0CpuRtv, Color.White);
 
             // Specify the buffers we are going to render to.
             cmdList.SetRenderTargets(1, _ambientMap0CpuRtv, null);
@@ -251,7 +250,6 @@ namespace DX12GameProgramming
             _ambientMap1?.Dispose();
             _normalMap?.Dispose();
             _randomVectorMap?.Dispose();
-            _randomVectorMapUploadBuffer?.Dispose();
         }
 
         private void BlurAmbientMap(GraphicsCommandList cmdList, FrameResource currFrame, int blurCount)
@@ -293,7 +291,7 @@ namespace DX12GameProgramming
 
             cmdList.ResourceBarrierTransition(output, ResourceStates.GenericRead, ResourceStates.RenderTarget);
 
-            cmdList.ClearRenderTargetView(outputRtv, Color4.White);
+            cmdList.ClearRenderTargetView(outputRtv, Color.White);
 
             cmdList.SetRenderTargets(1, outputRtv, null);
 
@@ -375,7 +373,6 @@ namespace DX12GameProgramming
             var texDesc = new ResourceDescription
             {
                 Dimension = ResourceDimension.Texture2D,
-                Alignment = 0,
                 Width = 256,
                 Height = 256,
                 DepthOrArraySize = 1,
@@ -387,7 +384,7 @@ namespace DX12GameProgramming
             };
 
             _randomVectorMap = _device.CreateCommittedResource(
-                new HeapProperties(HeapType.Default),
+                new HeapProperties(CpuPageProperty.WriteBack, MemoryPool.L0),
                 HeapFlags.None,
                 texDesc,
                 ResourceStates.GenericRead);
@@ -396,16 +393,6 @@ namespace DX12GameProgramming
             // In order to copy CPU memory data into our default buffer, we need to create
             // an intermediate upload heap. 
             //
-
-            int num2DSubresources = texDesc.DepthOrArraySize * texDesc.MipLevels;
-            long uploadBufferSize;
-            _device.GetCopyableFootprints(ref texDesc, 0, num2DSubresources, 0, null, null, null, out uploadBufferSize);
-
-            _randomVectorMapUploadBuffer = _device.CreateCommittedResource(
-                new HeapProperties(HeapType.Upload),
-                HeapFlags.None,
-                ResourceDescription.Buffer(uploadBufferSize),
-                ResourceStates.GenericRead);
 
             var initData = new Color[256 * 256];
             for (int i = 0; i < 256; i++)
@@ -416,20 +403,14 @@ namespace DX12GameProgramming
                     initData[i * 256 + j] = new Color(
                         MathHelper.Randf(),
                         MathHelper.Randf(),
-                        MathHelper.Randf(), 
+                        MathHelper.Randf(),
                         0.0f);
                 }
             }
-
-            // Copy the data to the upload buffer.
-            IntPtr ptr = _randomVectorMapUploadBuffer.Map(0);
-            Utilities.Write(ptr, initData, 0, initData.Length);
-            _randomVectorMapUploadBuffer.Unmap(0);
-
-            // Schedule to copy the data to the default buffer resource.
-            cmdList.ResourceBarrierTransition(_randomVectorMap, ResourceStates.GenericRead, ResourceStates.CopyDestination);
-            cmdList.CopyResource(_randomVectorMap, _randomVectorMapUploadBuffer);
-            cmdList.ResourceBarrierTransition(_randomVectorMap, ResourceStates.CopyDestination, ResourceStates.GenericRead);
+            
+            int rowPitch = Utilities.SizeOf<Color>() * 256;
+            int slicePitch = rowPitch * 256;
+            Utilities.Pin(initData, ptr => _randomVectorMap.WriteToSubresource(0, null, ptr, rowPitch, slicePitch));                        
         }
 
         private void BuildOffsetVectors()

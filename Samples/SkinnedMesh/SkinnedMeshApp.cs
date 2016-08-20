@@ -264,9 +264,7 @@ namespace DX12GameProgramming
 
             // Clear the back buffer and depth buffer.
             CommandList.ClearRenderTargetView(CurrentBackBufferView, Color.LightSteelBlue);
-
-            // WE ALREADY WROTE THE DEPTH INFO TO THE DEPTH BUFFER IN DrawNormalsAndDepth,
-            // SO DO NOT CLEAR DEPTH.
+            CommandList.ClearDepthStencilView(DepthStencilView, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);            
 
             // Specify the buffers we are going to render to.            
             CommandList.SetRenderTargets(CurrentBackBufferView, DepthStencilView);
@@ -600,6 +598,9 @@ namespace DX12GameProgramming
 
         private void AddTexture(string name, string filename)
         {
+            // Don't create duplicates.
+            if (_textures.ContainsKey(name)) return;
+
             var tex = new Texture
             {
                 Name = name,
@@ -619,8 +620,8 @@ namespace DX12GameProgramming
                 new RootParameter(ShaderVisibility.All, new RootDescriptor(1, 0), RootParameterType.ConstantBufferView),
                 new RootParameter(ShaderVisibility.All, new RootDescriptor(2, 0), RootParameterType.ConstantBufferView),
                 new RootParameter(ShaderVisibility.All, new RootDescriptor(0, 1), RootParameterType.ShaderResourceView),
-                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 3, 0)),
-                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 48, 3))
+                new RootParameter(ShaderVisibility.Pixel, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 3, 0)),
+                new RootParameter(ShaderVisibility.Pixel, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 48, 3))
             };
 
             // A root signature is an array of root parameters.
@@ -640,8 +641,8 @@ namespace DX12GameProgramming
             {
                 new RootParameter(ShaderVisibility.All, new RootDescriptor(0, 0), RootParameterType.ConstantBufferView),
                 new RootParameter(ShaderVisibility.All, new RootConstants(1, 0, 1)),
-                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 2, 0)),
-                new RootParameter(ShaderVisibility.All, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 1, 2))
+                new RootParameter(ShaderVisibility.Pixel, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 2, 0)),
+                new RootParameter(ShaderVisibility.Pixel, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 1, 2))
             };            
 
             StaticSamplerDescription[] staticSamplers =
@@ -1308,9 +1309,7 @@ namespace DX12GameProgramming
             CommandList.SetScissorRectangles(_shadowMap.ScissorRectangle);
 
             // Change to DEPTH_WRITE.
-            CommandList.ResourceBarrierTransition(_shadowMap.Resource, ResourceStates.GenericRead, ResourceStates.DepthWrite);
-
-            int passCBByteSize = D3DUtil.CalcConstantBufferByteSize<PassConstants>();
+            CommandList.ResourceBarrierTransition(_shadowMap.Resource, ResourceStates.GenericRead, ResourceStates.DepthWrite);            
 
             // Clear the depth buffer.
             CommandList.ClearDepthStencilView(_shadowMap.Dsv, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
@@ -1321,9 +1320,10 @@ namespace DX12GameProgramming
             CommandList.SetRenderTargets((CpuDescriptorHandle?)null, _shadowMap.Dsv);
 
             // Bind the pass constant buffer for shadow map pass.
+            int passCBByteSize = D3DUtil.CalcConstantBufferByteSize<PassConstants>();
             Resource passCB = CurrFrameResource.PassCB.Resource;
             long passCBAddress = passCB.GPUVirtualAddress + passCBByteSize;
-            CommandList.SetGraphicsRootConstantBufferView(1, passCBAddress);
+            CommandList.SetGraphicsRootConstantBufferView(2, passCBAddress);
 
             CommandList.PipelineState = _psos["shadow_opaque"];
             DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Opaque]);
@@ -1347,7 +1347,7 @@ namespace DX12GameProgramming
             CommandList.ResourceBarrierTransition(normalMap, ResourceStates.GenericRead, ResourceStates.RenderTarget);
 
             // Clear the screen normal map and depth buffer.
-            CommandList.ClearRenderTargetView(normalMapRtv, Color.Blue);
+            CommandList.ClearRenderTargetView(normalMapRtv, new Color4(0.0f, 0.0f, 1.0f, 0.0f));
             CommandList.ClearDepthStencilView(DepthStencilView, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
 
             // Specify the buffers we are going to render to.
@@ -1355,7 +1355,7 @@ namespace DX12GameProgramming
 
             // Bind the constant buffer for this pass.
             Resource passCB = CurrFrameResource.PassCB.Resource;
-            CommandList.SetGraphicsRootConstantBufferView(1, passCB.GPUVirtualAddress);
+            CommandList.SetGraphicsRootConstantBufferView(2, passCB.GPUVirtualAddress);
 
             CommandList.PipelineState = _psos["drawNormals"];
             DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Opaque]);

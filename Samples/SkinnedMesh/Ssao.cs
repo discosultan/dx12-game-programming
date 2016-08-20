@@ -23,7 +23,6 @@ namespace DX12GameProgramming
         private PipelineState _ssaoBlurPso;
 
         private Resource _randomVectorMap;
-        private Resource _randomVectorMapUploadBuffer;
         private Resource _normalMap;
         private Resource _ambientMap0;
         private Resource _ambientMap1;
@@ -130,7 +129,7 @@ namespace DX12GameProgramming
             _ambientMap0CpuRtv = cpuRtv + rtvDescriptorSize;
             _ambientMap1CpuRtv = cpuRtv + 2 * rtvDescriptorSize;
 
-            //  Create the descriptors
+            // Create the descriptors
             RebuildDescriptors(depthStencilBuffer);
         }
 
@@ -215,10 +214,10 @@ namespace DX12GameProgramming
             // Change to RENDER_TARGET.
             cmdList.ResourceBarrierTransition(_ambientMap0, ResourceStates.GenericRead, ResourceStates.RenderTarget);
 
-            cmdList.ClearRenderTargetView(_ambientMap0CpuRtv, Color4.White);
+            cmdList.ClearRenderTargetView(_ambientMap0CpuRtv, Color.White);
 
             // Specify the buffers we are going to render to.
-            cmdList.SetRenderTargets(_ambientMap0CpuRtv, null);
+            cmdList.SetRenderTargets(1, _ambientMap0CpuRtv, null);
 
             // Bind the constant buffer for this pass.
             long ssaoCBAddress = currFrame.SsaoCB.Resource.GPUVirtualAddress;
@@ -251,7 +250,6 @@ namespace DX12GameProgramming
             _ambientMap1?.Dispose();
             _normalMap?.Dispose();
             _randomVectorMap?.Dispose();
-            _randomVectorMapUploadBuffer?.Dispose();
         }
 
         private void BlurAmbientMap(GraphicsCommandList cmdList, FrameResource currFrame, int blurCount)
@@ -293,9 +291,9 @@ namespace DX12GameProgramming
 
             cmdList.ResourceBarrierTransition(output, ResourceStates.GenericRead, ResourceStates.RenderTarget);
 
-            cmdList.ClearRenderTargetView(outputRtv, Color4.White);
+            cmdList.ClearRenderTargetView(outputRtv, Color.White);
 
-            cmdList.SetRenderTargets(outputRtv, null);
+            cmdList.SetRenderTargets(1, outputRtv, null);
 
             // Normal/depth map still bound.
 
@@ -375,7 +373,6 @@ namespace DX12GameProgramming
             var texDesc = new ResourceDescription
             {
                 Dimension = ResourceDimension.Texture2D,
-                Alignment = 0,
                 Width = 256,
                 Height = 256,
                 DepthOrArraySize = 1,
@@ -387,7 +384,7 @@ namespace DX12GameProgramming
             };
 
             _randomVectorMap = _device.CreateCommittedResource(
-                new HeapProperties(HeapType.Default),
+                new HeapProperties(CpuPageProperty.WriteBack, MemoryPool.L0),
                 HeapFlags.None,
                 texDesc,
                 ResourceStates.GenericRead);
@@ -397,44 +394,30 @@ namespace DX12GameProgramming
             // an intermediate upload heap. 
             //
 
-            int num2DSubresources = texDesc.DepthOrArraySize * texDesc.MipLevels;
-            long uploadBufferSize;
-            _device.GetCopyableFootprints(ref texDesc, 0, num2DSubresources, 0, null, null, null, out uploadBufferSize);
-
-            _randomVectorMapUploadBuffer = _device.CreateCommittedResource(
-                new HeapProperties(HeapType.Upload),
-                HeapFlags.None,
-                ResourceDescription.Buffer(uploadBufferSize),
-                ResourceStates.GenericRead);
-
             var initData = new Color[256 * 256];
             for (int i = 0; i < 256; i++)
             {
                 for (int j = 0; j < 256; j++)
                 {
                     // Random vector in [0,1]. We will decompress in shader to [-1,1].
-                    var v = new Vector3(MathHelper.Randf(), MathHelper.Randf(), MathHelper.Randf());
-
-                    initData[i * 256 + j] = new Color(v.X, v.Y, v.Z, 0.0f);
+                    initData[i * 256 + j] = new Color(
+                        MathHelper.Randf(),
+                        MathHelper.Randf(),
+                        MathHelper.Randf(),
+                        0.0f);
                 }
             }
 
-            // Copy the data to the upload buffer.
-            IntPtr ptr = _randomVectorMapUploadBuffer.Map(0);
-            Utilities.Write(ptr, initData, 0, initData.Length);
-            _randomVectorMapUploadBuffer.Unmap(0);
-
-            // Schedule to copy the data to the default buffer resource.
-            cmdList.ResourceBarrierTransition(_randomVectorMap, ResourceStates.GenericRead, ResourceStates.CopyDestination);
-            cmdList.CopyResource(_randomVectorMap, _randomVectorMapUploadBuffer);
-            cmdList.ResourceBarrierTransition(_randomVectorMap, ResourceStates.CopyDestination, ResourceStates.GenericRead);
+            int rowPitch = Utilities.SizeOf<Color>() * 256;
+            int slicePitch = rowPitch * 256;
+            Utilities.Pin(initData, ptr => _randomVectorMap.WriteToSubresource(0, null, ptr, rowPitch, slicePitch));
         }
 
         private void BuildOffsetVectors()
         {
             // Start with 14 uniformly distributed vectors. We choose the 8 corners of the cube
             // and the 6 center points along each cube face. We always alternate the points on 
-            // opposites sides of the cubes.  This way we still get the vectors spread out even
+            // opposites sides of the cubes. This way we still get the vectors spread out even
             // if we choose to use less than 14 samples.
 
             // 8 cube corners

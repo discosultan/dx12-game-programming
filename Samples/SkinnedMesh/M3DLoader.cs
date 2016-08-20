@@ -26,7 +26,7 @@ namespace DX12GameProgramming
             public Vector3 Pos;
             public Vector3 Normal;
             public Vector2 TexC;
-            public Vector4 TangentU;
+            public Vector3 TangentU;
             public Vector3 BoneWeights;
             public Color BoneIndices;
         }
@@ -215,11 +215,10 @@ namespace DX12GameProgramming
                     float.Parse(split[2], Culture),
                     float.Parse(split[3], Culture));
                 split = ReadAndSplitLine(reader);
-                vertex.TangentU = new Vector4(
+                vertex.TangentU = new Vector3(
                     float.Parse(split[1], Culture),
                     float.Parse(split[2], Culture),
-                    float.Parse(split[3], Culture),
-                    0.0f); // Why does it differ from ReadVertices?
+                    float.Parse(split[3], Culture));
                 split = ReadAndSplitLine(reader);
                 vertex.Normal = new Vector3(
                     float.Parse(split[1], Culture),
@@ -301,7 +300,7 @@ namespace DX12GameProgramming
                 clip.BoneAnimations.Capacity = numBones;
                 
                 for (int boneIndex = 0; boneIndex < numBones; boneIndex++)
-                    ReadBoneKeyframe(reader, numBones, clip.BoneAnimations);
+                    ReadBoneKeyframe(reader, clip.BoneAnimations);
 
                 reader.ReadLine(); // }
 
@@ -310,7 +309,7 @@ namespace DX12GameProgramming
             reader.ReadLine();
         }
 
-        private static void ReadBoneKeyframe(StreamReader reader, int numBones, List<BoneAnimation> boneAnimations)
+        private static void ReadBoneKeyframe(StreamReader reader, List<BoneAnimation> boneAnimations)
         {
             var boneAnimation = new BoneAnimation();
             string[] split = ReadAndSplitLine(reader);

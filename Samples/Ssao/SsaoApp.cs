@@ -235,7 +235,7 @@ namespace DX12GameProgramming
             // Main rendering pass.
             //
 
-            CommandList.SetGraphicsRootSignature(_rootSignature);
+            CommandList.SetGraphicsRootSignature(_rootSignature);            
 
             // Rebind state whenever graphics root signature changes.
 
@@ -262,7 +262,7 @@ namespace DX12GameProgramming
             // Bind all the textures used in this scene. Observe
             // that we only have to specify the first descriptor in the table.  
             // The root signature knows how many descriptors are expected in the table.
-            CommandList.SetGraphicsRootDescriptorTable(4, _srvDescriptorHeap.GPUDescriptorHandleForHeapStart);
+            CommandList.SetGraphicsRootDescriptorTable(4, _srvDescriptorHeap.GPUDescriptorHandleForHeapStart);            
 
             Resource passCB = CurrFrameResource.PassCB.Resource;
             CommandList.SetGraphicsRootConstantBufferView(1, passCB.GPUVirtualAddress);
@@ -621,11 +621,11 @@ namespace DX12GameProgramming
                 {
                     Filter = Filter.MinMagMipLinear,
                     AddressUVW = TextureAddressMode.Border,
-                    MipLODBias = 0.0f,
-                    MinLOD = 0.0f,
+                    MipLODBias = 0.0f,                    
                     MaxAnisotropy = 0,
                     ComparisonFunc = Comparison.LessEqual,
-                    BorderColor = StaticBorderColor.OpaqueWhite
+                    BorderColor = StaticBorderColor.OpaqueWhite,
+                    MinLOD = 0.0f
                 },
                 new StaticSamplerDescription(ShaderVisibility.All, 3, 0)
                 {
@@ -989,7 +989,7 @@ namespace DX12GameProgramming
             //
             // PSO for drawing normals.
             //
-
+            
             GraphicsPipelineStateDescription drawNormalsPsoDesc = basePsoDesc.Copy();
             drawNormalsPsoDesc.VertexShader = _shaders["drawNormalsVS"];
             drawNormalsPsoDesc.PixelShader = _shaders["drawNormalsPS"];
@@ -1008,7 +1008,7 @@ namespace DX12GameProgramming
             ssaoPsoDesc.PixelShader = _shaders["ssaoPS"];
             // SSAO effect does not need the depth buffer.
             ssaoPsoDesc.DepthStencilState.IsDepthEnabled = false;
-            ssaoPsoDesc.DepthStencilState.DepthWriteMask = DepthWriteMask.Zero;
+            ssaoPsoDesc.DepthStencilState.DepthWriteMask = DepthWriteMask.Zero;            
             ssaoPsoDesc.RenderTargetFormats[0] = Ssao.AmbientMapFormat;
             ssaoPsoDesc.SampleDescription = new SampleDescription(1, 0);
             ssaoPsoDesc.DepthStencilFormat = Format.Unknown;
@@ -1215,7 +1215,7 @@ namespace DX12GameProgramming
 
         private void DrawRenderItems(GraphicsCommandList cmdList, List<RenderItem> ritems)
         {
-            int objCBByteSize = D3DUtil.CalcConstantBufferByteSize<ObjectConstants>();
+            int objCBByteSize = D3DUtil.CalcConstantBufferByteSize<ObjectConstants>();            
 
             Resource objectCB = CurrFrameResource.ObjectCB.Resource;
 

@@ -239,7 +239,7 @@ namespace DX12GameProgramming
                 Dimension = DepthStencilViewDimension.Texture2D,
                 Format = DepthStencilFormat
             };
-            // Create descriptor to mip level 0 of entire resource using the format of the resource.
+            // Create descriptor to mip level 0 of entire resource using a depth stencil format.
             CpuDescriptorHandle dsvHeapHandle = DsvHeap.CPUDescriptorHandleForHeapStart;
             Device.CreateDepthStencilView(DepthStencilBuffer, depthStencilViewDesc, dsvHeapHandle);
 

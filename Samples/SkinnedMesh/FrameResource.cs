@@ -134,7 +134,7 @@ namespace DX12GameProgramming
         {
             DiffuseAlbedo = Vector4.One,
             FresnelR0 = new Vector3(0.01f),
-            Roughness = 64.0f,
+            Roughness = 0.5f,
             MatTransform = Matrix.Identity
         };
     }
@@ -155,10 +155,10 @@ namespace DX12GameProgramming
             CmdListAlloc = device.CreateCommandAllocator(CommandListType.Direct);
 
             PassCB = new UploadBuffer<PassConstants>(device, passCount, true);
-            ObjectCB = new UploadBuffer<ObjectConstants>(device, objectCount, true);
-            SkinnedCB = new UploadBuffer<SkinnedConstants>(device, skinnedObjectCount, true);
             SsaoCB = new UploadBuffer<SsaoConstants>(device, 1, true);
             MaterialBuffer = new UploadBuffer<MaterialData>(device, materialCount, false);
+            ObjectCB = new UploadBuffer<ObjectConstants>(device, objectCount, true);
+            SkinnedCB = new UploadBuffer<SkinnedConstants>(device, skinnedObjectCount, true);
         }
 
         // We cannot reset the allocator until the GPU is done processing the commands.
