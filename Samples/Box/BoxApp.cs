@@ -126,7 +126,10 @@ namespace DX12GameProgramming
             // Specify the buffers we are going to render to.            
             CommandList.SetRenderTargets(CurrentBackBufferView, DepthStencilView);
 
-            CommandList.SetDescriptorHeaps(_descriptorHeaps.Length, _descriptorHeaps); // TODO: rename descriptorHeapsOut; setdescriptorheap?
+            // TODO: API suggesion: rename descriptorHeapsOut to descriptorHeaps;
+            // TODO: Add an overload for a setting a single SetDescriptorHeap?
+            // TODO: Make requiring explicit length optional.
+            CommandList.SetDescriptorHeaps(_descriptorHeaps.Length, _descriptorHeaps);
 
             CommandList.SetGraphicsRootSignature(_rootSignature);
 
@@ -262,7 +265,7 @@ namespace DX12GameProgramming
             _mvsByteCode = D3DUtil.CompileShader("Shaders\\Color.hlsl", "VS", "vs_5_0");
             _mpsByteCode = D3DUtil.CompileShader("Shaders\\Color.hlsl", "PS", "ps_5_0");
 
-            _inputLayout = new InputLayoutDescription(new [] // TODO: Add params overload
+            _inputLayout = new InputLayoutDescription(new [] // TODO: API suggestion: Add params overload
             {
                 new InputElement("POSITION", 0, Format.R32G32B32_Float, 0, 0),
                 new InputElement("COLOR", 0, Format.R32G32B32A32_Float, 12, 0)

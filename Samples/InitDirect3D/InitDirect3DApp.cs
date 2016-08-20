@@ -27,11 +27,12 @@ namespace DX12GameProgramming
 
             // Set the viewport and scissor rect. This needs to be reset whenever the command list is reset.
             CommandList.SetViewport(Viewport);
-            CommandList.SetScissorRectangles(ScissorRectangle); // TODO: SetScissorRectangle overload similar to SetViewport
+            CommandList.SetScissorRectangles(ScissorRectangle); // TODO: API suggestion: SetScissorRectangle overload similar to SetViewport
 
             // Clear the back buffer and depth buffer.
             CommandList.ClearRenderTargetView(CurrentBackBufferView, Color.LightSteelBlue);
-            CommandList.ClearDepthStencilView(DepthStencilView, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0); // TODO: rename flags
+            // TODO: API suggestion: simplify flags naming to ClearFlags.Depth|Stencil
+            CommandList.ClearDepthStencilView(DepthStencilView, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);            
 
             // Specify the buffers we are going to render to.
             CommandList.SetRenderTargets(CurrentBackBufferView, DepthStencilView);

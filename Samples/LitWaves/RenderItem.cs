@@ -5,7 +5,7 @@ namespace DX12GameProgramming
 {
     // Lightweight structure stores parameters to draw a shape. This will
     // vary from app-to-app.
-    class RenderItem
+    internal class RenderItem
     {
         // World matrix of the shape that describes the object's local space
         // relative to the world space, which defines the position, orientation,
@@ -33,7 +33,7 @@ namespace DX12GameProgramming
         public int BaseVertexLocation { get; set; }
     }
 
-    enum RenderLayer
+    internal enum RenderLayer
     {
         Opaque
     }

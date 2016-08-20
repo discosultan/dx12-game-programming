@@ -81,7 +81,7 @@ namespace DX12GameProgramming
 
     internal class FrameResource : IDisposable
     {
-        public FrameResource(Device device, int passCount, int objectCount, int materialCount, int waveVertCount)
+        public FrameResource(Device device, int passCount, int objectCount, int materialCount)
         {
             CmdListAlloc = device.CreateCommandAllocator(CommandListType.Direct);
 

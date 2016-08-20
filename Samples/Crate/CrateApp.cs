@@ -35,7 +35,10 @@ namespace DX12GameProgramming
         private readonly List<RenderItem> _allRitems = new List<RenderItem>();
 
         // Render items divided by PSO.
-        private readonly List<RenderItem> _opaqueRitems = new List<RenderItem>();
+        private readonly Dictionary<RenderLayer, List<RenderItem>> _ritemLayers = new Dictionary<RenderLayer, List<RenderItem>>(1)
+        {
+            [RenderLayer.Opaque] = new List<RenderItem>()
+        };
 
         private PassConstants _mainPassCB = PassConstants.Default;
 
@@ -135,14 +138,14 @@ namespace DX12GameProgramming
             // Specify the buffers we are going to render to.            
             CommandList.SetRenderTargets(CurrentBackBufferView, DepthStencilView);
 
-            CommandList.SetDescriptorHeaps(1, _descriptorHeaps); // TODO: Do not require count.
+            CommandList.SetDescriptorHeaps(1, _descriptorHeaps);
 
             CommandList.SetGraphicsRootSignature(_rootSignature);
 
             Resource passCB = CurrFrameResource.PassCB.Resource;
             CommandList.SetGraphicsRootConstantBufferView(2, passCB.GPUVirtualAddress);
 
-            DrawRenderItems(CommandList, _opaqueRitems);
+            DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Opaque]);
 
             // Indicate a state transition on the resource usage.
             CommandList.ResourceBarrierTransition(CurrentBackBuffer, ResourceStates.RenderTarget, ResourceStates.Present);
@@ -365,7 +368,9 @@ namespace DX12GameProgramming
 
             var srvDesc = new ShaderResourceViewDescription
             {
-                Shader4ComponentMapping = D3DUtil.DefaultShader4ComponentMapping, // TODO: turn int to enum
+                // TODO: API suggesion: Expose DefaultShader4ComponentMapping through ShaderComponentMapping enumeration.
+                // TODO: Turn from int to ShaderComponentMapping enum.
+                Shader4ComponentMapping = D3DUtil.DefaultShader4ComponentMapping,
                 Format = woodCrateTexture.Description.Format,
                 Dimension = ShaderResourceViewDimension.Texture2D,
                 Texture2D = new ShaderResourceViewDescription.Texture2DResource
@@ -471,19 +476,22 @@ namespace DX12GameProgramming
 
         private void BuildRenderItems()
         {
-            var boxRitem = new RenderItem();
-            boxRitem.ObjCBIndex = 0;
-            boxRitem.Mat = _materials["woodCrate"];
-            boxRitem.Geo = _geometries["boxGeo"];
-            boxRitem.PrimitiveType = PrimitiveTopology.TriangleList;
-            boxRitem.IndexCount = boxRitem.Geo.DrawArgs["box"].IndexCount;
-            boxRitem.StartIndexLocation = boxRitem.Geo.DrawArgs["box"].StartIndexLocation;
-            boxRitem.BaseVertexLocation = boxRitem.Geo.DrawArgs["box"].BaseVertexLocation;
-
+            MeshGeometry geo = _geometries["boxGeo"];
+            SubmeshGeometry submesh = geo.DrawArgs["box"];
+            var boxRitem = new RenderItem
+            {
+                ObjCBIndex = 0,
+                Mat = _materials["woodCrate"],
+                Geo = geo,
+                PrimitiveType = PrimitiveTopology.TriangleList,
+                IndexCount = submesh.IndexCount,
+                StartIndexLocation = submesh.StartIndexLocation,
+                BaseVertexLocation = submesh.BaseVertexLocation
+            };            
+                        
             _allRitems.Add(boxRitem);
-
             // All the render items are opaque.
-            _opaqueRitems.AddRange(_allRitems);
+            _ritemLayers[RenderLayer.Opaque].AddRange(_allRitems);
         }
 
         private void DrawRenderItems(GraphicsCommandList cmdList, List<RenderItem> ritems)

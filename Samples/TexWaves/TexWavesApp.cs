@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using SharpDX;
-using SharpDX.Direct3D;
 using SharpDX.Direct3D12;
 using SharpDX.DXGI;
 using Resource = SharpDX.Direct3D12.Resource;
@@ -672,43 +671,33 @@ namespace DX12GameProgramming
 
         private void BuildRenderItems()
         {
-            _wavesRitem = new RenderItem();
-            _wavesRitem.World = Matrix.Identity;
-            _wavesRitem.TexTransform = Matrix.Scaling(5.0f, 5.0f, 1.0f);
-            _wavesRitem.ObjCBIndex = 0;
-            _wavesRitem.Mat = _materials["water"];
-            _wavesRitem.Geo = _geometries["waterGeo"];
-            _wavesRitem.PrimitiveType = PrimitiveTopology.TriangleList;
-            _wavesRitem.IndexCount = _wavesRitem.Geo.DrawArgs["grid"].IndexCount;
-            _wavesRitem.StartIndexLocation = _wavesRitem.Geo.DrawArgs["grid"].StartIndexLocation;
-            _wavesRitem.BaseVertexLocation = _wavesRitem.Geo.DrawArgs["grid"].BaseVertexLocation;
-            _ritemLayers[RenderLayer.Opaque].Add(_wavesRitem);
-            _allRitems.Add(_wavesRitem);
+            _wavesRitem = AddRenderItem(RenderLayer.Opaque, 0, "water", "waterGeo", "grid",
+                texTransform: Matrix.Scaling(5.0f, 5.0f, 1.0f));
+            AddRenderItem(RenderLayer.Opaque, 1, "grass", "landGeo", "grid",
+                texTransform: Matrix.Scaling(5.0f, 5.0f, 1.0f));
+            AddRenderItem(RenderLayer.Opaque, 2, "wirefence", "boxGeo", "box",
+                world: Matrix.Translation(3.0f, 2.0f, -9.0f));
+        }
 
-            var gridRitem = new RenderItem();
-            gridRitem.World = Matrix.Identity;
-            gridRitem.TexTransform = Matrix.Scaling(5.0f, 5.0f, 1.0f);
-            gridRitem.ObjCBIndex = 1;
-            gridRitem.Mat = _materials["grass"];
-            gridRitem.Geo = _geometries["landGeo"];
-            gridRitem.PrimitiveType = PrimitiveTopology.TriangleList;
-            gridRitem.IndexCount = gridRitem.Geo.DrawArgs["grid"].IndexCount;
-            gridRitem.StartIndexLocation = gridRitem.Geo.DrawArgs["grid"].StartIndexLocation;
-            gridRitem.BaseVertexLocation = gridRitem.Geo.DrawArgs["grid"].BaseVertexLocation;
-            _ritemLayers[RenderLayer.Opaque].Add(gridRitem);
-            _allRitems.Add(gridRitem);
-
-            var boxRitem = new RenderItem();
-            boxRitem.World = Matrix.Translation(3.0f, 2.0f, -9.0f);            
-            boxRitem.ObjCBIndex = 2;
-            boxRitem.Mat = _materials["wirefence"];
-            boxRitem.Geo = _geometries["boxGeo"];
-            boxRitem.PrimitiveType = PrimitiveTopology.TriangleList;
-            boxRitem.IndexCount = boxRitem.Geo.DrawArgs["box"].IndexCount;
-            boxRitem.StartIndexLocation = boxRitem.Geo.DrawArgs["box"].StartIndexLocation;
-            boxRitem.BaseVertexLocation = boxRitem.Geo.DrawArgs["box"].BaseVertexLocation;
-            _ritemLayers[RenderLayer.Opaque].Add(boxRitem);
-            _allRitems.Add(boxRitem);
+        private RenderItem AddRenderItem(RenderLayer layer, int objCBIndex, string matName, string geoName, string submeshName,
+            Matrix? world = null, Matrix? texTransform = null)
+        {
+            MeshGeometry geo = _geometries[geoName];
+            SubmeshGeometry submesh = geo.DrawArgs[submeshName];
+            var renderItem = new RenderItem
+            {
+                ObjCBIndex = objCBIndex,
+                Mat = _materials[matName],
+                Geo = geo,
+                IndexCount = submesh.IndexCount,
+                StartIndexLocation = submesh.StartIndexLocation,
+                BaseVertexLocation = submesh.BaseVertexLocation,
+                World = world ?? Matrix.Identity,
+                TexTransform = texTransform ?? Matrix.Identity
+            };
+            _ritemLayers[layer].Add(renderItem);
+            _allRitems.Add(renderItem);
+            return renderItem;
         }
 
         private void DrawRenderItems(GraphicsCommandList cmdList, List<RenderItem> ritems)

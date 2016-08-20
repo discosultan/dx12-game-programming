@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using SharpDX;
-using SharpDX.Direct3D;
 using SharpDX.Direct3D12;
 using SharpDX.DXGI;
 using Resource = SharpDX.Direct3D12.Resource;
@@ -321,7 +320,7 @@ namespace DX12GameProgramming
             // Root parameter can be a table, root descriptor or root constants.
             var slotRootParameters = new[]
             {
-                // TODO: Register space default value = 0
+                // TODO: API suggesion: RootDescriptor register space default value = 0.
                 new RootParameter(ShaderVisibility.Vertex, new RootDescriptor(0, 0), RootParameterType.ConstantBufferView),
                 new RootParameter(ShaderVisibility.Vertex, new RootDescriptor(1, 0), RootParameterType.ConstantBufferView)
             };
@@ -496,27 +495,25 @@ namespace DX12GameProgramming
 
         private void BuildRenderItems()
         {
-            _wavesRitem = new RenderItem();
-            _wavesRitem.World = Matrix.Identity;
-            _wavesRitem.ObjCBIndex = 0;
-            _wavesRitem.Geo = _geometries["waterGeo"];
-            _wavesRitem.PrimitiveType = PrimitiveTopology.TriangleList;
-            _wavesRitem.IndexCount = _wavesRitem.Geo.DrawArgs["grid"].IndexCount;
-            _wavesRitem.StartIndexLocation = _wavesRitem.Geo.DrawArgs["grid"].StartIndexLocation;
-            _wavesRitem.BaseVertexLocation = _wavesRitem.Geo.DrawArgs["grid"].BaseVertexLocation;
-            _ritemLayers[RenderLayer.Opaque].Add(_wavesRitem);
-            _allRitems.Add(_wavesRitem);
+            _wavesRitem = AddRenderItem(RenderLayer.Opaque, 0, "waterGeo", "grid");
+            AddRenderItem(RenderLayer.Opaque, 1, "landGeo", "grid");
+        }
 
-            var gridRitem = new RenderItem();
-            gridRitem.World = Matrix.Identity;
-            gridRitem.ObjCBIndex = 1;
-            gridRitem.Geo = _geometries["landGeo"];
-            gridRitem.PrimitiveType = PrimitiveTopology.TriangleList;
-            gridRitem.IndexCount = gridRitem.Geo.DrawArgs["grid"].IndexCount;
-            gridRitem.StartIndexLocation = gridRitem.Geo.DrawArgs["grid"].StartIndexLocation;
-            gridRitem.BaseVertexLocation = gridRitem.Geo.DrawArgs["grid"].BaseVertexLocation;
-            _ritemLayers[RenderLayer.Opaque].Add(gridRitem);
-            _allRitems.Add(gridRitem);
+        private RenderItem AddRenderItem(RenderLayer layer, int objCBIndex, string geoName, string submeshName)
+        {
+            MeshGeometry geo = _geometries[geoName];
+            SubmeshGeometry submesh = geo.DrawArgs[submeshName];
+            var renderItem = new RenderItem
+            {
+                ObjCBIndex = objCBIndex,
+                Geo = geo,
+                IndexCount = submesh.IndexCount,
+                StartIndexLocation = submesh.StartIndexLocation,
+                BaseVertexLocation = submesh.BaseVertexLocation
+            };
+            _ritemLayers[layer].Add(renderItem);
+            _allRitems.Add(renderItem);
+            return renderItem;
         }
 
         private void DrawRenderItems(GraphicsCommandList cmdList, List<RenderItem> ritems)

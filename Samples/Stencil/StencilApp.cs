@@ -1,13 +1,13 @@
 ﻿using System;
-using SharpDX;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Threading;
+using SharpDX;
 using SharpDX.Direct3D;
 using SharpDX.Direct3D12;
 using SharpDX.DXGI;
 using Resource = SharpDX.Direct3D12.Resource;
-using System.IO;
-using System.Globalization;
 using ShaderResourceViewDimension = SharpDX.Direct3D12.ShaderResourceViewDimension;
 
 namespace DX12GameProgramming
@@ -859,7 +859,7 @@ namespace DX12GameProgramming
 
         private void BuildMaterials()
         {
-            _materials["bricks"] = new Material
+            AddMaterial(new Material
             {
                 Name = "bricks",
                 MatCBIndex = 0,
@@ -867,9 +867,8 @@ namespace DX12GameProgramming
                 DiffuseAlbedo = Color.White.ToVector4(),
                 FresnelR0 = new Vector3(0.05f),
                 Roughness = 0.25f
-            };
-
-            _materials["checkertile"] = new Material
+            });
+            AddMaterial(new Material
             {
                 Name = "checkertile",
                 MatCBIndex = 1,
@@ -877,9 +876,8 @@ namespace DX12GameProgramming
                 DiffuseAlbedo = Color.White.ToVector4(),
                 FresnelR0 = new Vector3(0.07f),
                 Roughness = 0.3f
-            };
-
-            _materials["icemirror"] = new Material
+            });
+            AddMaterial(new Material
             {
                 Name = "icemirror",
                 MatCBIndex = 2,
@@ -887,9 +885,8 @@ namespace DX12GameProgramming
                 DiffuseAlbedo = new Vector4(1.0f, 1.0f, 1.0f, 0.3f),
                 FresnelR0 = new Vector3(0.1f),
                 Roughness = 0.5f
-            };
-
-            _materials["skullMat"] = new Material
+            });
+            AddMaterial(new Material
             {
                 Name = "skullMat",
                 MatCBIndex = 3,
@@ -897,9 +894,8 @@ namespace DX12GameProgramming
                 DiffuseAlbedo = Color.White.ToVector4(),
                 FresnelR0 = new Vector3(0.05f),
                 Roughness = 0.3f
-            };
-
-            _materials["shadowMat"] = new Material
+            });
+            AddMaterial(new Material
             {
                 Name = "shadowMat",
                 MatCBIndex = 4,
@@ -907,76 +903,46 @@ namespace DX12GameProgramming
                 DiffuseAlbedo = new Vector4(0.0f, 0.0f, 0.0f, 0.5f),
                 FresnelR0 = new Vector3(0.001f),
                 Roughness = 0.0f
-            };
+            });
+        }
+
+        private void AddMaterial(Material mat)
+        {
+            _materials[mat.Name] = mat;
         }
 
         private void BuildRenderItems()
         {
-            var floorRitem = new RenderItem();
-            floorRitem.World = Matrix.Identity;
-            floorRitem.TexTransform = Matrix.Identity;
-            floorRitem.ObjCBIndex = 0;
-            floorRitem.Mat = _materials["checkertile"];
-            floorRitem.Geo = _geometries["roomGeo"];
-            floorRitem.PrimitiveType = PrimitiveTopology.TriangleList;
-            floorRitem.IndexCount = floorRitem.Geo.DrawArgs["floor"].IndexCount;
-            floorRitem.StartIndexLocation = floorRitem.Geo.DrawArgs["floor"].StartIndexLocation;
-            floorRitem.BaseVertexLocation = floorRitem.Geo.DrawArgs["floor"].BaseVertexLocation;
-            _ritemLayers[RenderLayer.Opaque].Add(floorRitem);
-            _allRitems.Add(floorRitem);
-
-            var wallsRitem = new RenderItem();
-            wallsRitem.World = Matrix.Identity;
-            wallsRitem.TexTransform = Matrix.Identity;
-            wallsRitem.ObjCBIndex = 1;
-            wallsRitem.Mat = _materials["bricks"];
-            wallsRitem.Geo = _geometries["roomGeo"];
-            wallsRitem.PrimitiveType = PrimitiveTopology.TriangleList;
-            wallsRitem.IndexCount = wallsRitem.Geo.DrawArgs["wall"].IndexCount;
-            wallsRitem.StartIndexLocation = wallsRitem.Geo.DrawArgs["wall"].StartIndexLocation;
-            wallsRitem.BaseVertexLocation = wallsRitem.Geo.DrawArgs["wall"].BaseVertexLocation;
-            _ritemLayers[RenderLayer.Opaque].Add(wallsRitem);
-            _allRitems.Add(wallsRitem);
-
-            _skullRitem = new RenderItem();
-            _skullRitem.World = Matrix.Identity;
-            _skullRitem.TexTransform = Matrix.Identity;
-            _skullRitem.ObjCBIndex = 2;
-            _skullRitem.Mat = _materials["skullMat"];
-            _skullRitem.Geo = _geometries["skullGeo"];
-            _skullRitem.PrimitiveType = PrimitiveTopology.TriangleList;
-            _skullRitem.IndexCount = _skullRitem.Geo.DrawArgs["skull"].IndexCount;
-            _skullRitem.StartIndexLocation = _skullRitem.Geo.DrawArgs["skull"].StartIndexLocation;
-            _skullRitem.BaseVertexLocation = _skullRitem.Geo.DrawArgs["skull"].BaseVertexLocation;
-            _ritemLayers[RenderLayer.Opaque].Add(_skullRitem);
-            _allRitems.Add(_skullRitem);
-
+            AddRenderItem(RenderLayer.Opaque, 0, "checkertile", "roomGeo", "floor");
+            AddRenderItem(RenderLayer.Opaque, 1, "bricks", "roomGeo", "wall");
+            _skullRitem = AddRenderItem(RenderLayer.Opaque, 2, "skullMat", "skullGeo", "skull");
             // Reflected skull will have different world matrix, so it needs to be its own render item.
-            _reflectedSkullRitem = _skullRitem.Copy();
-            _reflectedSkullRitem.ObjCBIndex = 3;
-            _ritemLayers[RenderLayer.Reflected].Add(_reflectedSkullRitem);
-            _allRitems.Add(_reflectedSkullRitem);
-
+            _reflectedSkullRitem = AddRenderItem(RenderLayer.Reflected, 3, "skullMat", "skullGeo", "skull");
             // Shadowed skull will have different world matrix, so it needs to be its own render item.
-            _shadowedSkullRitem = _skullRitem.Copy();
-            _shadowedSkullRitem.ObjCBIndex = 4;
-            _shadowedSkullRitem.Mat = _materials["shadowMat"];
-            _ritemLayers[RenderLayer.Shadow].Add(_shadowedSkullRitem);
-            _allRitems.Add(_shadowedSkullRitem);
+            _shadowedSkullRitem = AddRenderItem(RenderLayer.Shadow, 4, "shadowMat", "skullGeo", "skull");
+            AddRenderItem(RenderLayer.Mirrors, 5, "icemirror", "roomGeo", "mirror");
+            AddRenderItem(RenderLayer.Transparent, 6, "icemirror", "roomGeo", "mirror");
+        }
 
-            var mirrorRitem = new RenderItem();
-            mirrorRitem.World = Matrix.Identity;
-            mirrorRitem.TexTransform = Matrix.Identity;
-            mirrorRitem.ObjCBIndex = 5;
-            mirrorRitem.Mat = _materials["icemirror"];
-            mirrorRitem.Geo = _geometries["roomGeo"];
-            mirrorRitem.PrimitiveType = PrimitiveTopology.TriangleList;
-            mirrorRitem.IndexCount = mirrorRitem.Geo.DrawArgs["mirror"].IndexCount;
-            mirrorRitem.StartIndexLocation = mirrorRitem.Geo.DrawArgs["mirror"].StartIndexLocation;
-            mirrorRitem.BaseVertexLocation = mirrorRitem.Geo.DrawArgs["mirror"].BaseVertexLocation;
-            _ritemLayers[RenderLayer.Mirrors].Add(mirrorRitem);
-            _ritemLayers[RenderLayer.Transparent].Add(mirrorRitem);
-            _allRitems.Add(mirrorRitem);
+        private RenderItem AddRenderItem(RenderLayer layer, int objCBIndex, string matName, string geoName, string submeshName,
+            Matrix? world = null, Matrix? texTransform = null)
+        {
+            MeshGeometry geo = _geometries[geoName];
+            SubmeshGeometry submesh = geo.DrawArgs[submeshName];
+            var renderItem = new RenderItem
+            {
+                ObjCBIndex = objCBIndex,
+                Mat = _materials[matName],
+                Geo = geo,
+                IndexCount = submesh.IndexCount,
+                StartIndexLocation = submesh.StartIndexLocation,
+                BaseVertexLocation = submesh.BaseVertexLocation,
+                World = world ?? Matrix.Identity,
+                TexTransform = texTransform ?? Matrix.Identity
+            };
+            _ritemLayers[layer].Add(renderItem);
+            _allRitems.Add(renderItem);
+            return renderItem;
         }
 
         private void DrawRenderItems(GraphicsCommandList cmdList, List<RenderItem> ritems)

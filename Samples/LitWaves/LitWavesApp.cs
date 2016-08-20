@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using SharpDX;
-using SharpDX.Direct3D;
 using SharpDX.Direct3D12;
 using SharpDX.DXGI;
 using Resource = SharpDX.Direct3D12.Resource;
@@ -519,29 +518,26 @@ namespace DX12GameProgramming
 
         private void BuildRenderItems()
         {
-            _wavesRitem = new RenderItem();
-            _wavesRitem.World = Matrix.Identity;
-            _wavesRitem.ObjCBIndex = 0;
-            _wavesRitem.Mat = _materials["water"];
-            _wavesRitem.Geo = _geometries["waterGeo"];
-            _wavesRitem.PrimitiveType = PrimitiveTopology.TriangleList;
-            _wavesRitem.IndexCount = _wavesRitem.Geo.DrawArgs["grid"].IndexCount;
-            _wavesRitem.StartIndexLocation = _wavesRitem.Geo.DrawArgs["grid"].StartIndexLocation;
-            _wavesRitem.BaseVertexLocation = _wavesRitem.Geo.DrawArgs["grid"].BaseVertexLocation;
-            _ritemLayers[RenderLayer.Opaque].Add(_wavesRitem);
-            _allRitems.Add(_wavesRitem);
+            _wavesRitem = AddRenderItem(RenderLayer.Opaque, 0, "water", "waterGeo", "grid");
+            AddRenderItem(RenderLayer.Opaque, 1, "grass", "landGeo", "grid");      
+        }
 
-            var gridRitem = new RenderItem();
-            gridRitem.World = Matrix.Identity;
-            gridRitem.ObjCBIndex = 1;
-            gridRitem.Mat = _materials["grass"];
-            gridRitem.Geo = _geometries["landGeo"];
-            gridRitem.PrimitiveType = PrimitiveTopology.TriangleList;
-            gridRitem.IndexCount = gridRitem.Geo.DrawArgs["grid"].IndexCount;
-            gridRitem.StartIndexLocation = gridRitem.Geo.DrawArgs["grid"].StartIndexLocation;
-            gridRitem.BaseVertexLocation = gridRitem.Geo.DrawArgs["grid"].BaseVertexLocation;
-            _ritemLayers[RenderLayer.Opaque].Add(gridRitem);
-            _allRitems.Add(gridRitem);         
+        private RenderItem AddRenderItem(RenderLayer layer, int objCBIndex, string matName, string geoName, string submeshName)
+        {
+            MeshGeometry geo = _geometries[geoName];
+            SubmeshGeometry submesh = geo.DrawArgs[submeshName];
+            var renderItem = new RenderItem
+            {
+                ObjCBIndex = objCBIndex,
+                Mat = _materials[matName],
+                Geo = geo,
+                IndexCount = submesh.IndexCount,
+                StartIndexLocation = submesh.StartIndexLocation,
+                BaseVertexLocation = submesh.BaseVertexLocation
+            };
+            _ritemLayers[layer].Add(renderItem);
+            _allRitems.Add(renderItem);
+            return renderItem;
         }
 
         private void DrawRenderItems(GraphicsCommandList cmdList, List<RenderItem> ritems)

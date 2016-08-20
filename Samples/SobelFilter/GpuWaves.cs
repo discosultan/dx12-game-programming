@@ -205,7 +205,7 @@ namespace DX12GameProgramming
                 cmdList.SetComputeRootDescriptorTable(3, _nextSolUav);
 
                 // How many groups do we need to dispatch to cover the wave grid.  
-                // Note that mNumRows and mNumCols should be divisible by 16
+                // Note that RowCount and ColumnCount should be divisible by 16
                 // so there is no remainder.
                 int numGroupsX = ColumnCount / 16;
                 int numGroupsY = RowCount / 16;

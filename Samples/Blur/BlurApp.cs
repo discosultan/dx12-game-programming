@@ -247,10 +247,10 @@ namespace DX12GameProgramming
             {
                 _blurFilter?.Dispose();
                 _cbvSrvUavDescriptorHeap?.Dispose();
-                foreach (Texture texture in _textures.Values) texture.Dispose();
-                foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();
                 _postProcessRootSignature?.Dispose();
                 _rootSignature?.Dispose();
+                foreach (Texture texture in _textures.Values) texture.Dispose();
+                foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();                
                 foreach (MeshGeometry geometry in _geometries.Values) geometry.Dispose();
                 foreach (PipelineState pso in _psos.Values) pso.Dispose();
             }
@@ -492,14 +492,16 @@ namespace DX12GameProgramming
             //
             CpuDescriptorHandle hDescriptor = _cbvSrvUavDescriptorHeap.CPUDescriptorHandleForHeapStart;
 
-            Resource grassTex = _textures["grassTex"].Resource;
-            Resource waterTex = _textures["waterTex"].Resource;
-            Resource fenceTex = _textures["fenceTex"].Resource;
+            Resource[] tex2DList =
+            {
+                _textures["grassTex"].Resource,
+                _textures["waterTex"].Resource,
+                _textures["fenceTex"].Resource
+            };
 
             var srvDesc = new ShaderResourceViewDescription
             {
                 Shader4ComponentMapping = D3DUtil.DefaultShader4ComponentMapping,
-                Format = grassTex.Description.Format,
                 Dimension = ShaderResourceViewDimension.Texture2D,
                 Texture2D = new ShaderResourceViewDescription.Texture2DResource
                 {
@@ -508,19 +510,14 @@ namespace DX12GameProgramming
                 }
             };
 
-            Device.CreateShaderResourceView(grassTex, srvDesc, hDescriptor);
+            foreach (Resource tex2D in tex2DList)
+            {
+                srvDesc.Format = tex2D.Description.Format;
+                Device.CreateShaderResourceView(tex2D, srvDesc, hDescriptor);
 
-            // Next descriptor.
-            hDescriptor += CbvSrvUavDescriptorSize;
-
-            srvDesc.Format = waterTex.Description.Format;
-            Device.CreateShaderResourceView(waterTex, srvDesc, hDescriptor);
-
-            // Next descriptor.
-            hDescriptor += CbvSrvUavDescriptorSize;
-
-            srvDesc.Format = fenceTex.Description.Format;
-            Device.CreateShaderResourceView(fenceTex, srvDesc, hDescriptor);
+                // Next descriptor.
+                hDescriptor += CbvSrvUavDescriptorSize;
+            }
 
             //
             // Fill out the heap with the descriptors to the BlurFilter resources.
@@ -760,7 +757,7 @@ namespace DX12GameProgramming
 
         private void BuildMaterials()
         {
-            _materials["grass"] = new Material
+            AddMaterial(new Material
             {
                 Name = "grass",
                 MatCBIndex = 0,
@@ -768,11 +765,10 @@ namespace DX12GameProgramming
                 DiffuseAlbedo = new Vector4(1.0f),
                 FresnelR0 = new Vector3(0.01f),
                 Roughness = 0.125f
-            };
-
+            });
             // This is not a good water material definition, but we do not have all the rendering
             // tools we need (transparency, environment reflection), so we fake it for now.
-            _materials["water"] = new Material
+            AddMaterial(new Material
             {
                 Name = "water",
                 MatCBIndex = 1,
@@ -780,9 +776,8 @@ namespace DX12GameProgramming
                 DiffuseAlbedo = new Vector4(1.0f, 1.0f, 1.0f, 0.5f),
                 FresnelR0 = new Vector3(0.1f),
                 Roughness = 0.0f
-            };
-
-            _materials["wirefence"] = new Material
+            });
+            AddMaterial(new Material
             {
                 Name = "wirefence",
                 MatCBIndex = 2,
@@ -790,48 +785,43 @@ namespace DX12GameProgramming
                 DiffuseAlbedo = new Vector4(1.0f),
                 FresnelR0 = new Vector3(0.02f),
                 Roughness = 0.2f
-            };
+            });
+        }
+
+        private void AddMaterial(Material mat)
+        {
+            _materials[mat.Name] = mat;
         }
 
         private void BuildRenderItems()
         {
-            _wavesRitem = new RenderItem();
-            _wavesRitem.World = Matrix.Identity;
-            _wavesRitem.TexTransform = Matrix.Scaling(5.0f, 5.0f, 1.0f);
-            _wavesRitem.ObjCBIndex = 0;
-            _wavesRitem.Mat = _materials["water"];
-            _wavesRitem.Geo = _geometries["waterGeo"];
-            _wavesRitem.PrimitiveType = PrimitiveTopology.TriangleList;
-            _wavesRitem.IndexCount = _wavesRitem.Geo.DrawArgs["grid"].IndexCount;
-            _wavesRitem.StartIndexLocation = _wavesRitem.Geo.DrawArgs["grid"].StartIndexLocation;
-            _wavesRitem.BaseVertexLocation = _wavesRitem.Geo.DrawArgs["grid"].BaseVertexLocation;
-            _ritemLayers[RenderLayer.Transparent].Add(_wavesRitem);
-            _allRitems.Add(_wavesRitem);
+            _wavesRitem = AddRenderItem(RenderLayer.Transparent, 0, "water", "waterGeo", "grid",
+                texTransform: Matrix.Scaling(5.0f, 5.0f, 1.0f));
+            AddRenderItem(RenderLayer.Opaque, 1, "grass", "landGeo", "grid",
+                texTransform: Matrix.Scaling(5.0f, 5.0f, 1.0f));
+            AddRenderItem(RenderLayer.AlphaTested, 2, "wirefence", "boxGeo", "box",
+                world: Matrix.Translation(3.0f, 2.0f, -9.0f));
+        }
 
-            var gridRitem = new RenderItem();
-            gridRitem.World = Matrix.Identity;
-            gridRitem.TexTransform = Matrix.Scaling(5.0f, 5.0f, 1.0f);
-            gridRitem.ObjCBIndex = 1;
-            gridRitem.Mat = _materials["grass"];
-            gridRitem.Geo = _geometries["landGeo"];
-            gridRitem.PrimitiveType = PrimitiveTopology.TriangleList;
-            gridRitem.IndexCount = gridRitem.Geo.DrawArgs["grid"].IndexCount;
-            gridRitem.StartIndexLocation = gridRitem.Geo.DrawArgs["grid"].StartIndexLocation;
-            gridRitem.BaseVertexLocation = gridRitem.Geo.DrawArgs["grid"].BaseVertexLocation;
-            _ritemLayers[RenderLayer.Opaque].Add(gridRitem);
-            _allRitems.Add(gridRitem);
-
-            var boxItem = new RenderItem();
-            boxItem.World = Matrix.Translation(3.0f, 2.0f, -9.0f);            
-            boxItem.ObjCBIndex = 2;
-            boxItem.Mat = _materials["wirefence"];
-            boxItem.Geo = _geometries["boxGeo"];
-            boxItem.PrimitiveType = PrimitiveTopology.TriangleList;
-            boxItem.IndexCount = boxItem.Geo.DrawArgs["box"].IndexCount;
-            boxItem.StartIndexLocation = boxItem.Geo.DrawArgs["box"].StartIndexLocation;
-            boxItem.BaseVertexLocation = boxItem.Geo.DrawArgs["box"].BaseVertexLocation;
-            _ritemLayers[RenderLayer.AlphaTested].Add(boxItem);
-            _allRitems.Add(boxItem);
+        private RenderItem AddRenderItem(RenderLayer layer, int objCBIndex, string matName, string geoName, string submeshName,
+            Matrix? world = null, Matrix? texTransform = null)
+        {
+            MeshGeometry geo = _geometries[geoName];
+            SubmeshGeometry submesh = geo.DrawArgs[submeshName];
+            var renderItem = new RenderItem
+            {
+                ObjCBIndex = objCBIndex,
+                Mat = _materials[matName],
+                Geo = geo,
+                IndexCount = submesh.IndexCount,
+                StartIndexLocation = submesh.StartIndexLocation,
+                BaseVertexLocation = submesh.BaseVertexLocation,
+                World = world ?? Matrix.Identity,
+                TexTransform = texTransform ?? Matrix.Identity
+            };
+            _ritemLayers[layer].Add(renderItem);
+            _allRitems.Add(renderItem);
+            return renderItem;
         }
 
         private void DrawRenderItems(GraphicsCommandList cmdList, List<RenderItem> ritems)
@@ -866,7 +856,7 @@ namespace DX12GameProgramming
         private static StaticSamplerDescription[] GetStaticSamplers() => new[]
         {
             // PointWrap
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 0, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 0, 0)
             {
                 Filter = Filter.MinMagMipPoint,
                 AddressU = TextureAddressMode.Wrap,
@@ -874,7 +864,7 @@ namespace DX12GameProgramming
                 AddressW = TextureAddressMode.Wrap
             },
             // PointClamp
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 1, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 1, 0)
             {
                 Filter = Filter.MinMagMipPoint,
                 AddressU = TextureAddressMode.Clamp,
@@ -882,7 +872,7 @@ namespace DX12GameProgramming
                 AddressW = TextureAddressMode.Clamp
             },
             // LinearWrap
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 2, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 2, 0)
             {
                 Filter = Filter.MinMagMipLinear,
                 AddressU = TextureAddressMode.Wrap,
@@ -890,7 +880,7 @@ namespace DX12GameProgramming
                 AddressW = TextureAddressMode.Wrap
             },
             // LinearClamp
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 3, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 3, 0)
             {
                 Filter = Filter.MinMagMipLinear,
                 AddressU = TextureAddressMode.Clamp,
@@ -898,7 +888,7 @@ namespace DX12GameProgramming
                 AddressW = TextureAddressMode.Clamp
             },
             // AnisotropicWrap
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 4, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 4, 0)
             {
                 Filter = Filter.Anisotropic,
                 AddressU = TextureAddressMode.Wrap,
@@ -906,7 +896,7 @@ namespace DX12GameProgramming
                 AddressW = TextureAddressMode.Wrap
             },
             // AnisotropicClamp
-            new StaticSamplerDescription(ShaderVisibility.Pixel, 5, 0)
+            new StaticSamplerDescription(ShaderVisibility.All, 5, 0)
             {
                 Filter = Filter.Anisotropic,
                 AddressU = TextureAddressMode.Clamp,

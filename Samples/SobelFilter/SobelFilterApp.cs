@@ -759,7 +759,6 @@ namespace DX12GameProgramming
                 DepthStencilFormat = DepthStencilFormat
             };
             opaquePsoDesc.RenderTargetFormats[0] = BackBufferFormat;
-
             _psos["opaque"] = Device.CreateGraphicsPipelineState(opaquePsoDesc);
 
             //
@@ -767,11 +766,10 @@ namespace DX12GameProgramming
             //
 
             GraphicsPipelineStateDescription transparentPsoDesc = opaquePsoDesc.Copy();
-
             var transparencyBlendDesc = new RenderTargetBlendDescription
             {
                 IsBlendEnabled = true,
-                LogicOpEnable = false, // TODO: rename to IsLogicOpEnabled
+                LogicOpEnable = false,
                 SourceBlend = BlendOption.SourceAlpha,
                 DestinationBlend = BlendOption.InverseSourceAlpha,
                 BlendOperation = BlendOperation.Add,
@@ -782,7 +780,6 @@ namespace DX12GameProgramming
                 RenderTargetWriteMask = ColorWriteMaskFlags.All
             };
             transparentPsoDesc.BlendState.RenderTarget[0] = transparencyBlendDesc;
-
             _psos["transparent"] = Device.CreateGraphicsPipelineState(transparentPsoDesc);
 
             //
@@ -791,8 +788,6 @@ namespace DX12GameProgramming
 
             GraphicsPipelineStateDescription alphaTestedPsoDesc = opaquePsoDesc.Copy();
             alphaTestedPsoDesc.PixelShader = _shaders["alphaTestedPS"];
-            alphaTestedPsoDesc.RasterizerState.CullMode = CullMode.None;
-
             _psos["alphaTested"] = Device.CreateGraphicsPipelineState(alphaTestedPsoDesc);
 
             //
@@ -801,7 +796,6 @@ namespace DX12GameProgramming
 
             GraphicsPipelineStateDescription wavesRenderPSO = transparentPsoDesc.Copy();
             wavesRenderPSO.VertexShader = _shaders["wavesVS"];
-
             _psos["wavesRender"] = Device.CreateGraphicsPipelineState(wavesRenderPSO);
 
             //
@@ -817,7 +811,6 @@ namespace DX12GameProgramming
             compositePSO.DepthStencilState.DepthComparison = Comparison.Always;
             compositePSO.VertexShader = _shaders["compositeVS"];
             compositePSO.PixelShader = _shaders["compositePS"];
-
             _psos["composite"] = Device.CreateGraphicsPipelineState(compositePSO);
 
             //
@@ -830,7 +823,6 @@ namespace DX12GameProgramming
                 ComputeShader = _shaders["wavesDisturbCS"],
                 Flags = PipelineStateFlags.None
             };
-
             _psos["wavesDisturb"] = Device.CreateComputePipelineState(wavesDisturbPSO);
 
             //
@@ -843,7 +835,6 @@ namespace DX12GameProgramming
                 ComputeShader = _shaders["wavesUpdateCS"],
                 Flags = PipelineStateFlags.None
             };
-
             _psos["wavesUpdate"] = Device.CreateComputePipelineState(wavesUpdatePSO);
 
             //
@@ -856,7 +847,6 @@ namespace DX12GameProgramming
                 ComputeShader = _shaders["sobelCS"],
                 Flags = PipelineStateFlags.None
             };
-
             _psos["sobel"] = Device.CreateComputePipelineState(sobelPSO);
         }
 
@@ -864,14 +854,14 @@ namespace DX12GameProgramming
         {
             for (int i = 0; i < NumFrameResources; i++)
             {
-                _frameResources.Add(new FrameResource(Device, 1, _allRitems.Count, _materials.Count, _waves.VertexCount));
+                _frameResources.Add(new FrameResource(Device, 1, _allRitems.Count, _materials.Count));
                 _fenceEvents.Add(new AutoResetEvent(false));
             }
         }
 
         private void BuildMaterials()
         {
-            _materials["grass"] = new Material
+            AddMaterial(new Material
             {
                 Name = "grass",
                 MatCBIndex = 0,
@@ -879,11 +869,10 @@ namespace DX12GameProgramming
                 DiffuseAlbedo = new Vector4(1.0f),
                 FresnelR0 = new Vector3(0.01f),
                 Roughness = 0.125f
-            };
-
+            });
             // This is not a good water material definition, but we do not have all the rendering
             // tools we need (transparency, environment reflection), so we fake it for now.
-            _materials["water"] = new Material
+            AddMaterial(new Material
             {
                 Name = "water",
                 MatCBIndex = 1,
@@ -891,9 +880,8 @@ namespace DX12GameProgramming
                 DiffuseAlbedo = new Vector4(1.0f, 1.0f, 1.0f, 0.5f),
                 FresnelR0 = new Vector3(0.1f),
                 Roughness = 0.0f
-            };
-
-            _materials["wirefence"] = new Material
+            });
+            AddMaterial(new Material
             {
                 Name = "wirefence",
                 MatCBIndex = 2,
@@ -901,7 +889,12 @@ namespace DX12GameProgramming
                 DiffuseAlbedo = new Vector4(1.0f),
                 FresnelR0 = new Vector3(0.02f),
                 Roughness = 0.25f
-            };
+            });
+        }
+
+        private void AddMaterial(Material mat)
+        {
+            _materials[mat.Name] = mat;
         }
 
         private void BuildRenderItems()

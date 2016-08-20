@@ -33,20 +33,6 @@ namespace DX12GameProgramming
         public int IndexCount { get; set; }
         public int StartIndexLocation { get; set; }
         public int BaseVertexLocation { get; set; }
-
-        public RenderItem Copy() => new RenderItem
-        {
-            World = World,
-            TexTransform = TexTransform,
-            NumFramesDirty = NumFramesDirty,
-            ObjCBIndex = ObjCBIndex,
-            Mat = Mat,
-            Geo = Geo,
-            PrimitiveType = PrimitiveType,
-            IndexCount = IndexCount,
-            StartIndexLocation = StartIndexLocation,
-            BaseVertexLocation = BaseVertexLocation
-        };
     }
 
     internal enum RenderLayer

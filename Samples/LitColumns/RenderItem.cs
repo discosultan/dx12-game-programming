@@ -32,4 +32,9 @@ namespace DX12GameProgramming
         public int StartIndexLocation { get; set; }
         public int BaseVertexLocation { get; set; }
     }
+
+    internal enum RenderLayer
+    {
+        Opaque
+    }
 }
