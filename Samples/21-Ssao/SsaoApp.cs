@@ -653,7 +653,7 @@ namespace DX12GameProgramming
             //
             var srvHeapDesc = new DescriptorHeapDescription
             {
-                DescriptorCount = 18, // TODO: It's 16 actually
+                DescriptorCount = 18, // TODO: 16 are required.
                 Type = DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView,
                 Flags = DescriptorHeapFlags.ShaderVisible
             };
@@ -674,7 +674,6 @@ namespace DX12GameProgramming
                 _textures["defaultDiffuseMap"].Resource,
                 _textures["defaultNormalMap"].Resource,
             };
-
 
             Resource skyCubeMap = _textures["skyCubeMap"].Resource;
 
@@ -1107,108 +1106,53 @@ namespace DX12GameProgramming
 
         private void BuildRenderItems()
         {
-            var skyRitem = new RenderItem();
-            skyRitem.World = Matrix.Scaling(5000.0f);
-            skyRitem.ObjCBIndex = 0;
-            skyRitem.Mat = _materials["sky"];
-            skyRitem.Geo = _geometries["shapeGeo"];
-            skyRitem.IndexCount = skyRitem.Geo.DrawArgs["sphere"].IndexCount;
-            skyRitem.StartIndexLocation = skyRitem.Geo.DrawArgs["sphere"].StartIndexLocation;
-            skyRitem.BaseVertexLocation = skyRitem.Geo.DrawArgs["sphere"].BaseVertexLocation;
-            AddRenderItem(skyRitem, RenderLayer.Sky);
-
-            var quadRitem = new RenderItem();
-            quadRitem.ObjCBIndex = 1;
-            quadRitem.Mat = _materials["bricks0"];
-            quadRitem.Geo = _geometries["shapeGeo"];
-            quadRitem.IndexCount = quadRitem.Geo.DrawArgs["quad"].IndexCount;
-            quadRitem.StartIndexLocation = quadRitem.Geo.DrawArgs["quad"].StartIndexLocation;
-            quadRitem.BaseVertexLocation = quadRitem.Geo.DrawArgs["quad"].BaseVertexLocation;
-            AddRenderItem(quadRitem, RenderLayer.Debug);
-
-            var boxRitem = new RenderItem();
-            boxRitem.World = Matrix.Scaling(2.0f, 1.0f, 2.0f) * Matrix.Translation(0.0f, 0.5f, 0.0f);
-            boxRitem.TexTransform = Matrix.Scaling(1.0f, 0.5f, 1.0f);
-            boxRitem.ObjCBIndex = 2;
-            boxRitem.Mat = _materials["bricks0"];
-            boxRitem.Geo = _geometries["shapeGeo"];
-            boxRitem.IndexCount = boxRitem.Geo.DrawArgs["box"].IndexCount;
-            boxRitem.StartIndexLocation = boxRitem.Geo.DrawArgs["box"].StartIndexLocation;
-            boxRitem.BaseVertexLocation = boxRitem.Geo.DrawArgs["box"].BaseVertexLocation;
-            AddRenderItem(boxRitem, RenderLayer.Opaque);
-
-            var skullRitem = new RenderItem();
-            skullRitem.World = Matrix.Scaling(0.4f) * Matrix.Translation(0.0f, 1.0f, 0.0f);
-            skullRitem.ObjCBIndex = 3;
-            skullRitem.Mat = _materials["skullMat"];
-            skullRitem.Geo = _geometries["skullGeo"];
-            skullRitem.IndexCount = skullRitem.Geo.DrawArgs["skull"].IndexCount;
-            skullRitem.StartIndexLocation = skullRitem.Geo.DrawArgs["skull"].StartIndexLocation;
-            skullRitem.BaseVertexLocation = skullRitem.Geo.DrawArgs["skull"].BaseVertexLocation;
-            AddRenderItem(skullRitem, RenderLayer.Opaque);
-
-            var gridRitem = new RenderItem();
-            gridRitem.TexTransform = Matrix.Scaling(8.0f, 8.0f, 1.0f);
-            gridRitem.ObjCBIndex = 4;
-            gridRitem.Mat = _materials["tile0"];
-            gridRitem.Geo = _geometries["shapeGeo"];
-            gridRitem.IndexCount = gridRitem.Geo.DrawArgs["grid"].IndexCount;
-            gridRitem.StartIndexLocation = gridRitem.Geo.DrawArgs["grid"].StartIndexLocation;
-            gridRitem.BaseVertexLocation = gridRitem.Geo.DrawArgs["grid"].BaseVertexLocation;
-            AddRenderItem(gridRitem, RenderLayer.Opaque);
+            AddRenderItem(RenderLayer.Sky, 0, "sky", "shapeGeo", "sphere",
+                world: Matrix.Scaling(5000.0f));
+            AddRenderItem(RenderLayer.Debug, 1, "bricks0", "shapeGeo", "quad");
+            AddRenderItem(RenderLayer.Opaque, 2, "bricks0", "shapeGeo", "box",
+                world: Matrix.Scaling(2.0f, 1.0f, 2.0f) * Matrix.Translation(0.0f, 0.5f, 0.0f),
+                texTransform: Matrix.Scaling(1.0f, 0.5f, 1.0f));
+            AddRenderItem(RenderLayer.Opaque, 3, "skullMat", "skullGeo", "skull",
+                world: Matrix.Scaling(0.4f) * Matrix.Translation(0.0f, 1.0f, 0.0f));
+            AddRenderItem(RenderLayer.Opaque, 4, "tile0", "shapeGeo", "grid",
+                texTransform: Matrix.Scaling(8.0f, 8.0f, 1.0f));
 
             Matrix brickTexTransform = Matrix.Scaling(1.5f, 2.0f, 1.0f);
             int objCBIndex = 5;
             for (int i = 0; i < 5; ++i)
             {
-                var leftCylRitem = new RenderItem();
-                leftCylRitem.World = Matrix.Translation(-5.0f, 1.5f, -10.0f + i * 5.0f);
-                leftCylRitem.TexTransform = brickTexTransform;
-                leftCylRitem.ObjCBIndex = objCBIndex++;
-                leftCylRitem.Mat = _materials["bricks0"];
-                leftCylRitem.Geo = _geometries["shapeGeo"];
-                leftCylRitem.IndexCount = leftCylRitem.Geo.DrawArgs["cylinder"].IndexCount;
-                leftCylRitem.StartIndexLocation = leftCylRitem.Geo.DrawArgs["cylinder"].StartIndexLocation;
-                leftCylRitem.BaseVertexLocation = leftCylRitem.Geo.DrawArgs["cylinder"].BaseVertexLocation;
-                AddRenderItem(leftCylRitem, RenderLayer.Opaque);
+                AddRenderItem(RenderLayer.Opaque, objCBIndex++, "bricks0", "shapeGeo", "cylinder",
+                    world: Matrix.Translation(-5.0f, 1.5f, -10.0f + i * 5.0f),
+                    texTransform: brickTexTransform);
+                AddRenderItem(RenderLayer.Opaque, objCBIndex++, "bricks0", "shapeGeo", "cylinder",
+                    world: Matrix.Translation(+5.0f, 1.5f, -10.0f + i * 5.0f),
+                    texTransform: brickTexTransform);
 
-                var rightCylRitem = new RenderItem();
-                rightCylRitem.World = Matrix.Translation(+5.0f, 1.5f, -10.0f + i * 5.0f);
-                rightCylRitem.TexTransform = brickTexTransform;
-                rightCylRitem.ObjCBIndex = objCBIndex++;
-                rightCylRitem.Mat = _materials["bricks0"];
-                rightCylRitem.Geo = _geometries["shapeGeo"];
-                rightCylRitem.IndexCount = rightCylRitem.Geo.DrawArgs["cylinder"].IndexCount;
-                rightCylRitem.StartIndexLocation = rightCylRitem.Geo.DrawArgs["cylinder"].StartIndexLocation;
-                rightCylRitem.BaseVertexLocation = rightCylRitem.Geo.DrawArgs["cylinder"].BaseVertexLocation;
-                AddRenderItem(rightCylRitem, RenderLayer.Opaque);
-
-                var leftSphereRitem = new RenderItem();
-                leftSphereRitem.World = Matrix.Translation(-5.0f, 3.5f, -10.0f + i * 5.0f);
-                leftSphereRitem.ObjCBIndex = objCBIndex++;
-                leftSphereRitem.Mat = _materials["mirror0"];
-                leftSphereRitem.Geo = _geometries["shapeGeo"];
-                leftSphereRitem.IndexCount = leftSphereRitem.Geo.DrawArgs["sphere"].IndexCount;
-                leftSphereRitem.StartIndexLocation = leftSphereRitem.Geo.DrawArgs["sphere"].StartIndexLocation;
-                leftSphereRitem.BaseVertexLocation = leftSphereRitem.Geo.DrawArgs["sphere"].BaseVertexLocation;
-                AddRenderItem(leftSphereRitem, RenderLayer.Opaque);
-
-                var rightSphereRitem = new RenderItem();
-                rightSphereRitem.World = Matrix.Translation(+5.0f, 3.5f, -10.0f + i * 5.0f);
-                rightSphereRitem.ObjCBIndex = objCBIndex++;
-                rightSphereRitem.Mat = _materials["mirror0"];
-                rightSphereRitem.Geo = _geometries["shapeGeo"];
-                rightSphereRitem.IndexCount = rightSphereRitem.Geo.DrawArgs["sphere"].IndexCount;
-                rightSphereRitem.StartIndexLocation = rightSphereRitem.Geo.DrawArgs["sphere"].StartIndexLocation;
-                rightSphereRitem.BaseVertexLocation = rightSphereRitem.Geo.DrawArgs["sphere"].BaseVertexLocation;
-                AddRenderItem(rightSphereRitem, RenderLayer.Opaque);
+                AddRenderItem(RenderLayer.Opaque, objCBIndex++, "mirror0", "shapeGeo", "sphere",
+                    world: Matrix.Translation(-5.0f, 3.5f, -10.0f + i * 5.0f));
+                AddRenderItem(RenderLayer.Opaque, objCBIndex++, "mirror0", "shapeGeo", "sphere",
+                    world: Matrix.Translation(+5.0f, 3.5f, -10.0f + i * 5.0f));
             }
         }
 
-        private void AddRenderItem(RenderItem item, RenderLayer layer)
+        private void AddRenderItem(RenderLayer layer, int objCBIndex, string matName, string geoName, string submeshName,
+            Matrix? world = null, Matrix? texTransform = null)
         {
-            _allRitems.Add(item);
-            _ritemLayers[layer].Add(item);
+            MeshGeometry geo = _geometries[geoName];
+            SubmeshGeometry submesh = geo.DrawArgs[submeshName];
+            var renderItem = new RenderItem
+            {
+                ObjCBIndex = objCBIndex,
+                Mat = _materials[matName],
+                Geo = geo,
+                IndexCount = submesh.IndexCount,
+                StartIndexLocation = submesh.StartIndexLocation,
+                BaseVertexLocation = submesh.BaseVertexLocation,
+                World = world ?? Matrix.Identity,
+                TexTransform = texTransform ?? Matrix.Identity
+            };
+            _ritemLayers[layer].Add(renderItem);
+            _allRitems.Add(renderItem);
         }
 
         private void DrawRenderItems(GraphicsCommandList cmdList, List<RenderItem> ritems)
