@@ -12,13 +12,11 @@ The samples will compile with Visual Studio 2015+ and run on Windows 10 with Dir
 <img src="./Images/InitDirect3D.jpg" height="96px" align="right">
 
 Sets up a window using WinForms. Initializes Direct3D 12 and builds a base app and game loop upon which next samples are built.
-<br><br>
 
 ## [06-Box](Samples/06-Box)
 <img src="./Images/Box.jpg" height="96px" align="right">
 
-Manually defines vertices to render a colored box. Scene can be rotated and zoomed using mouse buttons. 
-<br><br>
+Manually defines vertices to render a colored box. Scene can be rotated and zoomed using mouse buttons.
 
 ## [07-Shapes](Samples/07-Shapes)
 <img src="./Images/Shapes.jpg" height="96px" align="right">
@@ -42,7 +40,6 @@ Adds lighting to the land and waves scene. Introduces ambient, diffuse and specu
 <img src="./Images/LitColumns.jpg" height="96px" align="right">
 
 Introduces parsing and loading a skull mesh from a custom model format. Applies lighting to the shapes scene.
-<br><br>
 
 ## [09-Crate](Samples/09-Crate)
 <img src="./Images/Crate.jpg" height="96px" align="right">
@@ -66,7 +63,6 @@ Textures objects in the shapes scene.
 <img src="./Images/Blend.jpg" height="96px" align="right">
 
 Renders the land and waves scene with transparent water and a wire fence box textures. Introduces the blending formula and creates a fog effect.
-<br><br>
 
 ## [11-Stencil](Samples/11-Stencil)
 <img src="./Images/Stencil.jpg" height="96px" align="right">
@@ -81,29 +77,24 @@ Renders trees as billboards. Introduces texture arrays and alpha to coverage in 
 <br><br>
 
 ## [13-VecAdd](Samples/13-VecAdd)
-<img src="./Images/InitDirect3D.jpg" height="96px" align="right" style="visibility:hidden">
 
 Sums a bunch of vectors on GPU instead of CPU for high parallelism using a compute shader. Outputs a *results.txt* file instead of rendering to screen.
-<br><br>
 
 ## [13-WavesCS](Samples/13-WavesCS)
 <!-- This sample looks exactly the same as 10-Blend -->
 <img src="./Images/Blend.jpg" height="96px" align="right">
 
 Uses a compute shader to update the land and waves scene waves simulation on GPU instead of CPU.
-<br><br>
 
 ## [13-Blur](Samples/13-Blur)
 <img src="./Images/Blur.jpg" height="96px" align="right">
 
 Applies a Gaussian blur post processing effect using a compute shader to the land and waves scene.
-<br><br>
 
 ## [13-SobelFilter](Samples/13-SobelFilter)
 <img src="./Images/SobelFilter.jpg" height="96px" align="right">
 
 Applies a sobel filter post processing effect using a compute shader to the land and waves scene to render outlines for geometry.
-<br><br>
 
 ## [14-BasicTessellation](Samples/14-BasicTessellation)
 <img src="./Images/BasicTessellation.jpg" height="96px" align="right">
@@ -121,19 +112,16 @@ Tessellates a quad using 16 control points cubic Bézier surface.
 <img src="./Images/CameraAndDynamicIndexing.jpg" height="96px" align="right">
 
 Creates a controllable first person camera. Introduces dynamic indexing of texture arrays. Camera is moved using WASD keys and rotated using a mouse.
-<br><br>
 
 ## [16-InstancingAndCulling](Samples/16-InstancingAndCulling)
 <img src="./Images/InstancingAndCulling.jpg" height="96px" align="right">
 
 Renders multiple copies of the skull mesh using a hardware instanced draw call. Culls skulls outside of camera frustum.
-<br><br>
 
 ## [17-Picking](Samples/17-Picking)
 <img src="./Images/Picking.jpg" height="96px" align="right">
 
 Enables picking individual triangles of a car mesh. Right mouse button picks a triangle which is highlighted using a yellow color.
-<br><br>
 
 ## [18-CubeMap](Samples/18-CubeMap)
 <img src="./Images/CubeMap.jpg" height="96px" align="right">
@@ -151,7 +139,6 @@ Renders scene objects into a texture cube every frame. Uses the rendered cube fo
 <img src="./Images/NormalMap.jpg" height="96px" align="right">
 
 Makes use of normal maps in addition to diffuse maps to generate more realistic lighting of surfaces.
-<br><br>
 
 ## [20-Shadows](Samples/20-Shadows)
 <img src="./Images/Shadows.jpg" height="96px" align="right">
@@ -175,4 +162,3 @@ Animates skull rotations using quaternions.
 <img src="./Images/SkinnedMesh.jpg" height="96px" align="right">
 
 Loads a soldier mesh from a *.m3d* format. Plays a walking animation using skinned animation.
-<br><br> 
