@@ -1129,17 +1129,18 @@ namespace DX12GameProgramming
 
         private void BuildRenderItems()
         {
-            AddRenderItem(RenderLayer.Sky, 0, "sky", "shapeGeo", "sphere",
+            int objCBIndex = 0;
+
+            AddRenderItem(RenderLayer.Sky, objCBIndex++, "sky", "shapeGeo", "sphere",
                 world: Matrix.Scaling(5000.0f));
-            AddRenderItem(RenderLayer.Debug, 1, "bricks0", "shapeGeo", "quad");
-            AddRenderItem(RenderLayer.Opaque, 2, "bricks0", "shapeGeo", "box",
+            AddRenderItem(RenderLayer.Debug, objCBIndex++, "bricks0", "shapeGeo", "quad");
+            AddRenderItem(RenderLayer.Opaque, objCBIndex++, "bricks0", "shapeGeo", "box",
                 world: Matrix.Scaling(2.0f, 1.0f, 2.0f) * Matrix.Translation(0.0f, 0.5f, 0.0f),
                 texTransform: Matrix.Scaling(1.0f, 0.5f, 1.0f));            
-            AddRenderItem(RenderLayer.Opaque, 4, "tile0", "shapeGeo", "grid",
+            AddRenderItem(RenderLayer.Opaque, objCBIndex++, "tile0", "shapeGeo", "grid",
                 texTransform: Matrix.Scaling(8.0f, 8.0f, 1.0f));
 
-            Matrix brickTexTransform = Matrix.Scaling(1.5f, 2.0f, 1.0f);
-            int objCBIndex = 4;
+            Matrix brickTexTransform = Matrix.Scaling(1.5f, 2.0f, 1.0f);            
             for (int i = 0; i < 5; ++i)
             {
                 AddRenderItem(RenderLayer.Opaque, objCBIndex++, "bricks0", "shapeGeo", "cylinder",
@@ -1168,12 +1169,13 @@ namespace DX12GameProgramming
                 // the same skinned model instance.
                 AddRenderItem(RenderLayer.SkinnedOpaque, objCBIndex++, _skinnedMats[i].Name, "soldier", submeshName,
                     world: modelScale * modelRot * modelOffset,
+                    skinnedCBIndex: 0,
                     skinnedInst: _skinnedModelInst);
             }
         }
 
         private void AddRenderItem(RenderLayer layer, int objCBIndex, string matName, string geoName, string submeshName,
-            Matrix? world = null, Matrix? texTransform = null, SkinnedModelInstance skinnedInst = null)
+            Matrix? world = null, Matrix? texTransform = null, int skinnedCBIndex = -1, SkinnedModelInstance skinnedInst = null)
         {
             MeshGeometry geo = _geometries[geoName];
             SubmeshGeometry submesh = geo.DrawArgs[submeshName];
@@ -1187,6 +1189,7 @@ namespace DX12GameProgramming
                 BaseVertexLocation = submesh.BaseVertexLocation,
                 World = world ?? Matrix.Identity,
                 TexTransform = texTransform ?? Matrix.Identity,
+                SkinnedCBIndex = skinnedCBIndex,
                 SkinnedModelInst = skinnedInst
             };
             _ritemLayers[layer].Add(renderItem);
