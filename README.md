@@ -81,11 +81,13 @@ Renders trees as billboards. Introduces texture arrays and alpha to coverage in 
 <br><br>
 
 ## [13-VecAdd](Samples/13-VecAdd)
+<img src="./Images/InitDirect3D.jpg" height="96px" align="right" style="visibility:hidden">
 
-Sums a bunch of vectors on GPU instead of CPU for high parallelism using a compute shader. Outputs a 'results.txt' file instead of rendering to screen.
+Sums a bunch of vectors on GPU instead of CPU for high parallelism using a compute shader. Outputs a *results.txt* file instead of rendering to screen.
 <br><br>
 
 ## [13-WavesCS](Samples/13-WavesCS)
+<!-- This sample looks exactly the same as 10-Blend -->
 <img src="./Images/Blend.jpg" height="96px" align="right">
 
 Uses a compute shader to update the land and waves scene waves simulation on GPU instead of CPU.
