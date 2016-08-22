@@ -305,7 +305,7 @@ namespace DX12GameProgramming
             {
                 ClientWidth = _window.ClientSize.Width;
                 ClientHeight = _window.ClientSize.Height;
-                // When window state changes
+                // When window state changes.
                 if (_window.WindowState != _lastWindowState)
                 {
                     _lastWindowState = _window.WindowState;
@@ -352,6 +352,10 @@ namespace DX12GameProgramming
                             OnResize();
                         }
                     }
+                }
+                else if (!_resizing) // Resize due to snapping.
+                {
+                    OnResize();
                 }
             };
 
