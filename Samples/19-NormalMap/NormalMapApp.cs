@@ -392,8 +392,6 @@ namespace DX12GameProgramming
                 _textures["defaultDiffuseMap"].Resource,
                 _textures["defaultNormalMap"].Resource,
             };
-
-            
             Resource skyCubeMap = _textures["skyCubeMap"].Resource;
 
             var srvDesc = new ShaderResourceViewDescription
@@ -526,7 +524,6 @@ namespace DX12GameProgramming
                 DepthStencilFormat = DepthStencilFormat
             };
             opaquePsoDesc.RenderTargetFormats[0] = BackBufferFormat;
-
             _psos["opaque"] = Device.CreateGraphicsPipelineState(opaquePsoDesc);
 
             //
@@ -534,10 +531,8 @@ namespace DX12GameProgramming
             //
 
             GraphicsPipelineStateDescription skyPsoDesc = opaquePsoDesc.Copy();
-
             // The camera is inside the sky sphere, so just turn off culling.
             skyPsoDesc.RasterizerState.CullMode = CullMode.None;
-
             // Make sure the depth function is LESS_EQUAL and not just LESS.  
             // Otherwise, the normalized depth values at z = 1 (NDC) will 
             // fail the depth test if the depth buffer was cleared to 1.
@@ -545,7 +540,6 @@ namespace DX12GameProgramming
             skyPsoDesc.RootSignature = _rootSignature;
             skyPsoDesc.VertexShader = _shaders["skyVS"];
             skyPsoDesc.PixelShader = _shaders["skyPS"];
-
             _psos["sky"] = Device.CreateGraphicsPipelineState(skyPsoDesc);
         }
 

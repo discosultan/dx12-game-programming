@@ -496,15 +496,16 @@ namespace DX12GameProgramming
 
         private void BuildMaterials()
         {
-            _materials["whiteMat"] = new Material
+            var mat = new Material
             {
-                Name = "quadMat",
+                Name = "whiteMat",
                 MatCBIndex = 0,
                 DiffuseSrvHeapIndex = 3,
                 DiffuseAlbedo = Color.White.ToVector4(),
                 FresnelR0 = new Vector3(0.1f),
                 Roughness = 0.5f
             };
+            _materials[mat.Name] = mat;
         }
 
         private void BuildRenderItems()

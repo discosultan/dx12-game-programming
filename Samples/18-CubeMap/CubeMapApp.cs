@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using SharpDX;
 using SharpDX.Direct3D12;
@@ -381,41 +382,34 @@ namespace DX12GameProgramming
             //
             CpuDescriptorHandle hDescriptor = _srvDescriptorHeap.CPUDescriptorHandleForHeapStart;
 
-            Resource bricksTex = _textures["bricksDiffuseMap"].Resource;
-            Resource tileTex = _textures["tileDiffuseMap"].Resource;
-            Resource whiteTex = _textures["defaultDiffuseMap"].Resource;
+            Resource[] tex2DList =
+            {
+                _textures["bricksDiffuseMap"].Resource,
+                _textures["tileDiffuseMap"].Resource,
+                _textures["defaultDiffuseMap"].Resource
+            };
             Resource skyTex = _textures["skyCubeMap"].Resource;
 
             var srvDesc = new ShaderResourceViewDescription
             {
                 Shader4ComponentMapping = D3DUtil.DefaultShader4ComponentMapping,
-                Format = bricksTex.Description.Format,
                 Dimension = ShaderResourceViewDimension.Texture2D,
                 Texture2D = new ShaderResourceViewDescription.Texture2DResource
                 {
                     MostDetailedMip = 0,
-                    MipLevels = bricksTex.Description.MipLevels,
                     ResourceMinLODClamp = 0.0f
                 }
             };
-            Device.CreateShaderResourceView(bricksTex, srvDesc, hDescriptor);
 
-            // Next descriptor.
-            hDescriptor += CbvSrvUavDescriptorSize;
+            foreach (Resource tex2D in tex2DList)
+            {
+                srvDesc.Format = tex2D.Description.Format;
+                srvDesc.Texture2D.MipLevels = tex2D.Description.MipLevels;
+                Device.CreateShaderResourceView(tex2D, srvDesc, hDescriptor);
 
-            srvDesc.Format = tileTex.Description.Format;
-            srvDesc.Texture2D.MipLevels = tileTex.Description.MipLevels;
-            Device.CreateShaderResourceView(tileTex, srvDesc, hDescriptor);
-
-            // Next descriptor.
-            hDescriptor += CbvSrvUavDescriptorSize;
-
-            srvDesc.Format = whiteTex.Description.Format;
-            srvDesc.Texture2D.MipLevels = whiteTex.Description.MipLevels;
-            Device.CreateShaderResourceView(whiteTex, srvDesc, hDescriptor);
-
-            // Next descriptor.
-            hDescriptor += CbvSrvUavDescriptorSize;
+                // Next descriptor.
+                hDescriptor += CbvSrvUavDescriptorSize;
+            }
 
             srvDesc.Dimension = ShaderResourceViewDimension.TextureCube;
             srvDesc.TextureCube = new ShaderResourceViewDescription.TextureCubeResource
@@ -448,115 +442,57 @@ namespace DX12GameProgramming
 
         private void BuildShapeGeometry()
         {
-            GeometryGenerator.MeshData box = GeometryGenerator.CreateBox(1.0f, 1.0f, 1.0f, 3);
-            GeometryGenerator.MeshData grid = GeometryGenerator.CreateGrid(20.0f, 30.0f, 60, 40);
-            GeometryGenerator.MeshData sphere = GeometryGenerator.CreateSphere(0.5f, 20, 20);
-            GeometryGenerator.MeshData cylinder = GeometryGenerator.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
-
             //
             // We are concatenating all the geometry into one big vertex/index buffer. So
             // define the regions in the buffer each submesh covers.
             //
 
-            // Cache the vertex offsets to each object in the concatenated vertex buffer.
-            int boxVertexOffset = 0;
-            int gridVertexOffset = box.Vertices.Count;
-            int sphereVertexOffset = gridVertexOffset + grid.Vertices.Count;
-            int cylinderVertexOffset = sphereVertexOffset + sphere.Vertices.Count;
+            var vertices = new List<Vertex>();
+            var indices = new List<short>();
 
-            // Cache the starting index for each object in the concatenated index buffer.
-            int boxIndexOffset = 0;
-            int gridIndexOffset = box.Indices32.Count;
-            int sphereIndexOffset = gridIndexOffset + grid.Indices32.Count;
-            int cylinderIndexOffset = sphereIndexOffset + sphere.Indices32.Count;
+            SubmeshGeometry box = AppendMeshData(GeometryGenerator.CreateBox(1.0f, 1.0f, 1.0f, 3), vertices, indices);
+            SubmeshGeometry grid = AppendMeshData(GeometryGenerator.CreateGrid(20.0f, 30.0f, 60, 40), vertices, indices);
+            SubmeshGeometry sphere = AppendMeshData(GeometryGenerator.CreateSphere(0.5f, 20, 20), vertices, indices);
+            SubmeshGeometry cylinder = AppendMeshData(GeometryGenerator.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20), vertices, indices);
 
+            var geo = MeshGeometry.New(Device, CommandList, vertices, indices.ToArray(), "shapeGeo");
+
+            geo.DrawArgs["box"] = box;
+            geo.DrawArgs["grid"] = grid;
+            geo.DrawArgs["sphere"] = sphere;
+            geo.DrawArgs["cylinder"] = cylinder;
+
+            _geometries[geo.Name] = geo;
+        }
+
+        private SubmeshGeometry AppendMeshData(GeometryGenerator.MeshData meshData, List<Vertex> vertices, List<short> indices)
+        {
+            //
             // Define the SubmeshGeometry that cover different 
             // regions of the vertex/index buffers.
+            //
 
-            var boxSubmesh = new SubmeshGeometry
+            var submesh = new SubmeshGeometry
             {
-                IndexCount = box.Indices32.Count,
-                StartIndexLocation = boxIndexOffset,
-                BaseVertexLocation = boxVertexOffset
-            };
-
-            var gridSubmesh = new SubmeshGeometry
-            {
-                IndexCount = grid.Indices32.Count,
-                StartIndexLocation = gridIndexOffset,
-                BaseVertexLocation = gridVertexOffset
-            };
-
-            var sphereSubmesh = new SubmeshGeometry
-            {
-                IndexCount = sphere.Indices32.Count,
-                StartIndexLocation = sphereIndexOffset,
-                BaseVertexLocation = sphereVertexOffset
-            };
-
-            var cylinderSubmesh = new SubmeshGeometry
-            {
-                IndexCount = cylinder.Indices32.Count,
-                StartIndexLocation = cylinderIndexOffset,
-                BaseVertexLocation = cylinderVertexOffset
+                IndexCount = meshData.Indices32.Count,
+                StartIndexLocation = indices.Count,
+                BaseVertexLocation = vertices.Count
             };
 
             //
             // Extract the vertex elements we are interested in and pack the
-            // vertices of all the meshes into one vertex buffer.
+            // vertices and indices of all the meshes into one vertex/index buffer.
             //
 
-            int totalVertexCount =
-                box.Vertices.Count +
-                grid.Vertices.Count +
-                sphere.Vertices.Count +
-                cylinder.Vertices.Count;
-
-            var vertices = new Vertex[totalVertexCount];
-
-            int k = 0;
-            for (int i = 0; i < box.Vertices.Count; ++i, ++k)
+            vertices.AddRange(meshData.Vertices.Select(vertex => new Vertex
             {
-                vertices[k].Pos = box.Vertices[i].Position;
-                vertices[k].Normal = box.Vertices[i].Normal;
-                vertices[k].TexC = box.Vertices[i].TexC;
-            }
+                Pos = vertex.Position,
+                Normal = vertex.Normal,
+                TexC = vertex.TexC
+            }));
+            indices.AddRange(meshData.GetIndices16());
 
-            for (int i = 0; i < grid.Vertices.Count; ++i, ++k)
-            {
-                vertices[k].Pos = grid.Vertices[i].Position;
-                vertices[k].Normal = grid.Vertices[i].Normal;
-                vertices[k].TexC = grid.Vertices[i].TexC;
-            }
-
-            for (int i = 0; i < sphere.Vertices.Count; ++i, ++k)
-            {
-                vertices[k].Pos = sphere.Vertices[i].Position;
-                vertices[k].Normal = sphere.Vertices[i].Normal;
-                vertices[k].TexC = sphere.Vertices[i].TexC;
-            }
-
-            for (int i = 0; i < cylinder.Vertices.Count; ++i, ++k)
-            {
-                vertices[k].Pos = cylinder.Vertices[i].Position;
-                vertices[k].Normal = cylinder.Vertices[i].Normal;
-                vertices[k].TexC = cylinder.Vertices[i].TexC;
-            }
-
-            var indices = new List<short>();
-            indices.AddRange(box.GetIndices16());
-            indices.AddRange(grid.GetIndices16());
-            indices.AddRange(sphere.GetIndices16());
-            indices.AddRange(cylinder.GetIndices16());
-
-            var geo = MeshGeometry.New(Device, CommandList, vertices, indices.ToArray(), "shapeGeo");
-
-            geo.DrawArgs["box"] = boxSubmesh;
-            geo.DrawArgs["grid"] = gridSubmesh;
-            geo.DrawArgs["sphere"] = sphereSubmesh;
-            geo.DrawArgs["cylinder"] = cylinderSubmesh;
-
-            _geometries[geo.Name] = geo;
+            return submesh;
         }
 
         private void BuildSkullGeometry()

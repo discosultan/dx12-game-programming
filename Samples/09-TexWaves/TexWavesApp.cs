@@ -450,14 +450,16 @@ namespace DX12GameProgramming
             //
             CpuDescriptorHandle hDescriptor = _srvDescriptorHeap.CPUDescriptorHandleForHeapStart;
 
-            Resource grassTex = _textures["grassTex"].Resource;
-            Resource waterTex = _textures["waterTex"].Resource;
-            Resource fenceTex = _textures["fenceTex"].Resource;
+            Resource[] tex2DList =
+            {
+                _textures["grassTex"].Resource,
+                _textures["waterTex"].Resource,
+                _textures["fenceTex"].Resource
+            };                                    
 
             var srvDesc = new ShaderResourceViewDescription
             {
                 Shader4ComponentMapping = D3DUtil.DefaultShader4ComponentMapping,
-                Format = grassTex.Description.Format,
                 Dimension = ShaderResourceViewDimension.Texture2D,
                 Texture2D = new ShaderResourceViewDescription.Texture2DResource
                 {
@@ -466,19 +468,14 @@ namespace DX12GameProgramming
                 }
             };
 
-            Device.CreateShaderResourceView(grassTex, srvDesc, hDescriptor);
+            foreach (Resource tex2D in tex2DList)
+            {
+                srvDesc.Format = tex2D.Description.Format;
+                Device.CreateShaderResourceView(tex2D, srvDesc, hDescriptor);
 
-            // Next descriptor.
-            hDescriptor += CbvSrvUavDescriptorSize;
-
-            srvDesc.Format = waterTex.Description.Format;
-            Device.CreateShaderResourceView(waterTex, srvDesc, hDescriptor);
-
-            // Next descriptor.
-            hDescriptor += CbvSrvUavDescriptorSize;
-
-            srvDesc.Format = fenceTex.Description.Format;
-            Device.CreateShaderResourceView(fenceTex, srvDesc, hDescriptor);
+                // Next descriptor.
+                hDescriptor += CbvSrvUavDescriptorSize;
+            }
         }
 
         private void BuildShadersAndInputLayout()
@@ -621,7 +618,6 @@ namespace DX12GameProgramming
                 DepthStencilFormat = DepthStencilFormat
             };
             opaquePsoDesc.RenderTargetFormats[0] = BackBufferFormat;
-
             _psos["opaque"] = Device.CreateGraphicsPipelineState(opaquePsoDesc);
         }
 
@@ -636,7 +632,7 @@ namespace DX12GameProgramming
 
         private void BuildMaterials()
         {
-            _materials["grass"] = new Material
+            AddMaterial(new Material
             {
                 Name = "grass",
                 MatCBIndex = 0,
@@ -644,11 +640,10 @@ namespace DX12GameProgramming
                 DiffuseAlbedo = new Vector4(1.0f),
                 FresnelR0 = new Vector3(0.01f),
                 Roughness = 0.125f
-            };
-
+            });
             // This is not a good water material definition, but we do not have all the rendering
             // tools we need (transparency, environment reflection), so we fake it for now.
-            _materials["water"] = new Material
+            AddMaterial(new Material
             {
                 Name = "water",
                 MatCBIndex = 1,
@@ -656,9 +651,8 @@ namespace DX12GameProgramming
                 DiffuseAlbedo = new Vector4(1.0f),
                 FresnelR0 = new Vector3(0.2f),
                 Roughness = 0.0f
-            };
-
-            _materials["wirefence"] = new Material
+            });
+            AddMaterial(new Material
             {
                 Name = "wirefence",
                 MatCBIndex = 2,
@@ -666,8 +660,10 @@ namespace DX12GameProgramming
                 DiffuseAlbedo = new Vector4(1.0f),
                 FresnelR0 = new Vector3(0.1f),
                 Roughness = 0.25f
-            };
+            });
         }
+
+        private void AddMaterial(Material mat) => _materials[mat.Name] = mat;
 
         private void BuildRenderItems()
         {

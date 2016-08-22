@@ -526,8 +526,6 @@ namespace DX12GameProgramming
                 _textures["defaultDiffuseMap"].Resource,
                 _textures["defaultNormalMap"].Resource,
             };
-
-
             Resource skyCubeMap = _textures["skyCubeMap"].Resource;
 
             var srvDesc = new ShaderResourceViewDescription

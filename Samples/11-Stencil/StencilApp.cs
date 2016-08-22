@@ -475,15 +475,17 @@ namespace DX12GameProgramming
             //
             CpuDescriptorHandle hDescriptor = _srvDescriptorHeap.CPUDescriptorHandleForHeapStart;
 
-            Resource bricksTex = _textures["bricksTex"].Resource;
-            Resource checkboardTex = _textures["checkboardTex"].Resource;
-            Resource iceTex = _textures["iceTex"].Resource;
-            Resource white1x1Tex = _textures["white1x1Tex"].Resource;
+            Resource[] tex2DList =
+            {
+                _textures["bricksTex"].Resource,
+                _textures["checkboardTex"].Resource,
+                _textures["iceTex"].Resource,
+                _textures["white1x1Tex"].Resource
+            };            
 
             var srvDesc = new ShaderResourceViewDescription
             {
                 Shader4ComponentMapping = D3DUtil.DefaultShader4ComponentMapping,
-                Format = bricksTex.Description.Format,
                 Dimension = ShaderResourceViewDimension.Texture2D,
                 Texture2D = new ShaderResourceViewDescription.Texture2DResource
                 {
@@ -492,25 +494,14 @@ namespace DX12GameProgramming
                 }
             };
 
-            Device.CreateShaderResourceView(bricksTex, srvDesc, hDescriptor);
+            foreach (Resource tex2D in tex2DList)
+            {
+                srvDesc.Format = tex2D.Description.Format;
+                Device.CreateShaderResourceView(tex2D, srvDesc, hDescriptor);
 
-            // Next descriptor.
-            hDescriptor += CbvSrvUavDescriptorSize;
-
-            srvDesc.Format = checkboardTex.Description.Format;
-            Device.CreateShaderResourceView(checkboardTex, srvDesc, hDescriptor);
-
-            // Next descriptor.
-            hDescriptor += CbvSrvUavDescriptorSize;
-
-            srvDesc.Format = iceTex.Description.Format;
-            Device.CreateShaderResourceView(iceTex, srvDesc, hDescriptor);
-
-            // Next descriptor.
-            hDescriptor += CbvSrvUavDescriptorSize;
-
-            srvDesc.Format = white1x1Tex.Description.Format;
-            Device.CreateShaderResourceView(white1x1Tex, srvDesc, hDescriptor);
+                // Next descriptor.
+                hDescriptor += CbvSrvUavDescriptorSize;
+            }
         }
 
         private void BuildShadersAndInputLayout()
@@ -725,7 +716,6 @@ namespace DX12GameProgramming
                 DepthStencilFormat = DepthStencilFormat
             };
             opaquePsoDesc.RenderTargetFormats[0] = BackBufferFormat;
-
             _psos["opaque"] = Device.CreateGraphicsPipelineState(opaquePsoDesc);
 
             //
@@ -733,7 +723,6 @@ namespace DX12GameProgramming
             //
 
             GraphicsPipelineStateDescription transparentPsoDesc = opaquePsoDesc.Copy();
-
             var transparencyBlendDesc = new RenderTargetBlendDescription
             {
                 IsBlendEnabled = true,
@@ -748,7 +737,6 @@ namespace DX12GameProgramming
                 RenderTargetWriteMask = ColorWriteMaskFlags.All
             };
             transparentPsoDesc.BlendState.RenderTarget[0] = transparencyBlendDesc;
-
             _psos["transparent"] = Device.CreateGraphicsPipelineState(transparentPsoDesc);
 
             //
@@ -766,7 +754,6 @@ namespace DX12GameProgramming
 
             var mirrorBlendState = BlendStateDescription.Default();
             mirrorBlendState.RenderTarget[0].RenderTargetWriteMask = 0;
-
             var mirrorDSS = new DepthStencilStateDescription
             {
                 IsDepthEnabled = true,
