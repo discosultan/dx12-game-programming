@@ -8,6 +8,10 @@ The samples will compile with Visual Studio 2015+ and run on Windows 10 with Dir
 
 # Samples
 
+The number prefix for sample name indicates its corresponding chapter from the book. 
+
+Note that there might be issues: some which are inherited from the original C++ samples and some which have been introduced during the porting process. All known issues are listed in the [issues section](https://github.com/discosultan/dx12-game-programming/issues).
+
 ## [04-InitDirect3D](Samples/04-InitDirect3D)
 <img src="./Images/InitDirect3D.jpg" height="96px" align="right">
 
