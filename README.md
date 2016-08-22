@@ -11,7 +11,7 @@ The samples will compile with Visual Studio 2015+ and run on Windows 10 with Dir
 ## [04-InitDirect3D](Samples/04-InitDirect3D)
 <img src="./Images/InitDirect3D.jpg" height="96px" align="right">
 
-Sets up a window using WinForms. Initializes Direct3D 12 and builds a base app and game loop upon which next samples are built.
+Sets up a window using WinForms. Initializes Direct3D 12 and builds a base app with game loop upon which next samples are built.
 
 ## [06-Box](Samples/06-Box)
 <img src="./Images/Box.jpg" height="96px" align="right">
@@ -33,7 +33,7 @@ Constructs a heightmap based terrain and water geometry using a dynamic vertex b
 ## [08-LitWaves](Samples/08-LitWaves)
 <img src="./Images/LitWaves.jpg" height="96px" align="right">
 
-Adds lighting to the land and waves scene. Introduces ambient, diffuse and specular lighting.
+Adds ambient, diffuse and specular lighting to the land and waves scene.
 <br><br> 
 
 ## [08-LitColumns](Samples/08-LitColumns)
@@ -50,7 +50,7 @@ Textures a box with uv-coordinates added to its vertices.
 ## [09-TexWaves](Samples/09-TexWaves)
 <img src="./Images/TexWaves.jpg" height="96px" align="right">
 
-Animates the water texture in the land and waves scene.
+Animates a water texture in the land and waves scene.
 <br><br>
 
 ## [09-TexColumns](Samples/09-TexColumns)
@@ -62,7 +62,7 @@ Textures objects in the shapes scene.
 ## [10-Blend](Samples/10-Blend)
 <img src="./Images/Blend.jpg" height="96px" align="right">
 
-Renders the land and waves scene with transparent water and a wire fence box textures. Introduces the blending formula and creates a fog effect.
+Renders the land and waves scene with transparent water and a wire fence textures. Introduces the blending formula and creates a fog effect.
 
 ## [11-Stencil](Samples/11-Stencil)
 <img src="./Images/Stencil.jpg" height="96px" align="right">
@@ -89,12 +89,12 @@ Uses a compute shader to update the land and waves scene waves simulation on GPU
 ## [13-Blur](Samples/13-Blur)
 <img src="./Images/Blur.jpg" height="96px" align="right">
 
-Applies a Gaussian blur post processing effect using a compute shader to the land and waves scene.
+Applies a Gaussian blur post-processing effect using a compute shader to the land and waves scene.
 
 ## [13-SobelFilter](Samples/13-SobelFilter)
 <img src="./Images/SobelFilter.jpg" height="96px" align="right">
 
-Applies a sobel filter post processing effect using a compute shader to the land and waves scene to render outlines for geometry.
+Applies a Sobel filter post-processing effect using a compute shader to the land and waves scene to render outlines for geometry.
 
 ## [14-BasicTessellation](Samples/14-BasicTessellation)
 <img src="./Images/BasicTessellation.jpg" height="96px" align="right">
@@ -149,16 +149,16 @@ Projects shadows into a shadow map which is blended with the diffuse target.
 ## [21-Ssao](Samples/21-Ssao)
 <img src="./Images/Ssao.jpg" height="96px" align="right">
 
-Computes real time screen space ambient occlusion and applies it as a post-processing effect.
+Computes real-time screen space ambient occlusion and applies it as a post-processing effect.
 <br><br>
 
 ## [22-Quaternions](Samples/22-Quaternions)
 <img src="./Images/Quaternions.jpg" height="96px" align="right">
 
-Animates skull rotations using quaternions.
+Animates skull rotation using quaternions.
 <br><br>
 
 ## [23-SkinnedMesh](Samples/23-SkinnedMesh)
 <img src="./Images/SkinnedMesh.jpg" height="96px" align="right">
 
-Loads a soldier mesh from a *.m3d* format. Plays a walking animation using skinned animation.
+Plays a walking animation for an animated skinned soldier mesh loaded from *.m3d* format.
