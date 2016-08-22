@@ -126,7 +126,7 @@ namespace DX12GameProgramming
             // Specify the buffers we are going to render to.            
             CommandList.SetRenderTargets(CurrentBackBufferView, DepthStencilView);
 
-            // TODO: API suggesion: rename descriptorHeapsOut to descriptorHeaps;
+            // TODO: API suggestion: rename descriptorHeapsOut to descriptorHeaps;
             // TODO: Add an overload for a setting a single SetDescriptorHeap?
             // TODO: Make requiring explicit length optional.
             CommandList.SetDescriptorHeaps(_descriptorHeaps.Length, _descriptorHeaps);

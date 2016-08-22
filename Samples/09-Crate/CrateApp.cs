@@ -368,7 +368,7 @@ namespace DX12GameProgramming
 
             var srvDesc = new ShaderResourceViewDescription
             {
-                // TODO: API suggesion: Expose DefaultShader4ComponentMapping through ShaderComponentMapping enumeration.
+                // TODO: API suggestion: Expose DefaultShader4ComponentMapping through ShaderComponentMapping enumeration.
                 // TODO: Turn from int to ShaderComponentMapping enum.
                 Shader4ComponentMapping = D3DUtil.DefaultShader4ComponentMapping,
                 Format = woodCrateTexture.Description.Format,

@@ -1,6 +1,6 @@
-﻿using SharpDX;
+﻿using System.Collections.Generic;
+using SharpDX;
 using SharpDX.Direct3D;
-using System.Collections.Generic;
 
 namespace DX12GameProgramming
 {

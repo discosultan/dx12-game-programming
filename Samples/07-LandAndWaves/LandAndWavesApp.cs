@@ -320,7 +320,7 @@ namespace DX12GameProgramming
             // Root parameter can be a table, root descriptor or root constants.
             var slotRootParameters = new[]
             {
-                // TODO: API suggesion: RootDescriptor register space default value = 0.
+                // TODO: API suggestion: RootDescriptor register space default value = 0.
                 new RootParameter(ShaderVisibility.Vertex, new RootDescriptor(0, 0), RootParameterType.ConstantBufferView),
                 new RootParameter(ShaderVisibility.Vertex, new RootDescriptor(1, 0), RootParameterType.ConstantBufferView)
             };
