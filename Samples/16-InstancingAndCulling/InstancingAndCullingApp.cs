@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using SharpDX;
 using SharpDX.Direct3D12;
@@ -11,8 +12,6 @@ using ShaderResourceViewDimension = SharpDX.Direct3D12.ShaderResourceViewDimensi
 
 namespace DX12GameProgramming
 {
-    // TODO: Fix crash when a large number of skulls become visible in the camera frustum.
-    // TODO: https://github.com/d3dcoder/d3d12book/issues/8
     public class InstancingAndCullingApp : D3DApp
     {
         private readonly List<FrameResource> _frameResources = new List<FrameResource>(NumFrameResources);
@@ -549,7 +548,7 @@ namespace DX12GameProgramming
         {
             for (int i = 0; i < NumFrameResources; i++)
             {
-                _frameResources.Add(new FrameResource(Device, 1, _allRitems.Count, _materials.Count));
+                _frameResources.Add(new FrameResource(Device, 1, _allRitems.Sum(ri => ri.Instances.Length), _materials.Count));
                 _fenceEvents.Add(new AutoResetEvent(false));
             }
         }
