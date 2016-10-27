@@ -9,6 +9,7 @@ using SharpDX.Direct3D;
 using SharpDX.Direct3D12;
 using SharpDX.DXGI;
 using Device = SharpDX.Direct3D12.Device;
+using Feature = SharpDX.Direct3D12.Feature;
 using Point = SharpDX.Point;
 using Resource = SharpDX.Direct3D12.Resource;
 using RectangleF = SharpDX.RectangleF;
