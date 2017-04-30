@@ -24,17 +24,17 @@ namespace DX12GameProgramming
         public const int NumFrameResources = 3;
         public const int SwapChainBufferCount = 2;
 
-        private readonly IntPtr _appInst;   // Application instance handle.
-        private Form _window;               // Main window.
-        private bool _appPaused;            // Is the application paused?
-        private bool _minimized;            // Is the application minimized?
-        private bool _maximized;            // Is the application maximized?
-        private bool _resizing;             // Are the resize bars being dragged?        
-        private bool _running;              // Is the application running?
+        private readonly IntPtr _appInst; // Application instance handle.
+        private Form _window;             // Main window.
+        private bool _appPaused;          // Is the application paused?
+        private bool _minimized;          // Is the application minimized?
+        private bool _maximized;          // Is the application maximized?
+        private bool _resizing;           // Are the resize bars being dragged?
+        private bool _running;            // Is the application running?
 
         // Set true to use 4X MSAA (§4.1.8).
-        private bool _m4xMsaaState;         // 4X MSAA enabled.
-        private int _m4xMsaaQuality;        // Quality level of 4X MSAA.
+        private bool _m4xMsaaState;       // 4X MSAA enabled.
+        private int _m4xMsaaQuality;      // Quality level of 4X MSAA.
 
         private FormWindowState _lastWindowState = FormWindowState.Normal;
 
@@ -42,7 +42,7 @@ namespace DX12GameProgramming
         private float _timeElapsed;
 
         private Factory _factory;
-        private readonly Resource[] _swapChainBuffers = new Resource[SwapChainBufferCount];        
+        private readonly Resource[] _swapChainBuffers = new Resource[SwapChainBufferCount];
 
         private AutoResetEvent _fenceEvent;
 
@@ -85,7 +85,7 @@ namespace DX12GameProgramming
 
         protected int RtvDescriptorSize { get; private set; }
         protected int DsvDescriptorSize { get; private set; }
-        protected int CbvSrvUavDescriptorSize { get; private set; }        
+        protected int CbvSrvUavDescriptorSize { get; private set; }
 
         protected CommandQueue CommandQueue { get; private set; }
         protected CommandAllocator DirectCmdListAlloc { get; private set; }
@@ -107,7 +107,8 @@ namespace DX12GameProgramming
         protected Format DepthStencilFormat { get; } = Format.D24_UNorm_S8_UInt;
 
         protected Resource CurrentBackBuffer => _swapChainBuffers[SwapChain.CurrentBackBufferIndex];
-        protected CpuDescriptorHandle CurrentBackBufferView => RtvHeap.CPUDescriptorHandleForHeapStart + SwapChain.CurrentBackBufferIndex * RtvDescriptorSize;
+        protected CpuDescriptorHandle CurrentBackBufferView
+            => RtvHeap.CPUDescriptorHandleForHeapStart + SwapChain.CurrentBackBufferIndex * RtvDescriptorSize;
         protected CpuDescriptorHandle DepthStencilView => DsvHeap.CPUDescriptorHandleForHeapStart;
 
         public virtual void Initialize()
@@ -138,7 +139,7 @@ namespace DX12GameProgramming
                 {
                     Thread.Sleep(100);
                 }
-            }            
+            }
         }
 
         public void Dispose()
@@ -163,7 +164,7 @@ namespace DX12GameProgramming
                 DepthStencilBuffer?.Dispose();
                 CommandList?.Dispose();
                 DirectCmdListAlloc?.Dispose();
-                CommandQueue?.Dispose();                
+                CommandQueue?.Dispose();
                 Fence?.Dispose();
                 Device?.Dispose();
             }
@@ -237,7 +238,9 @@ namespace DX12GameProgramming
 
             var depthStencilViewDesc = new DepthStencilViewDescription
             {
-                Dimension = DepthStencilViewDimension.Texture2D,
+                Dimension = M4xMsaaState 
+                    ? DepthStencilViewDimension.Texture2DMultisampled
+                    : DepthStencilViewDimension.Texture2D,
                 Format = DepthStencilFormat
             };
             // Create descriptor to mip level 0 of entire resource using a depth stencil format.
@@ -362,7 +365,7 @@ namespace DX12GameProgramming
 
             _window.Show();
             _window.Update();
-        }        
+        }
 
         protected virtual void OnMouseDown(MouseButtons button, Point location)
         {
@@ -396,7 +399,6 @@ namespace DX12GameProgramming
         }
 
         protected bool IsKeyDown(Keys keyCode) => Keyboard.IsKeyDown(KeyInterop.KeyFromVirtualKey((int)keyCode));
-        
 
         protected void InitDirect3D()
         {
@@ -410,7 +412,7 @@ namespace DX12GameProgramming
             {
                 // Try to create hardware device.
                 // Pass NULL to use the default adapter which is the first adapter that is enumerated by Factory.Adapters.
-                // Ref: https://msdn.microsoft.com/en-us/library/windows/desktop/dn770336(v=vs.85).aspx            
+                // Ref: https://msdn.microsoft.com/en-us/library/windows/desktop/dn770336(v=vs.85).aspx
                 Device = new Device(null, FeatureLevel.Level_11_0);
             }
             catch (SharpDXException)
@@ -425,7 +427,8 @@ namespace DX12GameProgramming
 
             RtvDescriptorSize = Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.RenderTargetView);
             DsvDescriptorSize = Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.DepthStencilView);
-            CbvSrvUavDescriptorSize = Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView);
+            CbvSrvUavDescriptorSize = Device.GetDescriptorHandleIncrementSize(
+                DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView);
 
             // Check 4X MSAA quality support for our back buffer format.
             // All Direct3D 11 capable devices support 4X MSAA for all render 
@@ -509,8 +512,8 @@ namespace DX12GameProgramming
                 },
                 SampleDescription = new SampleDescription
                 {
-                    Count = MsaaCount,
-                    Quality = MsaaQuality
+                    Count = 1,
+                    Quality = 0
                 },
                 Usage = Usage.RenderTargetOutput,
                 BufferCount = SwapChainBufferCount,
