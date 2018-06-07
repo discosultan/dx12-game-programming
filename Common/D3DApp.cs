@@ -403,7 +403,19 @@ namespace DX12GameProgramming
         protected void InitDirect3D()
         {
 #if DEBUG
-            DebugInterface.Get().EnableDebugLayer();
+            // The Direct3D 12 debug layer may or may not be installed. It's installation can be
+            // managed through settings page "Manage optional features" with a feature called
+            // "Graphics Tools".
+            // There may be a better solution to check for it instead of try/catch. If you happen
+            // to know, please consider opening an issue or PR in the repo.
+            try
+            {
+                DebugInterface.Get().EnableDebugLayer();
+            }
+            catch (SharpDXException ex) when (ex.Descriptor.NativeApiCode == "DXGI_ERROR_SDK_COMPONENT_MISSING")
+            {
+                Debug.WriteLine("Failed to enable debug layer. Please ensure \"Graphics Tools\" feature is enabled in Windows \"Manage optional feature\" settings page");
+            }
 #endif
 
             _factory = new Factory4();
