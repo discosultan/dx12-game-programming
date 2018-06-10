@@ -51,7 +51,7 @@ namespace DX12GameProgramming
 
         private Point _lastMousePos;
 
-        public QuaternionsApp(IntPtr hInstance) : base(hInstance)
+        public QuaternionsApp()
         {
             MainWindowCaption = "Quaternions";
             DefineSkullAnimation();

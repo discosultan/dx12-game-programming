@@ -24,7 +24,6 @@ namespace DX12GameProgramming
         public const int NumFrameResources = 3;
         public const int SwapChainBufferCount = 2;
 
-        private readonly IntPtr _appInst; // Application instance handle.
         private Form _window;             // Main window.
         private bool _appPaused;          // Is the application paused?
         private bool _minimized;          // Is the application minimized?
@@ -41,15 +40,10 @@ namespace DX12GameProgramming
         private int _frameCount;
         private float _timeElapsed;
 
-        private Factory _factory;
+        private Factory4 _factory;
         private readonly Resource[] _swapChainBuffers = new Resource[SwapChainBufferCount];
 
         private AutoResetEvent _fenceEvent;
-
-        protected D3DApp(IntPtr hInstance)
-        {
-            _appInst = hInstance;
-        }
 
         public bool M4xMsaaState
         {
@@ -430,7 +424,7 @@ namespace DX12GameProgramming
             catch (SharpDXException)
             {
                 // Fallback to WARP device.
-                Adapter warpAdapter = _factory.CreateSoftwareAdapter(_appInst);
+                Adapter warpAdapter = _factory.GetWarpAdapter();
                 Device = new Device(warpAdapter, FeatureLevel.Level_11_0);
             }
 

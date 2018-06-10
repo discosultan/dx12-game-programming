@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -57,7 +56,7 @@ namespace DX12GameProgramming
 
         private Point _lastMousePos;
 
-        public TexWavesApp(IntPtr hInstance) : base(hInstance)
+        public TexWavesApp()
         {
             MainWindowCaption = "Tex Waves";
         }

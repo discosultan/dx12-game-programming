@@ -84,7 +84,7 @@ namespace DX12GameProgramming
 
         private Point _lastMousePos;
 
-        public SsaoApp(IntPtr hInstance) : base(hInstance)
+        public SsaoApp()
         {
             MainWindowCaption = "Ssao";
 

@@ -85,12 +85,19 @@ namespace DX12GameProgramming
             TIndex[] indexArray = indices.ToArray();
 
             int vertexBufferByteSize = Utilities.SizeOf(vertexArray);
-            Resource vertexBufferUploader;
-            Resource vertexBuffer = D3DUtil.CreateDefaultBuffer(device, commandList, vertexArray, vertexBufferByteSize, out vertexBufferUploader);
+            Resource vertexBuffer = D3DUtil.CreateDefaultBuffer(
+                device,
+                commandList,
+                vertexArray,
+                vertexBufferByteSize,
+                out Resource vertexBufferUploader);
 
             int indexBufferByteSize = Utilities.SizeOf(indexArray);
-            Resource indexBufferUploader;
-            Resource indexBuffer = D3DUtil.CreateDefaultBuffer(device, commandList, indexArray, indexBufferByteSize, out indexBufferUploader);
+            Resource indexBuffer = D3DUtil.CreateDefaultBuffer(
+                device, commandList,
+                indexArray,
+                indexBufferByteSize,
+                out Resource indexBufferUploader);
 
             return new MeshGeometry
             {
@@ -122,8 +129,12 @@ namespace DX12GameProgramming
             TIndex[] indexArray = indices.ToArray();
 
             int indexBufferByteSize = Utilities.SizeOf(indexArray);
-            Resource indexBufferUploader;
-            Resource indexBuffer = D3DUtil.CreateDefaultBuffer(device, commandList, indexArray, indexBufferByteSize, out indexBufferUploader);
+            Resource indexBuffer = D3DUtil.CreateDefaultBuffer(
+                device,
+                commandList,
+                indexArray,
+                indexBufferByteSize,
+                out Resource indexBufferUploader);
 
             return new MeshGeometry
             {

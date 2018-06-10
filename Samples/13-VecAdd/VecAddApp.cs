@@ -31,7 +31,7 @@ namespace DX12GameProgramming
         private Resource _outputBuffer;
         private Resource _readBackBuffer;
 
-        public VecAddApp(IntPtr hInstance) : base(hInstance)
+        public VecAddApp()
         {
             MainWindowCaption = "Vec Add";
         }

@@ -50,7 +50,7 @@ namespace DX12GameProgramming
 
         private Point _lastMousePos;
 
-        public BezierPatchApp(IntPtr hInstance) : base(hInstance)
+        public BezierPatchApp()
         {
             MainWindowCaption = "Bezier Patch";
         }

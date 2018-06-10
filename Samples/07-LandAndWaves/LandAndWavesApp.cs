@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using SharpDX;
@@ -52,7 +51,7 @@ namespace DX12GameProgramming
 
         private Point _lastMousePos;
 
-        public LandAndWavesApp(IntPtr hInstance) : base(hInstance)
+        public LandAndWavesApp()
         {
             MainWindowCaption = "Land and Waves";
         }

@@ -50,7 +50,7 @@ namespace DX12GameProgramming
 
         private Point _lastMousePos;
 
-        public ShapesApp(IntPtr hInstance) : base(hInstance)
+        public ShapesApp()
         {
             MainWindowCaption = "Shapes";
         }

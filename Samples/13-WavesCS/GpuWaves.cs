@@ -115,8 +115,7 @@ namespace DX12GameProgramming
             //
 
             int num2DSubresources = texDesc.DepthOrArraySize * texDesc.MipLevels;
-            long uploadBufferSize;
-            _device.GetCopyableFootprints(ref texDesc, 0, num2DSubresources, 0, null, null, null, out uploadBufferSize);
+            _device.GetCopyableFootprints(ref texDesc, 0, num2DSubresources, 0, null, null, null, out long uploadBufferSize);
 
             _prevUploadBuffer = _device.CreateCommittedResource(
                 new HeapProperties(HeapType.Upload),
@@ -127,7 +126,7 @@ namespace DX12GameProgramming
                 new HeapProperties(HeapType.Upload),
                 HeapFlags.None,
                 ResourceDescription.Buffer(uploadBufferSize),
-                ResourceStates.GenericRead);            
+                ResourceStates.GenericRead);
 
             //
             // Schedule to copy the data to the default resource, and change states.

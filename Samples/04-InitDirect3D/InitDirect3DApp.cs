@@ -7,7 +7,7 @@ namespace DX12GameProgramming
 {
     public class InitDirect3DApp : D3DApp
     {
-        public InitDirect3DApp(IntPtr hInstance) : base(hInstance)
+        public InitDirect3DApp()
         {
             MainWindowCaption = "Init Direct3D";
         }

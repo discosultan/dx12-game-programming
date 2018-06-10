@@ -64,7 +64,7 @@ namespace DX12GameProgramming
 
         private Point _lastMousePos;
 
-        public StencilApp(IntPtr hInstance) : base(hInstance)
+        public StencilApp()
         {
             MainWindowCaption = "Stencil";
         }

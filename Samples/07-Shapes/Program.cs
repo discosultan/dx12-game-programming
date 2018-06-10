@@ -1,12 +1,10 @@
-﻿using System.Diagnostics;
-
-namespace DX12GameProgramming
+﻿namespace DX12GameProgramming
 {
     internal class Program
     {
         static void Main(string[] args)
         {
-            using (D3DApp app = new ShapesApp(Process.GetCurrentProcess().Handle))
+            using (var app = new ShapesApp())
             {
                 app.Initialize();
                 app.Run();

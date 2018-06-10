@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using SharpDX;
@@ -47,14 +46,14 @@ namespace DX12GameProgramming
         private float _phi = MathUtil.PiOverTwo - 0.1f;
         private float _radius = 50.0f;
 
-        private float _sunTheta = 1.25f * MathUtil.Pi;
-        private float _sunPhi = MathUtil.PiOverFour;
+        private readonly float _sunTheta = 1.25f * MathUtil.Pi;
+        private readonly float _sunPhi = MathUtil.PiOverFour;
 
         private float _tBase;
 
         private Point _lastMousePos;
 
-        public LitWavesApp(IntPtr hInstance) : base(hInstance)
+        public LitWavesApp()
         {
             MainWindowCaption = "Lit Waves";
         }

@@ -48,7 +48,7 @@ namespace DX12GameProgramming
 
         private Point _lastMousePos;
 
-        public LitColumnsApp(IntPtr hInstance) : base(hInstance)
+        public LitColumnsApp()
         {
             MainWindowCaption = "Lit Columns";
         }

@@ -52,7 +52,7 @@ namespace DX12GameProgramming
 
         private Point _lastMousePos;
 
-        public CrateApp(IntPtr hInstance) : base(hInstance)
+        public CrateApp()
         {
             MainWindowCaption = "Crate";
         }

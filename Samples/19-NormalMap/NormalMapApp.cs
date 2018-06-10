@@ -47,7 +47,7 @@ namespace DX12GameProgramming
 
         private Point _lastMousePos;
 
-        public NormalMapApp(IntPtr hInstance) : base(hInstance)
+        public NormalMapApp()
         {
             MainWindowCaption = "Normal Map";
         }

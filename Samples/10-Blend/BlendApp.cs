@@ -60,7 +60,7 @@ namespace DX12GameProgramming
 
         private Point _lastMousePos;
 
-        public BlendApp(IntPtr hInstance) : base(hInstance)
+        public BlendApp()
         {
             MainWindowCaption = "Blend";
         }

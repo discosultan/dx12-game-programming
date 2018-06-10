@@ -49,7 +49,7 @@ namespace DX12GameProgramming
 
         private Point _lastMousePos;
 
-        public CubeMapApp(IntPtr hInstance) : base(hInstance)
+        public CubeMapApp()
         {
             MainWindowCaption = "Cube Map";
         }

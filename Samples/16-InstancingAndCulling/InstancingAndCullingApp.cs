@@ -48,7 +48,7 @@ namespace DX12GameProgramming
 
         private Point _lastMousePos;
 
-        public InstancingAndCullingApp(IntPtr hInstance) : base(hInstance)
+        public InstancingAndCullingApp()
         {
             MainWindowCaption = "Instancing and Culling";
         }

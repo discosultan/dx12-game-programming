@@ -48,7 +48,7 @@ namespace DX12GameProgramming
 
         private Point _lastMousePos;
 
-        public PickingApp(IntPtr hInstance) : base(hInstance)
+        public PickingApp()
         {
             MainWindowCaption = "Picking";
         }

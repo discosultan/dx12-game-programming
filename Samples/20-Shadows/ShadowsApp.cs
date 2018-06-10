@@ -79,7 +79,7 @@ namespace DX12GameProgramming
 
         private Point _lastMousePos;
 
-        public ShadowsApp(IntPtr hInstance) : base(hInstance)
+        public ShadowsApp()
         {
             MainWindowCaption = "Shadows";
 

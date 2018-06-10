@@ -66,7 +66,7 @@ namespace DX12GameProgramming
 
         private Point _lastMousePos;
 
-        public SobelFilterApp(IntPtr hInstance) : base(hInstance)
+        public SobelFilterApp()
         {
             MainWindowCaption = "Sobel Filter";
         }

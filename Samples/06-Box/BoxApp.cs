@@ -46,7 +46,7 @@ namespace DX12GameProgramming
 
         private Point _lastMousePos;
 
-        public BoxApp(IntPtr hInstance) : base(hInstance)
+        public BoxApp()
         {
             MainWindowCaption = "Box";
         }

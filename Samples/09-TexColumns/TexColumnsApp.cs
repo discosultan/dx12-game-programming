@@ -51,7 +51,7 @@ namespace DX12GameProgramming
 
         private Point _lastMousePos;
 
-        public TexColumnsApp(IntPtr hInstance) : base(hInstance)
+        public TexColumnsApp()
         {
             MainWindowCaption = "Tex Columns";
         }

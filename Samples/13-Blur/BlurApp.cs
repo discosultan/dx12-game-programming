@@ -63,7 +63,7 @@ namespace DX12GameProgramming
 
         private Point _lastMousePos;
 
-        public BlurApp(IntPtr hInstance) : base(hInstance)
+        public BlurApp()
         {
             MainWindowCaption = "Blur";
         }

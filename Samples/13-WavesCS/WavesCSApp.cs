@@ -61,7 +61,7 @@ namespace DX12GameProgramming
 
         private Point _lastMousePos;
 
-        public WavesCSApp(IntPtr hInstance) : base(hInstance)
+        public WavesCSApp()
         {
             MainWindowCaption = "Waves CS";
         }

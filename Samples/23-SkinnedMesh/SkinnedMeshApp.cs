@@ -95,7 +95,7 @@ namespace DX12GameProgramming
 
         private Point _lastMousePos;
 
-        public SkinnedMeshApp(IntPtr hInstance) : base(hInstance)
+        public SkinnedMeshApp()
         {
             MainWindowCaption = "Skinned Mesh";
 

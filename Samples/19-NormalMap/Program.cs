@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 
 namespace DX12GameProgramming
 {
@@ -8,7 +7,7 @@ namespace DX12GameProgramming
         [STAThread]
         static void Main(string[] args)
         {
-            using (D3DApp app = new NormalMapApp(Process.GetCurrentProcess().Handle))
+            using (var app = new NormalMapApp())
             {
                 app.Initialize();
                 app.Run();

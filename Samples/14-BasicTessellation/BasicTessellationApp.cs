@@ -50,7 +50,7 @@ namespace DX12GameProgramming
 
         private Point _lastMousePos;
 
-        public BasicTessellationApp(IntPtr hInstance) : base(hInstance)
+        public BasicTessellationApp()
         {
             MainWindowCaption = "Basic Tessellation";
         }

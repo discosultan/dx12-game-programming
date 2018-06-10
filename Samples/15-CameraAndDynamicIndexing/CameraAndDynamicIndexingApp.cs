@@ -44,7 +44,7 @@ namespace DX12GameProgramming
 
         private Point _lastMousePos;
 
-        public CameraAndDynamicIndexingApp(IntPtr hInstance) : base(hInstance)
+        public CameraAndDynamicIndexingApp()
         {
             MainWindowCaption = "Camera and Dynamic Indexing";
         }

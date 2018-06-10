@@ -61,7 +61,7 @@ namespace DX12GameProgramming
 
         private Point _lastMousePos;
 
-        public DynamicCubeApp(IntPtr hInstance) : base(hInstance)
+        public DynamicCubeApp()
         {
             MainWindowCaption = "Dynamic Cube";
         }
