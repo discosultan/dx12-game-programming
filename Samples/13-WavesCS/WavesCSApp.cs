@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -156,10 +155,10 @@ namespace DX12GameProgramming
             CommandList.ClearRenderTargetView(CurrentBackBufferView, new Color(_mainPassCB.FogColor));
             CommandList.ClearDepthStencilView(DepthStencilView, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
 
-            // Specify the buffers we are going to render to.            
+            // Specify the buffers we are going to render to.
             CommandList.SetRenderTargets(CurrentBackBufferView, DepthStencilView);
 
-            CommandList.SetGraphicsRootSignature(_rootSignature);            
+            CommandList.SetGraphicsRootSignature(_rootSignature);
 
             Resource passCB = CurrFrameResource.PassCB.Resource;
             CommandList.SetGraphicsRootConstantBufferView(2, passCB.GPUVirtualAddress);
@@ -208,7 +207,7 @@ namespace DX12GameProgramming
         {
             if ((button & MouseButtons.Left) != 0)
             {
-                // Make each pixel correspond to a quarter of a degree.                
+                // Make each pixel correspond to a quarter of a degree.
                 float dx = MathUtil.DegreesToRadians(0.25f * (location.X - _lastMousePos.X));
                 float dy = MathUtil.DegreesToRadians(0.25f * (location.Y - _lastMousePos.Y));
 
@@ -221,7 +220,7 @@ namespace DX12GameProgramming
             }
             else if ((button & MouseButtons.Right) != 0)
             {
-                // Make each pixel correspond to a quarter of a degree.                
+                // Make each pixel correspond to a quarter of a degree.
                 float dx = 0.2f * (location.X - _lastMousePos.X);
                 float dy = 0.2f * (location.Y - _lastMousePos.Y);
 
@@ -243,7 +242,7 @@ namespace DX12GameProgramming
                 _wavesRootSignature?.Dispose();
                 _srvDescriptorHeap?.Dispose();
                 foreach (Texture texture in _textures.Values) texture.Dispose();
-                foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();                
+                foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();
                 foreach (MeshGeometry geometry in _geometries.Values) geometry.Dispose();
                 foreach (PipelineState pso in _psos.Values) pso.Dispose();
             }
@@ -293,7 +292,7 @@ namespace DX12GameProgramming
         {
             foreach (RenderItem e in _allRitems)
             {
-                // Only update the cbuffer data if the constants have changed.  
+                // Only update the cbuffer data if the constants have changed.
                 // This needs to be tracked per frame resource. 
                 if (e.NumFramesDirty > 0)
                 {
@@ -327,7 +326,7 @@ namespace DX12GameProgramming
                         FresnelR0 = mat.FresnelR0,
                         Roughness = mat.Roughness,
                         MatTransform = Matrix.Transpose(mat.MatTransform)
-                    };                    
+                    };
 
                     currMaterialCB.CopyData(mat.MatCBIndex, ref matConstants);
 
@@ -363,15 +362,15 @@ namespace DX12GameProgramming
             _mainPassCB.Lights[1].Direction = new Vector3(-0.57735f, -0.57735f, 0.57735f);
             _mainPassCB.Lights[1].Strength = new Vector3(0.3f);
             _mainPassCB.Lights[2].Direction = new Vector3(0.0f, -0.707f, -0.707f);
-            _mainPassCB.Lights[2].Strength = new Vector3(0.15f);            
+            _mainPassCB.Lights[2].Strength = new Vector3(0.15f);
 
             CurrFrameResource.PassCB.CopyData(0, ref _mainPassCB);
         }
-        
+
         private void UpdateWavesGPU(GameTimer gt)
         {
             // Every quarter second, generate a random wave.
-            if ((Timer.TotalTime - _tBase) >= 0.25f)
+            if (Timer.TotalTime - _tBase >= 0.25f)
             {
                 _tBase += 0.25f;
 
@@ -384,7 +383,7 @@ namespace DX12GameProgramming
             }
 
             // Update the wave simulation.
-            _waves.Update(gt, CommandList, _wavesRootSignature, _psos["wavesUpdate"]);            
+            _waves.Update(gt, CommandList, _wavesRootSignature, _psos["wavesUpdate"]);
         }
 
         private void LoadTextures()
@@ -477,7 +476,7 @@ namespace DX12GameProgramming
                 _textures["grassTex"].Resource,
                 _textures["waterTex"].Resource,
                 _textures["fenceTex"].Resource
-            };            
+            };
 
             var srvDesc = new ShaderResourceViewDescription
             {
@@ -486,7 +485,7 @@ namespace DX12GameProgramming
                 Texture2D = new ShaderResourceViewDescription.Texture2DResource
                 {
                     MostDetailedMip = 0,
-                    MipLevels = -1,                    
+                    MipLevels = -1,
                 }
             };
 
@@ -499,7 +498,7 @@ namespace DX12GameProgramming
                 hDescriptor += CbvSrvUavDescriptorSize;
             }
 
-            _waves.BuildDescriptors(                
+            _waves.BuildDescriptors(
                 _srvDescriptorHeap.CPUDescriptorHandleForHeapStart + srvCount * CbvSrvUavDescriptorSize,
                 _srvDescriptorHeap.GPUDescriptorHandleForHeapStart + srvCount * CbvSrvUavDescriptorSize,
                 CbvSrvUavDescriptorSize);
@@ -575,7 +574,7 @@ namespace DX12GameProgramming
         }
 
         private void BuildWavesGeometry()
-        {            
+        {
             GeometryGenerator.MeshData grid = GeometryGenerator.CreateGrid(160.0f, 160.0f, _waves.RowCount, _waves.ColumnCount);
 
             var vertices = new Vertex[grid.Vertices.Count];
@@ -786,7 +785,9 @@ namespace DX12GameProgramming
         private void BuildRenderItems()
         {
             AddRenderItem(RenderLayer.Transparent, 0, "water", "waterGeo", "grid",
-                texTransform: Matrix.Scaling(5.0f, 5.0f, 1.0f));
+                texTransform: Matrix.Scaling(5.0f, 5.0f, 1.0f),
+                dmTexelSize: new Vector2(1.0f / _waves.ColumnCount, 1.0f / _waves.RowCount),
+                gridSpatialStep: _waves.SpatialStep);
             AddRenderItem(RenderLayer.Opaque, 1, "grass", "landGeo", "grid",
                 texTransform: Matrix.Scaling(5.0f, 5.0f, 1.0f));
             AddRenderItem(RenderLayer.AlphaTested, 2, "wirefence", "boxGeo", "box",
@@ -794,10 +795,11 @@ namespace DX12GameProgramming
         }
 
         private void AddRenderItem(RenderLayer layer, int objCBIndex, string matName, string geoName, string submeshName,
-            Matrix? world = null, Matrix? texTransform = null)
+            Matrix? world = null, Matrix? texTransform = null, Vector2? dmTexelSize = null, float? gridSpatialStep = null)
         {
             MeshGeometry geo = _geometries[geoName];
             SubmeshGeometry submesh = geo.DrawArgs[submeshName];
+
             var renderItem = new RenderItem
             {
                 ObjCBIndex = objCBIndex,
@@ -805,10 +807,13 @@ namespace DX12GameProgramming
                 Geo = geo,
                 IndexCount = submesh.IndexCount,
                 StartIndexLocation = submesh.StartIndexLocation,
-                BaseVertexLocation = submesh.BaseVertexLocation,
-                World = world ?? Matrix.Identity,
-                TexTransform = texTransform ?? Matrix.Identity
+                BaseVertexLocation = submesh.BaseVertexLocation
             };
+            if (world.HasValue) renderItem.World = world.Value;
+            if (texTransform.HasValue) renderItem.TexTransform = texTransform.Value;
+            if (dmTexelSize.HasValue) renderItem.DisplacementMapTexelSize = dmTexelSize.Value;
+            if (gridSpatialStep.HasValue) renderItem.GridSpatialStep = gridSpatialStep.Value;
+
             _ritemLayers[layer].Add(renderItem);
             _allRitems.Add(renderItem);
         }

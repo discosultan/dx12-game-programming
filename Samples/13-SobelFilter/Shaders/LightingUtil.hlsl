@@ -162,9 +162,7 @@ float4 ComputeLighting(Light gLights[MaxLights], Material mat,
     {
         result += ComputeSpotLight(gLights[i], mat, pos, normal, toEye);
     }
-#endif 
+#endif
 
     return float4(result, 0.0f);
 }
-
-

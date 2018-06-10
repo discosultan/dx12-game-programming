@@ -14,7 +14,6 @@ namespace DX12GameProgramming
 
         private float _t;
         private readonly float _timeStep;
-        private readonly float _spatialStep;
 
         private readonly Device _device;
 
@@ -47,7 +46,7 @@ namespace DX12GameProgramming
             TriangleCount = (m - 1) * (n - 1) * 2;
 
             _timeStep = dt;
-            _spatialStep = dx;
+            SpatialStep = dx;
 
             float d = damping * dt + 2.0f;
             float e = (speed * speed) * (dt * dt) / (dx * dx);
@@ -61,15 +60,15 @@ namespace DX12GameProgramming
             BuildResources(cmdList);
         }
 
-        public float SpatialStep => _spatialStep;
+        public float SpatialStep { get; }
         public GpuDescriptorHandle DisplacementMap => _currSolSrv;
 
         public int RowCount { get; }
         public int ColumnCount { get; }
         public int VertexCount { get; }
         public int TriangleCount { get; }
-        public float Width => ColumnCount * _spatialStep;
-        public float Depth => RowCount * _spatialStep;
+        public float Width => ColumnCount * SpatialStep;
+        public float Depth => RowCount * SpatialStep;
 
         // Number of descriptors in heap to reserve for GpuWaves.
         public int DescriptorCount { get; } = 6;
@@ -115,8 +114,7 @@ namespace DX12GameProgramming
             //
 
             int num2DSubresources = texDesc.DepthOrArraySize * texDesc.MipLevels;
-            long uploadBufferSize;
-            _device.GetCopyableFootprints(ref texDesc, 0, num2DSubresources, 0, null, null, null, out uploadBufferSize);
+            _device.GetCopyableFootprints(ref texDesc, 0, num2DSubresources, 0, null, null, null, out long uploadBufferSize);
 
             _prevUploadBuffer = _device.CreateCommittedResource(
                 new HeapProperties(HeapType.Upload),
@@ -127,7 +125,7 @@ namespace DX12GameProgramming
                 new HeapProperties(HeapType.Upload),
                 HeapFlags.None,
                 ResourceDescription.Buffer(uploadBufferSize),
-                ResourceStates.GenericRead);            
+                ResourceStates.GenericRead);
 
             //
             // Schedule to copy the data to the default resource, and change states.
@@ -198,13 +196,13 @@ namespace DX12GameProgramming
             if (_t >= _timeStep)
             {
                 // Set the update constants.
-                Utilities.Pin(_k, ptr => cmdList.SetComputeRoot32BitConstants(0, 3, ptr, 0));                
+                Utilities.Pin(_k, ptr => cmdList.SetComputeRoot32BitConstants(0, 3, ptr, 0));
 
                 cmdList.SetComputeRootDescriptorTable(1, _prevSolUav);
                 cmdList.SetComputeRootDescriptorTable(2, _currSolUav);
                 cmdList.SetComputeRootDescriptorTable(3, _nextSolUav);
 
-                // How many groups do we need to dispatch to cover the wave grid.  
+                // How many groups do we need to dispatch to cover the wave grid.
                 // Note that RowCount and ColumnCount should be divisible by 16
                 // so there is no remainder.
                 int numGroupsX = ColumnCount / 16;
