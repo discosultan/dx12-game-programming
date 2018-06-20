@@ -29,10 +29,10 @@ cbuffer cbPerObject : register(b0)
 
 cbuffer cbMaterial : register(b1)
 {
-	float4 gDiffuseAlbedo;
+    float4 gDiffuseAlbedo;
     float3 gFresnelR0;
     float  gRoughness;
-	float4x4 gMatTransform;
+    float4x4 gMatTransform;
 };
 
 // Constant data that varies per material.
@@ -63,20 +63,20 @@ cbuffer cbPass : register(b2)
 
 struct VertexIn
 {
-	float3 PosL    : POSITION;
+    float3 PosL    : POSITION;
     float3 NormalL : NORMAL;
 };
 
 struct VertexOut
 {
-	float4 PosH    : SV_POSITION;
+    float4 PosH    : SV_POSITION;
     float3 PosW    : POSITION;
     float3 NormalW : NORMAL;
 };
 
 VertexOut VS(VertexIn vin)
 {
-	VertexOut vout = (VertexOut)0.0f;
+    VertexOut vout = (VertexOut)0.0f;
 
     // Transform to world space.
     float4 posW = mul(float4(vin.PosL, 1.0f), gWorld);
@@ -99,7 +99,7 @@ float4 PS(VertexOut pin) : SV_Target
     // Vector from point being lit to eye.
     float3 toEyeW = normalize(gEyePosW - pin.PosW);
 
-	// Indirect lighting.
+    // Indirect lighting.
     float4 ambient = gAmbientLight*gDiffuseAlbedo;
 
     const float shininess = 1.0f - gRoughness;
@@ -115,5 +115,3 @@ float4 PS(VertexOut pin) : SV_Target
 
     return litColor;
 }
-
-

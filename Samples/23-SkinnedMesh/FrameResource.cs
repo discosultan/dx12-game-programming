@@ -63,7 +63,7 @@ namespace DX12GameProgramming
         // indices [NUM_DIR_LIGHTS+NUM_POINT_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHT+NUM_SPOT_LIGHTS)
         // are spot lights for a maximum of MaxLights per object.
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = Light.MaxLights)]
-		public Light[] Lights;
+        public Light[] Lights;
 
         public static PassConstants Default => new PassConstants
         {

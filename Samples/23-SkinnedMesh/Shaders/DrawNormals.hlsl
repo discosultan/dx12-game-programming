@@ -20,10 +20,10 @@
 
 struct VertexIn
 {
-	float3 PosL    : POSITION;
+    float3 PosL    : POSITION;
     float3 NormalL : NORMAL;
-	float2 TexC    : TEXCOORD;
-	float3 TangentL : TANGENT;
+    float2 TexC    : TEXCOORD;
+    float3 TangentL : TANGENT;
 #ifdef SKINNED
     float3 BoneWeights : WEIGHTS;
     uint4 BoneIndices  : BONEINDICES;
@@ -32,18 +32,18 @@ struct VertexIn
 
 struct VertexOut
 {
-	float4 PosH     : SV_POSITION;
+    float4 PosH     : SV_POSITION;
     float3 NormalW  : NORMAL;
-	float3 TangentW : TANGENT;
-	float2 TexC     : TEXCOORD;
+    float3 TangentW : TANGENT;
+    float2 TexC     : TEXCOORD;
 };
 
 VertexOut VS(VertexIn vin)
 {
-	VertexOut vout = (VertexOut)0.0f;
+    VertexOut vout = (VertexOut)0.0f;
 
-	// Fetch the material data.
-	MaterialData matData = gMaterialData[gMaterialIndex];
+    // Fetch the material data.
+    MaterialData matData = gMaterialData[gMaterialIndex];
 
 #ifdef SKINNED
     float weights[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -72,26 +72,26 @@ VertexOut VS(VertexIn vin)
 
     // Assumes nonuniform scaling; otherwise, need to use inverse-transpose of world matrix.
     vout.NormalW = mul(vin.NormalL, (float3x3)gWorld);
-	vout.TangentW = mul(vin.TangentL, (float3x3)gWorld);
+    vout.TangentW = mul(vin.TangentL, (float3x3)gWorld);
 
     // Transform to homogeneous clip space.
     float4 posW = mul(float4(vin.PosL, 1.0f), gWorld);
     vout.PosH = mul(posW, gViewProj);
 
-	// Output vertex attributes for interpolation across triangle.
-	float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gTexTransform);
-	vout.TexC = mul(texC, matData.MatTransform).xy;
+    // Output vertex attributes for interpolation across triangle.
+    float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gTexTransform);
+    vout.TexC = mul(texC, matData.MatTransform).xy;
 
     return vout;
 }
 
 float4 PS(VertexOut pin) : SV_Target
 {
-	// Fetch the material data.
-	MaterialData matData = gMaterialData[gMaterialIndex];
-	float4 diffuseAlbedo = matData.DiffuseAlbedo;
-	uint diffuseMapIndex = matData.DiffuseMapIndex;
-	uint normalMapIndex = matData.NormalMapIndex;
+    // Fetch the material data.
+    MaterialData matData = gMaterialData[gMaterialIndex];
+    float4 diffuseAlbedo = matData.DiffuseAlbedo;
+    uint diffuseMapIndex = matData.DiffuseMapIndex;
+    uint normalMapIndex = matData.NormalMapIndex;
 
     // Dynamically look up the texture in the array.
     diffuseAlbedo *= gTextureMaps[diffuseMapIndex].Sample(gsamAnisotropicWrap, pin.TexC);
@@ -103,7 +103,7 @@ float4 PS(VertexOut pin) : SV_Target
     clip(diffuseAlbedo.a - 0.1f);
 #endif
 
-	// Interpolating normal can unnormalize it, so renormalize it.
+    // Interpolating normal can unnormalize it, so renormalize it.
     pin.NormalW = normalize(pin.NormalW);
 
     // NOTE: We use interpolated vertex normal for SSAO.
@@ -112,5 +112,3 @@ float4 PS(VertexOut pin) : SV_Target
     float3 normalV = mul(pin.NormalW, (float3x3)gView);
     return float4(normalV, 0.0f);
 }
-
-

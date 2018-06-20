@@ -412,25 +412,25 @@ namespace DX12GameProgramming
             Vector3[] vertices =
             {
                 // Row 0
-		        new Vector3(-10.0f, -10.0f, +15.0f),
+                new Vector3(-10.0f, -10.0f, +15.0f),
                 new Vector3(-5.0f,  0.0f, +15.0f),
                 new Vector3(+5.0f,  0.0f, +15.0f),
                 new Vector3(+10.0f, 0.0f, +15.0f),
 
-		        // Row 1
-		        new Vector3(-15.0f, 0.0f, +5.0f),
+                // Row 1
+                new Vector3(-15.0f, 0.0f, +5.0f),
                 new Vector3(-5.0f,  0.0f, +5.0f),
                 new Vector3(+5.0f,  20.0f, +5.0f),
                 new Vector3(+15.0f, 0.0f, +5.0f),
 
-		        // Row 2
-		        new Vector3(-15.0f, 0.0f, -5.0f),
+                // Row 2
+                new Vector3(-15.0f, 0.0f, -5.0f),
                 new Vector3(-5.0f,  0.0f, -5.0f),
                 new Vector3(+5.0f,  0.0f, -5.0f),
                 new Vector3(+15.0f, 0.0f, -5.0f),
 
-		        // Row 3
-		        new Vector3(-10.0f, 10.0f, -15.0f),
+                // Row 3
+                new Vector3(-10.0f, 10.0f, -15.0f),
                 new Vector3(-5.0f,  0.0f, -15.0f),
                 new Vector3(+5.0f,  0.0f, -15.0f),
                 new Vector3(+25.0f, 10.0f, -15.0f)

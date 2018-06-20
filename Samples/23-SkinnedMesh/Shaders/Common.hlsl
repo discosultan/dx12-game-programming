@@ -20,14 +20,14 @@
 
 struct MaterialData
 {
-	float4   DiffuseAlbedo;
-	float3   FresnelR0;
-	float    Roughness;
-	float4x4 MatTransform;
-	uint     DiffuseMapIndex;
-	uint     NormalMapIndex;
-	uint     MatPad1;
-	uint     MatPad2;
+    float4   DiffuseAlbedo;
+    float3   FresnelR0;
+    float    Roughness;
+    float4x4 MatTransform;
+    uint     DiffuseMapIndex;
+    uint     NormalMapIndex;
+    uint     MatPad1;
+    uint     MatPad2;
 };
 
 TextureCube gCubeMap : register(t0);
@@ -55,11 +55,11 @@ SamplerComparisonState gsamShadow : register(s6);
 cbuffer cbPerObject : register(b0)
 {
     float4x4 gWorld;
-	float4x4 gTexTransform;
-	uint gMaterialIndex;
-	uint gObjPad0;
-	uint gObjPad1;
-	uint gObjPad2;
+    float4x4 gTexTransform;
+    uint gMaterialIndex;
+    uint gObjPad0;
+    uint gObjPad1;
+    uint gObjPad2;
 };
 
 cbuffer cbSkinned : register(b1)
@@ -100,20 +100,20 @@ cbuffer cbPass : register(b2)
 //---------------------------------------------------------------------------------------
 float3 NormalSampleToWorldSpace(float3 normalMapSample, float3 unitNormalW, float3 tangentW)
 {
-	// Uncompress each component from [0,1] to [-1,1].
-	float3 normalT = 2.0f*normalMapSample - 1.0f;
+    // Uncompress each component from [0,1] to [-1,1].
+    float3 normalT = 2.0f*normalMapSample - 1.0f;
 
-	// Build orthonormal basis.
-	float3 N = unitNormalW;
-	float3 T = normalize(tangentW - dot(tangentW, N)*N);
-	float3 B = cross(N, T);
+    // Build orthonormal basis.
+    float3 N = unitNormalW;
+    float3 T = normalize(tangentW - dot(tangentW, N)*N);
+    float3 B = cross(N, T);
 
-	float3x3 TBN = float3x3(T, B, N);
+    float3x3 TBN = float3x3(T, B, N);
 
-	// Transform from tangent space to world space.
-	float3 bumpedNormalW = mul(normalT, TBN);
+    // Transform from tangent space to world space.
+    float3 bumpedNormalW = mul(normalT, TBN);
 
-	return bumpedNormalW;
+    return bumpedNormalW;
 }
 
 //---------------------------------------------------------------------------------------
@@ -152,4 +152,3 @@ float CalcShadowFactor(float4 shadowPosH)
 
     return percentLit / 9.0f;
 }
-

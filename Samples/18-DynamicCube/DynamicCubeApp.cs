@@ -926,24 +926,24 @@ namespace DX12GameProgramming
             Vector3[] targets =
             {
                 new Vector3(x + 1.0f, y, z), // +X
-		        new Vector3(x - 1.0f, y, z), // -X
-		        new Vector3(x, y + 1.0f, z), // +Y
-		        new Vector3(x, y - 1.0f, z), // -Y
-		        new Vector3(x, y, z + 1.0f), // +Z
-		        new Vector3(x, y, z - 1.0f)  // -Z
-	        };
+                new Vector3(x - 1.0f, y, z), // -X
+                new Vector3(x, y + 1.0f, z), // +Y
+                new Vector3(x, y - 1.0f, z), // -Y
+                new Vector3(x, y, z + 1.0f), // +Z
+                new Vector3(x, y, z - 1.0f)  // -Z
+            };
 
             // Use world up vector (0,1,0) for all directions except +Y/-Y.  In these cases, we
             // are looking down +Y or -Y, so we need a different "up" vector.
             Vector3[] ups =
             {
                 new Vector3(0.0f, 1.0f, 0.0f),  // +X
-		        new Vector3(0.0f, 1.0f, 0.0f),  // -X
-		        new Vector3(0.0f, 0.0f, -1.0f), // +Y
-		        new Vector3(0.0f, 0.0f, +1.0f), // -Y
-		        new Vector3(0.0f, 1.0f, 0.0f),	// +Z
-		        new Vector3(0.0f, 1.0f, 0.0f)	// -Z
-	        };
+                new Vector3(0.0f, 1.0f, 0.0f),  // -X
+                new Vector3(0.0f, 0.0f, -1.0f), // +Y
+                new Vector3(0.0f, 0.0f, +1.0f), // -Y
+                new Vector3(0.0f, 1.0f, 0.0f),    // +Z
+                new Vector3(0.0f, 1.0f, 0.0f)    // -Z
+            };
 
             for (int i = 0; i < 6; i++)
             {

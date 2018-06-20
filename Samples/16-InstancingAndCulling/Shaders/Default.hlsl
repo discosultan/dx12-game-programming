@@ -20,24 +20,24 @@
 
 struct InstanceData
 {
-	float4x4 World;
-	float4x4 TexTransform;
-	uint     MaterialIndex;
-	uint     InstPad0;
-	uint     InstPad1;
-	uint     InstPad2;
+    float4x4 World;
+    float4x4 TexTransform;
+    uint     MaterialIndex;
+    uint     InstPad0;
+    uint     InstPad1;
+    uint     InstPad2;
 };
 
 struct MaterialData
 {
-	float4   DiffuseAlbedo;
+    float4   DiffuseAlbedo;
     float3   FresnelR0;
     float    Roughness;
-	float4x4 MatTransform;
-	uint     DiffuseMapIndex;
-	uint     MatPad0;
-	uint     MatPad1;
-	uint     MatPad2;
+    float4x4 MatTransform;
+    uint     DiffuseMapIndex;
+    uint     MatPad0;
+    uint     MatPad1;
+    uint     MatPad2;
 };
 
 // An array of textures, which is only supported in shader model 5.1+.  Unlike Texture2DArray, the textures
@@ -84,37 +84,37 @@ cbuffer cbPass : register(b0)
 
 struct VertexIn
 {
-	float3 PosL    : POSITION;
+    float3 PosL    : POSITION;
     float3 NormalL : NORMAL;
-	float2 TexC    : TEXCOORD;
+    float2 TexC    : TEXCOORD;
 };
 
 struct VertexOut
 {
-	float4 PosH    : SV_POSITION;
+    float4 PosH    : SV_POSITION;
     float3 PosW    : POSITION;
     float3 NormalW : NORMAL;
-	float2 TexC    : TEXCOORD;
+    float2 TexC    : TEXCOORD;
 
-	// nointerpolation is used so the index is not interpolated
-	// across the triangle.
-	nointerpolation uint MatIndex  : MATINDEX;
+    // nointerpolation is used so the index is not interpolated
+    // across the triangle.
+    nointerpolation uint MatIndex  : MATINDEX;
 };
 
 VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
 {
-	VertexOut vout = (VertexOut)0.0f;
+    VertexOut vout = (VertexOut)0.0f;
 
-	// Fetch the instance data.
-	InstanceData instData = gInstanceData[instanceID];
-	float4x4 world = instData.World;
-	float4x4 texTransform = instData.TexTransform;
-	uint matIndex = instData.MaterialIndex;
+    // Fetch the instance data.
+    InstanceData instData = gInstanceData[instanceID];
+    float4x4 world = instData.World;
+    float4x4 texTransform = instData.TexTransform;
+    uint matIndex = instData.MaterialIndex;
 
-	vout.MatIndex = matIndex;
+    vout.MatIndex = matIndex;
 
-	// Fetch the material data.
-	MaterialData matData = gMaterialData[matIndex];
+    // Fetch the material data.
+    MaterialData matData = gMaterialData[matIndex];
 
     // Transform to world space.
     float4 posW = mul(float4(vin.PosL, 1.0f), world);
@@ -126,23 +126,23 @@ VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
     // Transform to homogeneous clip space.
     vout.PosH = mul(posW, gViewProj);
 
-	// Output vertex attributes for interpolation across triangle.
-	float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), texTransform);
-	vout.TexC = mul(texC, matData.MatTransform).xy;
+    // Output vertex attributes for interpolation across triangle.
+    float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), texTransform);
+    vout.TexC = mul(texC, matData.MatTransform).xy;
 
     return vout;
 }
 
 float4 PS(VertexOut pin) : SV_Target
 {
-	// Fetch the material data.
-	MaterialData matData = gMaterialData[pin.MatIndex];
-	float4 diffuseAlbedo = matData.DiffuseAlbedo;
+    // Fetch the material data.
+    MaterialData matData = gMaterialData[pin.MatIndex];
+    float4 diffuseAlbedo = matData.DiffuseAlbedo;
     float3 fresnelR0 = matData.FresnelR0;
     float  roughness = matData.Roughness;
-	uint diffuseTexIndex = matData.DiffuseMapIndex;
+    uint diffuseTexIndex = matData.DiffuseMapIndex;
 
-	// Dynamically look up the texture in the array.
+    // Dynamically look up the texture in the array.
     diffuseAlbedo *= gDiffuseMap[diffuseTexIndex].Sample(gsamLinearWrap, pin.TexC);
 
     // Interpolating normal can unnormalize it, so renormalize it.
@@ -167,5 +167,3 @@ float4 PS(VertexOut pin) : SV_Target
 
     return litColor;
 }
-
-

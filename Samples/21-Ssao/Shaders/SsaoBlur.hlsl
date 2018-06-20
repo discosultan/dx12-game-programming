@@ -60,7 +60,7 @@ static const float2 gTexCoords[6] =
 struct VertexOut
 {
     float4 PosH  : SV_POSITION;
-	float2 TexC  : TEXCOORD;
+    float2 TexC  : TEXCOORD;
 };
 
 VertexOut VS(uint vid : SV_VertexID)
@@ -92,55 +92,55 @@ float4 PS(VertexOut pin) : SV_Target
         gBlurWeights[2].x, gBlurWeights[2].y, gBlurWeights[2].z, gBlurWeights[2].w,
     };
 
-	float2 texOffset;
-	if(gHorizontalBlur)
-	{
-		texOffset = float2(gInvRenderTargetSize.x, 0.0f);
-	}
-	else
-	{
-		texOffset = float2(0.0f, gInvRenderTargetSize.y);
-	}
+    float2 texOffset;
+    if(gHorizontalBlur)
+    {
+        texOffset = float2(gInvRenderTargetSize.x, 0.0f);
+    }
+    else
+    {
+        texOffset = float2(0.0f, gInvRenderTargetSize.y);
+    }
 
-	// The center value always contributes to the sum.
-	float4 color      = blurWeights[gBlurRadius] * gInputMap.SampleLevel(gsamPointClamp, pin.TexC, 0.0);
-	float totalWeight = blurWeights[gBlurRadius];
+    // The center value always contributes to the sum.
+    float4 color      = blurWeights[gBlurRadius] * gInputMap.SampleLevel(gsamPointClamp, pin.TexC, 0.0);
+    float totalWeight = blurWeights[gBlurRadius];
 
     float3 centerNormal = gNormalMap.SampleLevel(gsamPointClamp, pin.TexC, 0.0f).xyz;
     float  centerDepth = NdcDepthToViewDepth(
         gDepthMap.SampleLevel(gsamDepthMap, pin.TexC, 0.0f).r);
 
-	for(float i = -gBlurRadius; i <=gBlurRadius; ++i)
-	{
-		// We already added in the center weight.
-		if( i == 0 )
-			continue;
+    for(float i = -gBlurRadius; i <=gBlurRadius; ++i)
+    {
+        // We already added in the center weight.
+        if( i == 0 )
+            continue;
 
-		float2 tex = pin.TexC + i*texOffset;
+        float2 tex = pin.TexC + i*texOffset;
 
-		float3 neighborNormal = gNormalMap.SampleLevel(gsamPointClamp, tex, 0.0f).xyz;
+        float3 neighborNormal = gNormalMap.SampleLevel(gsamPointClamp, tex, 0.0f).xyz;
         float  neighborDepth  = NdcDepthToViewDepth(
             gDepthMap.SampleLevel(gsamDepthMap, tex, 0.0f).r);
 
-		//
-		// If the center value and neighbor values differ too much (either in
-		// normal or depth), then we assume we are sampling across a discontinuity.
-		// We discard such samples from the blur.
-		//
+        //
+        // If the center value and neighbor values differ too much (either in
+        // normal or depth), then we assume we are sampling across a discontinuity.
+        // We discard such samples from the blur.
+        //
 
-		if( dot(neighborNormal, centerNormal) >= 0.8f &&
-		    abs(neighborDepth - centerDepth) <= 0.2f )
-		{
+        if( dot(neighborNormal, centerNormal) >= 0.8f &&
+            abs(neighborDepth - centerDepth) <= 0.2f )
+        {
             float weight = blurWeights[i + gBlurRadius];
 
-			// Add neighbor pixel to blur.
-			color += weight*gInputMap.SampleLevel(
+            // Add neighbor pixel to blur.
+            color += weight*gInputMap.SampleLevel(
                 gsamPointClamp, tex, 0.0);
 
-			totalWeight += weight;
-		}
-	}
+            totalWeight += weight;
+        }
+    }
 
-	// Compensate for discarded samples by making total weights sum to 1.
+    // Compensate for discarded samples by making total weights sum to 1.
     return color / totalWeight;
 }
