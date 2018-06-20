@@ -114,14 +114,14 @@ namespace DX12GameProgramming
         public UploadBuffer<PassConstants> PassCB { get; }
         public UploadBuffer<MaterialData> MaterialBuffer { get; }
 
-        // NOTE: In this demo, we instance only one render-item, so we only have one structured buffer to 
-        // store instancing data. To make this more general (i.e., to support instancing multiple render-items), 
+        // NOTE: In this demo, we instance only one render-item, so we only have one structured buffer to
+        // store instancing data. To make this more general (i.e., to support instancing multiple render-items),
         // you would need to have a structured buffer for each render-item, and allocate each buffer with enough
-        // room for the maximum number of instances you would ever draw.  
-        // This sounds like a lot, but it is actually no more than the amount of per-object constant data we 
+        // room for the maximum number of instances you would ever draw.
+        // This sounds like a lot, but it is actually no more than the amount of per-object constant data we
         // would need if we were not using instancing. For example, if we were drawing 1000 objects without instancing,
         // we would create a constant buffer with enough room for a 1000 objects. With instancing, we would just
-        // create a structured buffer large enough to store the instance data for 1000 instances.  
+        // create a structured buffer large enough to store the instance data for 1000 instances.
         public UploadBuffer<InstanceData> InstanceBuffer { get; }
 
         // Fence value to mark commands up to this fence point.  This lets us

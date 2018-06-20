@@ -191,8 +191,8 @@ namespace DX12GameProgramming
             // Advance the fence value to mark commands up to this fence point.
             CurrFrameResource.Fence = ++CurrentFence;
 
-            // Add an instruction to the command queue to set a new fence point. 
-            // Because we are on the GPU timeline, the new fence point won't be 
+            // Add an instruction to the command queue to set a new fence point.
+            // Because we are on the GPU timeline, the new fence point won't be
             // set until the GPU finishes processing all the commands prior to this Signal().
             CommandQueue.Signal(Fence, CurrentFence);
         }
@@ -293,7 +293,7 @@ namespace DX12GameProgramming
             foreach (RenderItem e in _allRitems)
             {
                 // Only update the cbuffer data if the constants have changed.
-                // This needs to be tracked per frame resource. 
+                // This needs to be tracked per frame resource.
                 if (e.NumFramesDirty > 0)
                 {
                     var objConstants = new ObjectConstants

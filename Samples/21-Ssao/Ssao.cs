@@ -79,7 +79,7 @@ namespace DX12GameProgramming
             float twoSigma2 = 2.0f * sigma * sigma;
 
             // Estimate the blur radius based on sigma since sigma controls the "width" of the bell curve.
-            // For example, for sigma = 3, the width of the bell curve is 
+            // For example, for sigma = 3, the width of the bell curve is
             int blurRadius = (int)Math.Ceiling(2.0f * sigma);
 
             Debug.Assert(blurRadius <= MaxBlurRadius);
@@ -147,7 +147,7 @@ namespace DX12GameProgramming
                 }
             };
             _device.CreateShaderResourceView(_normalMap, srvDesc, _normalMapCpuSrv);
-            
+
             srvDesc.Format = Format.R24_UNorm_X8_Typeless;
             _device.CreateShaderResourceView(depthStencilBuffer, srvDesc, _depthMapCpuSrv);
 
@@ -159,7 +159,7 @@ namespace DX12GameProgramming
             _device.CreateShaderResourceView(_ambientMap1, srvDesc, _ambientMap1CpuSrv);
 
             var rtvDesc = new RenderTargetViewDescription
-            {                
+            {
                 Dimension = RenderTargetViewDimension.Texture2D,
                 Format = NormalMapFormat,
                 Texture2D = new RenderTargetViewDescription.Texture2DResource
@@ -330,9 +330,9 @@ namespace DX12GameProgramming
             };
 
             var optClear = new ClearValue
-            {                
+            {
                 Format = NormalMapFormat,
-                Color = Vector4.UnitZ                
+                Color = Vector4.UnitZ
             };
 
             _normalMap = _device.CreateCommittedResource(
@@ -391,7 +391,7 @@ namespace DX12GameProgramming
 
             //
             // In order to copy CPU memory data into our default buffer, we need to create
-            // an intermediate upload heap. 
+            // an intermediate upload heap.
             //
 
             var initData = new Color[256 * 256];
@@ -407,16 +407,16 @@ namespace DX12GameProgramming
                         0.0f);
                 }
             }
-            
+
             int rowPitch = Utilities.SizeOf<Color>() * 256;
             int slicePitch = rowPitch * 256;
-            Utilities.Pin(initData, ptr => _randomVectorMap.WriteToSubresource(0, null, ptr, rowPitch, slicePitch));                        
+            Utilities.Pin(initData, ptr => _randomVectorMap.WriteToSubresource(0, null, ptr, rowPitch, slicePitch));
         }
 
         private void BuildOffsetVectors()
         {
             // Start with 14 uniformly distributed vectors. We choose the 8 corners of the cube
-            // and the 6 center points along each cube face. We always alternate the points on 
+            // and the 6 center points along each cube face. We always alternate the points on
             // opposites sides of the cubes. This way we still get the vectors spread out even
             // if we choose to use less than 14 samples.
 

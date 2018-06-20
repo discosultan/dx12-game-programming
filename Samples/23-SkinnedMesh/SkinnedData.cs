@@ -18,7 +18,7 @@ namespace DX12GameProgramming
     ///<summary>
     /// A BoneAnimation is defined by a list of keyframes.  For time
     /// values inbetween two keyframes, we interpolate between the
-    /// two nearest keyframes that bound the time.  
+    /// two nearest keyframes that bound the time.
     ///
     /// We assume an animation always has two keyframes.
     ///</summary>
@@ -78,7 +78,7 @@ namespace DX12GameProgramming
     ///<summary>
     /// Examples of AnimationClips are "Walk", "Run", "Attack", "Defend".
     /// An AnimationClip requires a BoneAnimation for every bone to form
-    /// the animation clip.    
+    /// the animation clip.
     ///</summary>
     internal class AnimationClip
     {
@@ -105,8 +105,8 @@ namespace DX12GameProgramming
         private readonly Matrix[] _toRootTransforms;
 
         public SkinnedData(
-            List<int> boneHierarchy, 
-            List<Matrix> boneOffsets, 
+            List<int> boneHierarchy,
+            List<Matrix> boneOffsets,
             Dictionary<string, AnimationClip> animations)
         {
             _boneHierarchy = boneHierarchy;
@@ -121,10 +121,10 @@ namespace DX12GameProgramming
 
         public float GetClipStartTime(string clipName) => _animations[clipName].ClipStartTime;
         public float GetClipEndTime(string clipName) => _animations[clipName].ClipEndTime;
-       
+
 
         // In a real project, you'd want to cache the result if there was a chance
-        // that you were calling this several times with the same clipName at 
+        // that you were calling this several times with the same clipName at
         // the same timePos.
         public void GetFinalTransforms(string clipName, float time, List<Matrix> finalTransforms)
         {

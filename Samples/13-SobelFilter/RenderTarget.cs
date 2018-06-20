@@ -34,7 +34,7 @@ namespace DX12GameProgramming
 
         public void BuildDescriptors(CpuDescriptorHandle cpuSrv, GpuDescriptorHandle gpuSrv, CpuDescriptorHandle cpuRtv)
         {
-            // Save references to the descriptors. 
+            // Save references to the descriptors.
             _cpuSrv = cpuSrv;
             _gpuSrv = gpuSrv;
             _cpuRtv = cpuRtv;
@@ -77,9 +77,9 @@ namespace DX12GameProgramming
         private void BuildResource()
         {
             // Note, compressed formats cannot be used for UAV.  We get error like:
-            // ERROR: ID3D11Device::CreateTexture2D: The format (0x4d, BC3_UNORM) 
+            // ERROR: ID3D11Device::CreateTexture2D: The format (0x4d, BC3_UNORM)
             // cannot be bound as an UnorderedAccessView, or cast to a format that
-            // could be bound as an UnorderedAccessView.  Therefore this format 
+            // could be bound as an UnorderedAccessView.  Therefore this format
             // does not support D3D11_BIND_UNORDERED_ACCESS.
 
             var texDesc = new ResourceDescription

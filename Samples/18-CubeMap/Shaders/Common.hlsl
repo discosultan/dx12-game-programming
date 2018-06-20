@@ -36,8 +36,8 @@ TextureCube gCubeMap : register(t0);
 // in this array can be different sizes and formats, making it more flexible than texture arrays.
 Texture2D gDiffuseMap[4] : register(t1);
 
-// Put in space1, so the texture array does not overlap with these resources.  
-// The texture array will occupy registers t0, t1, ..., t3 in space0. 
+// Put in space1, so the texture array does not overlap with these resources.
+// The texture array will occupy registers t0, t1, ..., t3 in space0.
 StructuredBuffer<MaterialData> gMaterialData : register(t0, space1);
 
 

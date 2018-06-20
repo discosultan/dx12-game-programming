@@ -9,7 +9,7 @@ namespace DX12GameProgramming
 {
     internal class CubeRenderTarget : IDisposable
     {
-        private readonly Device _device;        
+        private readonly Device _device;
         private readonly Format _format;
 
         private CpuDescriptorHandle _cpuSrv;
@@ -17,13 +17,13 @@ namespace DX12GameProgramming
 
         public CubeRenderTarget(Device device, int width, int height, Format format)
         {
-            _device = device;            
+            _device = device;
             _format = format;
 
             Width = width;
             Height = height;
 
-            Viewport = new ViewportF(0, 0, Width, Height);            
+            Viewport = new ViewportF(0, 0, Width, Height);
             ScissorRectangle = new RectangleF(0, 0, width, height);
 
             BuildResource();
@@ -40,11 +40,11 @@ namespace DX12GameProgramming
         public RectangleF ScissorRectangle { get; private set; }
 
         public void BuildDescriptors(
-            CpuDescriptorHandle cpuSrv, 
+            CpuDescriptorHandle cpuSrv,
             GpuDescriptorHandle gpuSrv,
             CpuDescriptorHandle[] cpuRtvs)
         {
-            // Save references to the descriptors. 
+            // Save references to the descriptors.
             _cpuSrv = cpuSrv;
             _gpuSrv = gpuSrv;
 
@@ -113,9 +113,9 @@ namespace DX12GameProgramming
         private void BuildResource()
         {
             // Note, compressed formats cannot be used for UAV. We get error like:
-            // ERROR: ID3D11Device::CreateTexture2D: The format (0x4d, BC3_UNORM) 
+            // ERROR: ID3D11Device::CreateTexture2D: The format (0x4d, BC3_UNORM)
             // cannot be bound as an UnorderedAccessView, or cast to a format that
-            // could be bound as an UnorderedAccessView. Therefore this format 
+            // could be bound as an UnorderedAccessView. Therefore this format
             // does not support D3D11_BIND_UNORDERED_ACCESS.
 
             var texDesc = new ResourceDescription
@@ -135,7 +135,7 @@ namespace DX12GameProgramming
             var optClear = new ClearValue
             {
                 Format = _format,
-                Color = Color.LightSteelBlue.ToVector4()                
+                Color = Color.LightSteelBlue.ToVector4()
             };
             Resource = _device.CreateCommittedResource(
                 new HeapProperties(HeapType.Default),

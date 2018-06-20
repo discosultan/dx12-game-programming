@@ -69,7 +69,7 @@ namespace DX12GameProgramming
             BuildRootSignature();
             BuildDescriptorHeaps();
             BuildShadersAndInputLayout();
-            BuildSkullGeometry();            
+            BuildSkullGeometry();
             BuildMaterials();
             BuildRenderItems();
             BuildFrameResources();
@@ -133,14 +133,14 @@ namespace DX12GameProgramming
             CommandList.ClearRenderTargetView(CurrentBackBufferView, Color.LightSteelBlue);
             CommandList.ClearDepthStencilView(DepthStencilView, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
 
-            // Specify the buffers we are going to render to.            
+            // Specify the buffers we are going to render to.
             CommandList.SetRenderTargets(CurrentBackBufferView, DepthStencilView);
 
             CommandList.SetDescriptorHeaps(_descriptorHeaps.Length, _descriptorHeaps);
 
-            CommandList.SetGraphicsRootSignature(_rootSignature);            
+            CommandList.SetGraphicsRootSignature(_rootSignature);
 
-            // Bind all the materials used in this scene. For structured buffers, we can bypass the heap and 
+            // Bind all the materials used in this scene. For structured buffers, we can bypass the heap and
             // set as a root descriptor.
             Resource matBuffer = CurrFrameResource.MaterialBuffer.Resource;
             CommandList.SetGraphicsRootShaderResourceView(1, matBuffer.GPUVirtualAddress);
@@ -149,7 +149,7 @@ namespace DX12GameProgramming
             CommandList.SetGraphicsRootConstantBufferView(2, passCB.GPUVirtualAddress);
 
             // Bind all the textures used in this scene. Observe
-            // that we only have to specify the first descriptor in the table. 
+            // that we only have to specify the first descriptor in the table.
             // The root signature knows how many descriptors are expected in the table.
             CommandList.SetGraphicsRootDescriptorTable(3, _srvDescriptorHeap.GPUDescriptorHandleForHeapStart);
 
@@ -170,8 +170,8 @@ namespace DX12GameProgramming
             // Advance the fence value to mark commands up to this fence point.
             CurrFrameResource.Fence = ++CurrentFence;
 
-            // Add an instruction to the command queue to set a new fence point. 
-            // Because we are on the GPU timeline, the new fence point won't be 
+            // Add an instruction to the command queue to set a new fence point.
+            // Because we are on the GPU timeline, the new fence point won't be
             // set until the GPU finishes processing all the commands prior to this Signal().
             CommandQueue.Signal(Fence, CurrentFence);
         }
@@ -179,14 +179,14 @@ namespace DX12GameProgramming
         protected override void OnMouseDown(MouseButtons button, Point location)
         {
             base.OnMouseDown(button, location);
-            _lastMousePos = location;            
+            _lastMousePos = location;
         }
 
         protected override void OnMouseMove(MouseButtons button, Point location)
         {
             if ((button & MouseButtons.Left) != 0)
             {
-                // Make each pixel correspond to a quarter of a degree.                
+                // Make each pixel correspond to a quarter of a degree.
                 float dx = MathUtil.DegreesToRadians(0.25f * (location.X - _lastMousePos.X));
                 float dy = MathUtil.DegreesToRadians(0.25f * (location.Y - _lastMousePos.Y));
 
@@ -204,7 +204,7 @@ namespace DX12GameProgramming
                 _rootSignature?.Dispose();
                 _srvDescriptorHeap?.Dispose();
                 foreach (Texture texture in _textures.Values) texture.Dispose();
-                foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();                
+                foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();
                 foreach (MeshGeometry geometry in _geometries.Values) geometry.Dispose();
                 foreach (PipelineState pso in _psos.Values) pso.Dispose();
             }
@@ -240,7 +240,7 @@ namespace DX12GameProgramming
                 int visibleInstanceCount = 0;
 
                 foreach (InstanceData instance in e.Instances)
-                {                    
+                {
                     var box = new BoundingBox(
                         Vector3.TransformCoordinate(e.Bounds.Minimum, instance.World),
                         Vector3.TransformCoordinate(e.Bounds.Maximum, instance.World));
@@ -456,7 +456,7 @@ namespace DX12GameProgramming
                 {
                     input = reader.ReadLine();
                 } while (input != null && !input.StartsWith("{", StringComparison.Ordinal));
-                
+
                 for (int i = 0; i < vCount; i++)
                 {
                     input = reader.ReadLine();
@@ -686,7 +686,7 @@ namespace DX12GameProgramming
                 cmdList.SetIndexBuffer(ri.Geo.IndexBufferView);
                 cmdList.PrimitiveTopology = ri.PrimitiveType;
 
-                // Set the instance buffer to use for this render-item. For structured buffers, we can bypass 
+                // Set the instance buffer to use for this render-item. For structured buffers, we can bypass
                 // the heap and set as a root descriptor.
                 Resource instanceBuffer = CurrFrameResource.InstanceBuffer.Resource;
                 cmdList.SetGraphicsRootShaderResourceView(0, instanceBuffer.GPUVirtualAddress);

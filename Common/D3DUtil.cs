@@ -76,10 +76,10 @@ namespace DX12GameProgramming
             shaderFlags |= ShaderFlags.Debug | ShaderFlags.SkipOptimization;
 #endif
             CompilationResult result = SharpDX.D3DCompiler.ShaderBytecode.CompileFromFile(
-                fileName, 
-                entryPoint, 
-                profile, 
-                shaderFlags, 
+                fileName,
+                entryPoint,
+                profile,
+                shaderFlags,
                 include: FileIncludeHandler.Default,
                 defines: defines);
             return new ShaderBytecode(result);
@@ -121,7 +121,7 @@ namespace DX12GameProgramming
         // Used in texture mapping.
         public Matrix MatTransform;
 
-        public static MaterialConstants Default => new MaterialConstants 
+        public static MaterialConstants Default => new MaterialConstants
         {
             DiffuseAlbedo = Vector4.One,
             FresnelR0 = new Vector3(0.01f),
@@ -148,7 +148,7 @@ namespace DX12GameProgramming
 
         // Dirty flag indicating the material has changed and we need to update the constant buffer.
         // Because we have a material constant buffer for each FrameResource, we have to apply the
-        // update to each FrameResource. Thus, when we modify a material we should set 
+        // update to each FrameResource. Thus, when we modify a material we should set
         // NumFramesDirty = NumFrameResources so that each frame resource gets the update.
         public int NumFramesDirty { get; set; } = D3DApp.NumFrameResources;
 

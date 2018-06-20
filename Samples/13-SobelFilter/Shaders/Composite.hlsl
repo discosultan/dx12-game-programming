@@ -14,7 +14,7 @@ SamplerState gsamLinearClamp      : register(s3);
 SamplerState gsamAnisotropicWrap  : register(s4);
 SamplerState gsamAnisotropicClamp : register(s5);
 
-static const float2 gTexCoords[6] = 
+static const float2 gTexCoords[6] =
 {
     float2(0.0f, 1.0f),
     float2(0.0f, 0.0f),

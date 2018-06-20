@@ -93,11 +93,11 @@ namespace DX12GameProgramming
                     {
                         // After this update we will be discarding the old previous
                         // buffer, so overwrite that buffer with the new update.
-                        // Note how we can do this inplace (read/write to same element) 
+                        // Note how we can do this inplace (read/write to same element)
                         // because we won't need prev_ij again and the assignment happens last.
 
                         // Note j indexes x and i indexes z: h(x_j, z_i, t_k)
-                        // Moreover, our +z axis goes "down"; this is just to 
+                        // Moreover, our +z axis goes "down"; this is just to
                         // keep consistent with our row indices going down.
 
                         _prevSolution[i * ColumnCount + j].Y =

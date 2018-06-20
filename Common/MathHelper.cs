@@ -27,7 +27,7 @@ namespace DX12GameProgramming
 
         public static Matrix InverseTranspose(Matrix m)
         {
-            // Inverse-transpose is just applied to normals. So zero out 
+            // Inverse-transpose is just applied to normals. So zero out
             // translation row so that it doesn't get into our inverse-transpose
             // calculation--we don't want the inverse-transpose of the translation.
             m.Row4 = Vector4.UnitW;

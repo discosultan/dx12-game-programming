@@ -18,7 +18,7 @@ namespace DX12GameProgramming
     ///<summary>
     /// A BoneAnimation is defined by a list of keyframes.  For time
     /// values inbetween two keyframes, we interpolate between the
-    /// two nearest keyframes that bound the time.  
+    /// two nearest keyframes that bound the time.
     ///
     /// We assume an animation always has two keyframes.
     ///</summary>

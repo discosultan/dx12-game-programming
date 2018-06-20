@@ -130,7 +130,7 @@ namespace DX12GameProgramming
             CommandList.ClearRenderTargetView(CurrentBackBufferView, Color.LightSteelBlue);
             CommandList.ClearDepthStencilView(DepthStencilView, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
 
-            // Specify the buffers we are going to render to.            
+            // Specify the buffers we are going to render to.
             CommandList.SetRenderTargets(CurrentBackBufferView, DepthStencilView);
 
             CommandList.SetGraphicsRootSignature(_rootSignature);
@@ -155,8 +155,8 @@ namespace DX12GameProgramming
             // Advance the fence value to mark commands up to this fence point.
             CurrFrameResource.Fence = ++CurrentFence;
 
-            // Add an instruction to the command queue to set a new fence point. 
-            // Because we are on the GPU timeline, the new fence point won't be 
+            // Add an instruction to the command queue to set a new fence point.
+            // Because we are on the GPU timeline, the new fence point won't be
             // set until the GPU finishes processing all the commands prior to this Signal().
             CommandQueue.Signal(Fence, CurrentFence);
         }
@@ -164,14 +164,14 @@ namespace DX12GameProgramming
         protected override void OnMouseDown(MouseButtons button, Point location)
         {
             base.OnMouseDown(button, location);
-            _lastMousePos = location;            
+            _lastMousePos = location;
         }
 
         protected override void OnMouseMove(MouseButtons button, Point location)
         {
             if ((button & MouseButtons.Left) != 0)
             {
-                // Make each pixel correspond to a quarter of a degree.                
+                // Make each pixel correspond to a quarter of a degree.
                 float dx = MathUtil.DegreesToRadians(0.25f * (location.X - _lastMousePos.X));
                 float dy = MathUtil.DegreesToRadians(0.25f * (location.Y - _lastMousePos.Y));
 
@@ -184,7 +184,7 @@ namespace DX12GameProgramming
             }
             else if ((button & MouseButtons.Right) != 0)
             {
-                // Make each pixel correspond to a quarter of a degree.                
+                // Make each pixel correspond to a quarter of a degree.
                 float dx = 0.05f * (location.X - _lastMousePos.X);
                 float dy = 0.05f * (location.Y - _lastMousePos.Y);
 
@@ -204,7 +204,7 @@ namespace DX12GameProgramming
             {
                 _rootSignature?.Dispose();
                 _opaquePso?.Dispose();
-                foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();                
+                foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();
                 foreach (MeshGeometry geometry in _geometries.Values) geometry.Dispose();
             }
             base.Dispose(disposing);
@@ -225,8 +225,8 @@ namespace DX12GameProgramming
         {
             foreach (RenderItem e in _allRitems)
             {
-                // Only update the cbuffer data if the constants have changed.  
-                // This needs to be tracked per frame resource. 
+                // Only update the cbuffer data if the constants have changed.
+                // This needs to be tracked per frame resource.
                 if (e.NumFramesDirty > 0)
                 {
                     var objConstants = new ObjectConstants { World = Matrix.Transpose(e.World) };
@@ -277,7 +277,7 @@ namespace DX12GameProgramming
             _mainPassCB.InvViewProj = Matrix.Transpose(invViewProj);
             _mainPassCB.EyePosW = _eyePos;
             _mainPassCB.RenderTargetSize = new Vector2(ClientWidth, ClientHeight);
-            _mainPassCB.InvRenderTargetSize = 1.0f / _mainPassCB.RenderTargetSize;            
+            _mainPassCB.InvRenderTargetSize = 1.0f / _mainPassCB.RenderTargetSize;
             _mainPassCB.TotalTime = gt.TotalTime;
             _mainPassCB.DeltaTime = gt.DeltaTime;
             _mainPassCB.AmbientLight = new Vector4(0.25f, 0.25f, 0.35f, 1.0f);
@@ -354,7 +354,7 @@ namespace DX12GameProgramming
         private static SubmeshGeometry AppendMeshData(GeometryGenerator.MeshData meshData, List<Vertex> vertices, List<short> indices)
         {
             //
-            // Define the SubmeshGeometry that cover different 
+            // Define the SubmeshGeometry that cover different
             // regions of the vertex/index buffers.
             //
 
@@ -552,7 +552,7 @@ namespace DX12GameProgramming
             }
         }
 
-        private void AddRenderItem(RenderLayer layer, int objCBIndex, string matName, string geoName, string submeshName, 
+        private void AddRenderItem(RenderLayer layer, int objCBIndex, string matName, string geoName, string submeshName,
             Matrix? world = null)
         {
             MeshGeometry geo = _geometries[geoName];

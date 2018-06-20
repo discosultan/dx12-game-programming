@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using SharpDX;
 
 namespace DX12GameProgramming
-{    
+{
     public static class GeometryGenerator
     {
         [StructLayout(LayoutKind.Sequential, Pack = 4)]
@@ -128,7 +128,7 @@ namespace DX12GameProgramming
 
             // Poles: note that there will be texture coordinate distortion as there is
             // not a unique point on the texture map to assign to the pole when mapping
-            // a rectangular texture onto a sphere.            
+            // a rectangular texture onto a sphere.
 
             // Top vertex.
             meshData.Vertices.Add(new Vertex(new Vector3(0, radius, 0), new Vector3(0, 1, 0), new Vector3(1, 0, 0), Vector2.Zero));
@@ -289,7 +289,7 @@ namespace DX12GameProgramming
         public static MeshData CreateCylinder(float bottomRadius, float topRadius,
             float height, int sliceCount, int stackCount)
         {
-            var meshData = new MeshData();            
+            var meshData = new MeshData();
 
             BuildCylinderSide(bottomRadius, topRadius, height, sliceCount, stackCount, meshData);
             BuildCylinderTopCap(topRadius, height, sliceCount, meshData);
@@ -300,7 +300,7 @@ namespace DX12GameProgramming
 
         public static MeshData CreateGrid(float width, float depth, int m, int n)
         {
-            var meshData = new MeshData();            
+            var meshData = new MeshData();
 
             //
             // Create the vertices.

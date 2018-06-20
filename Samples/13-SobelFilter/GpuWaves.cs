@@ -110,7 +110,7 @@ namespace DX12GameProgramming
 
             //
             // In order to copy CPU memory data into our default buffer, we need to create
-            // an intermediate upload heap. 
+            // an intermediate upload heap.
             //
 
             int num2DSubresources = texDesc.DepthOrArraySize * texDesc.MipLevels;
@@ -129,7 +129,7 @@ namespace DX12GameProgramming
 
             //
             // Schedule to copy the data to the default resource, and change states.
-            // Note that mCurrSol is put in the GENERIC_READ state so it can be 
+            // Note that mCurrSol is put in the GENERIC_READ state so it can be
             // read by a shader.
             //
 

@@ -72,7 +72,7 @@ namespace DX12GameProgramming
             BuildRootSignature();
             BuildDescriptorHeaps();
             BuildShadersAndInputLayout();
-            BuildCarGeometry();            
+            BuildCarGeometry();
             BuildMaterials();
             BuildRenderItems();
             BuildFrameResources();
@@ -136,7 +136,7 @@ namespace DX12GameProgramming
             CommandList.ClearRenderTargetView(CurrentBackBufferView, Color.LightSteelBlue);
             CommandList.ClearDepthStencilView(DepthStencilView, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
 
-            // Specify the buffers we are going to render to.            
+            // Specify the buffers we are going to render to.
             CommandList.SetRenderTargets(CurrentBackBufferView, DepthStencilView);
 
             CommandList.SetDescriptorHeaps(_descriptorHeaps.Length, _descriptorHeaps);
@@ -146,13 +146,13 @@ namespace DX12GameProgramming
             Resource passCB = CurrFrameResource.PassCB.Resource;
             CommandList.SetGraphicsRootConstantBufferView(1, passCB.GPUVirtualAddress);
 
-            // Bind all the materials used in this scene. For structured buffers, we can bypass the heap and 
+            // Bind all the materials used in this scene. For structured buffers, we can bypass the heap and
             // set as a root descriptor.
             Resource matBuffer = CurrFrameResource.MaterialBuffer.Resource;
             CommandList.SetGraphicsRootShaderResourceView(2, matBuffer.GPUVirtualAddress);
 
             // Bind all the textures used in this scene. Observe
-            // that we only have to specify the first descriptor in the table. 
+            // that we only have to specify the first descriptor in the table.
             // The root signature knows how many descriptors are expected in the table.
             CommandList.SetGraphicsRootDescriptorTable(3, _srvDescriptorHeap.GPUDescriptorHandleForHeapStart);
 
@@ -176,8 +176,8 @@ namespace DX12GameProgramming
             // Advance the fence value to mark commands up to this fence point.
             CurrFrameResource.Fence = ++CurrentFence;
 
-            // Add an instruction to the command queue to set a new fence point. 
-            // Because we are on the GPU timeline, the new fence point won't be 
+            // Add an instruction to the command queue to set a new fence point.
+            // Because we are on the GPU timeline, the new fence point won't be
             // set until the GPU finishes processing all the commands prior to this Signal().
             CommandQueue.Signal(Fence, CurrentFence);
         }
@@ -199,7 +199,7 @@ namespace DX12GameProgramming
         {
             if ((button & MouseButtons.Left) != 0)
             {
-                // Make each pixel correspond to a quarter of a degree.                
+                // Make each pixel correspond to a quarter of a degree.
                 float dx = MathUtil.DegreesToRadians(0.25f * (location.X - _lastMousePos.X));
                 float dy = MathUtil.DegreesToRadians(0.25f * (location.Y - _lastMousePos.Y));
 
@@ -217,7 +217,7 @@ namespace DX12GameProgramming
                 _rootSignature?.Dispose();
                 _srvDescriptorHeap?.Dispose();
                 foreach (Texture texture in _textures.Values) texture.Dispose();
-                foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();                
+                foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();
                 foreach (MeshGeometry geometry in _geometries.Values) geometry.Dispose();
                 foreach (PipelineState pso in _psos.Values) pso.Dispose();
             }
@@ -244,8 +244,8 @@ namespace DX12GameProgramming
         {
             foreach (RenderItem e in _allRitems)
             {
-                // Only update the cbuffer data if the constants have changed.  
-                // This needs to be tracked per frame resource. 
+                // Only update the cbuffer data if the constants have changed.
+                // This needs to be tracked per frame resource.
                 if (e.NumFramesDirty > 0)
                 {
                     var objConstants = new ObjectConstants
@@ -523,7 +523,7 @@ namespace DX12GameProgramming
 
             // Change the depth test from < to <= so that if we draw the same triangle twice, it will
             // still pass the depth test. This is needed because we redraw the picked triangle with a
-            // different material to highlight it. If we do not use <=, the triangle will fail the 
+            // different material to highlight it. If we do not use <=, the triangle will fail the
             // depth test the 2nd time we try and draw it.
             highlightPsoDesc.DepthStencilState.DepthComparison = Comparison.LessEqual;
 
@@ -610,7 +610,7 @@ namespace DX12GameProgramming
                 BaseVertexLocation = 0
             };
             _ritemLayer[RenderLayer.Highlight].Add(_pickedRitem);
-            _allRitems.Add(_pickedRitem);            
+            _allRitems.Add(_pickedRitem);
         }
 
         private void DrawRenderItems(GraphicsCommandList cmdList, List<RenderItem> ritems)
@@ -687,7 +687,7 @@ namespace DX12GameProgramming
             _pickedRitem.Visible = false;
 
             // Check if we picked an opaque render item.  A real app might keep a separate "picking list"
-            // of objects that can be selected.   
+            // of objects that can be selected.
             foreach (RenderItem ri in _ritemLayer[RenderLayer.Opaque])
             {
                 MeshGeometry geo = ri.Geo;
@@ -705,7 +705,7 @@ namespace DX12GameProgramming
                 // If we hit the bounding box of the Mesh, then we might have picked a Mesh triangle,
                 // so do the ray/triangle tests.
                 //
-                // If we did not hit the bounding box, then it is impossible that we hit 
+                // If we did not hit the bounding box, then it is impossible that we hit
                 // the Mesh, so do not waste effort doing ray/triangle tests.
                 float tmin;
                 BoundingBox bounds = ri.Bounds;

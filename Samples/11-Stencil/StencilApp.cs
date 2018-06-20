@@ -30,7 +30,7 @@ namespace DX12GameProgramming
         private readonly Dictionary<string, PipelineState> _psos = new Dictionary<string, PipelineState>();
 
         private InputLayoutDescription _inputLayout;
-        
+
         // Cache render items of interest.
         private RenderItem _skullRitem;
         private RenderItem _reflectedSkullRitem;
@@ -150,7 +150,7 @@ namespace DX12GameProgramming
             CommandList.ClearRenderTargetView(CurrentBackBufferView, new Color(_mainPassCB.FogColor));
             CommandList.ClearDepthStencilView(DepthStencilView, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
 
-            // Specify the buffers we are going to render to.            
+            // Specify the buffers we are going to render to.
             CommandList.SetRenderTargets(CurrentBackBufferView, DepthStencilView);
 
             CommandList.SetDescriptorHeaps(_descriptorHeaps.Length, _descriptorHeaps);
@@ -202,8 +202,8 @@ namespace DX12GameProgramming
             // Advance the fence value to mark commands up to this fence point.
             CurrFrameResource.Fence = ++CurrentFence;
 
-            // Add an instruction to the command queue to set a new fence point. 
-            // Because we are on the GPU timeline, the new fence point won't be 
+            // Add an instruction to the command queue to set a new fence point.
+            // Because we are on the GPU timeline, the new fence point won't be
             // set until the GPU finishes processing all the commands prior to this Signal().
             CommandQueue.Signal(Fence, CurrentFence);
         }
@@ -211,14 +211,14 @@ namespace DX12GameProgramming
         protected override void OnMouseDown(MouseButtons button, Point location)
         {
             base.OnMouseDown(button, location);
-            _lastMousePos = location;            
+            _lastMousePos = location;
         }
 
         protected override void OnMouseMove(MouseButtons button, Point location)
         {
             if ((button & MouseButtons.Left) != 0)
             {
-                // Make each pixel correspond to a quarter of a degree.                
+                // Make each pixel correspond to a quarter of a degree.
                 float dx = MathUtil.DegreesToRadians(0.25f * (location.X - _lastMousePos.X));
                 float dy = MathUtil.DegreesToRadians(0.25f * (location.Y - _lastMousePos.Y));
 
@@ -231,7 +231,7 @@ namespace DX12GameProgramming
             }
             else if ((button & MouseButtons.Right) != 0)
             {
-                // Make each pixel correspond to a quarter of a degree.                
+                // Make each pixel correspond to a quarter of a degree.
                 float dx = 0.2f * (location.X - _lastMousePos.X);
                 float dy = 0.2f * (location.Y - _lastMousePos.Y);
 
@@ -305,7 +305,7 @@ namespace DX12GameProgramming
             Matrix r = MathHelper.Reflection(mirrorPlane);
             _reflectedSkullRitem.World = skullWorld * r;
 
-            // Update shadow world matrix.            
+            // Update shadow world matrix.
             var shadowPlane = new Plane(new Vector3(0, 1, 0), 0); // XZ plane.
             Vector3 toMainLight = -_mainPassCB.Lights[0].Direction;
             Matrix s = MathHelper.Shadow(new Vector4(toMainLight, 0.0f), shadowPlane);
@@ -321,8 +321,8 @@ namespace DX12GameProgramming
         {
             foreach (RenderItem e in _allRitems)
             {
-                // Only update the cbuffer data if the constants have changed.  
-                // This needs to be tracked per frame resource. 
+                // Only update the cbuffer data if the constants have changed.
+                // This needs to be tracked per frame resource.
                 if (e.NumFramesDirty > 0)
                 {
                     var objConstants = new ObjectConstants
@@ -389,7 +389,7 @@ namespace DX12GameProgramming
             _mainPassCB.Lights[1].Direction = new Vector3(-0.57735f, -0.57735f, 0.57735f);
             _mainPassCB.Lights[1].Strength = new Vector3(0.3f);
             _mainPassCB.Lights[2].Direction = new Vector3(0.0f, -0.707f, -0.707f);
-            _mainPassCB.Lights[2].Strength = new Vector3(0.15f);            
+            _mainPassCB.Lights[2].Strength = new Vector3(0.15f);
 
             // Main pass stored in index 0.
             CurrFrameResource.PassCB.CopyData(0, ref _mainPassCB);
@@ -481,7 +481,7 @@ namespace DX12GameProgramming
                 _textures["checkboardTex"].Resource,
                 _textures["iceTex"].Resource,
                 _textures["white1x1Tex"].Resource
-            };            
+            };
 
             var srvDesc = new ShaderResourceViewDescription
             {
@@ -547,7 +547,7 @@ namespace DX12GameProgramming
             Vertex[] vertices =
             {
                 // Floor: Observe we tile texture coordinates.
-                new Vertex(-3.5f, 0.0f, -10.0f, 0.0f, 1.0f, 0.0f, 0.0f, 4.0f), // 0 
+                new Vertex(-3.5f, 0.0f, -10.0f, 0.0f, 1.0f, 0.0f, 0.0f, 4.0f), // 0
 		        new Vertex(-3.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f),
 		        new Vertex(7.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 4.0f, 0.0f),
 		        new Vertex(7.5f, 0.0f, -10.0f, 0.0f, 1.0f, 0.0f, 4.0f, 4.0f),
@@ -559,7 +559,7 @@ namespace DX12GameProgramming
 		        new Vertex(-2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.5f, 0.0f),
 		        new Vertex(-2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.5f, 2.0f),
 
-		        new Vertex(2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 2.0f), // 8 
+		        new Vertex(2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 2.0f), // 8
 		        new Vertex(2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f),
 		        new Vertex(7.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 2.0f, 0.0f),
 		        new Vertex(7.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 2.0f, 2.0f),
@@ -580,7 +580,7 @@ namespace DX12GameProgramming
             short[] indices =
             {
                 // Floor
-                0, 1, 2,	
+                0, 1, 2,
 		        0, 2, 3,
 
 		        // Walls

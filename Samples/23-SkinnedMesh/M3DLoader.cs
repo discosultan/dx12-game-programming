@@ -62,7 +62,7 @@ namespace DX12GameProgramming
         {
             using (var reader = new StreamReader(fileName))
             {
-                reader.ReadLine(); // File header text.                
+                reader.ReadLine(); // File header text.
                 string[] split = ReadAndSplitLine(reader);
                 int numMaterials = int.Parse(split[1]);
                 split = ReadAndSplitLine(reader);
@@ -88,7 +88,7 @@ namespace DX12GameProgramming
         {
             using (var reader = new StreamReader(fileName))
             {
-                reader.ReadLine(); // File header text.                
+                reader.ReadLine(); // File header text.
                 string[] split = ReadAndSplitLine(reader);
                 int numMaterials = int.Parse(split[1]);
                 split = ReadAndSplitLine(reader);
@@ -128,9 +128,9 @@ namespace DX12GameProgramming
                 mat.Name = split[1];
                 split = ReadAndSplitLine(reader);
                 mat.DiffuseAlbedo = new Vector4(
-                    float.Parse(split[1], Culture), 
-                    float.Parse(split[2], Culture), 
-                    float.Parse(split[3], Culture), 
+                    float.Parse(split[1], Culture),
+                    float.Parse(split[2], Culture),
+                    float.Parse(split[3], Culture),
                     0.0f);
                 split = ReadAndSplitLine(reader);
                 mat.FresnelR0 = new Vector3(
@@ -160,10 +160,10 @@ namespace DX12GameProgramming
             {
                 var subset = new Subset();
                 string[] split = ReadAndSplitLine(reader);
-                subset.Id = int.Parse(split[1]);                
+                subset.Id = int.Parse(split[1]);
                 subset.VertexStart = int.Parse(split[3]);
-                subset.VertexCount = int.Parse(split[5]);                
-                subset.FaceStart = int.Parse(split[7]);                
+                subset.VertexCount = int.Parse(split[5]);
+                subset.FaceStart = int.Parse(split[7]);
                 subset.FaceCount = int.Parse(split[9]);
                 subsets.Add(subset);
             }
@@ -298,7 +298,7 @@ namespace DX12GameProgramming
 
                 var clip = new AnimationClip();
                 clip.BoneAnimations.Capacity = numBones;
-                
+
                 for (int boneIndex = 0; boneIndex < numBones; boneIndex++)
                     ReadBoneKeyframe(reader, clip.BoneAnimations);
 
@@ -327,7 +327,7 @@ namespace DX12GameProgramming
                     float.Parse(split[4], Culture),
                     float.Parse(split[5], Culture));
                 // We are only using uniform scalings.
-                keyframe.Scale = float.Parse(split[7], Culture);                
+                keyframe.Scale = float.Parse(split[7], Culture);
                 keyframe.Rotation = new Quaternion(
                     float.Parse(split[11], Culture),
                     float.Parse(split[12], Culture),

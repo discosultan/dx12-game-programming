@@ -98,7 +98,7 @@ namespace DX12GameProgramming
         // that reference it. So each frame needs their own cbuffers.
         public UploadBuffer<PassConstants> PassCB { get; }
         public UploadBuffer<MaterialConstants> MaterialCB { get; }
-        public UploadBuffer<ObjectConstants> ObjectCB { get; }        
+        public UploadBuffer<ObjectConstants> ObjectCB { get; }
 
         // Fence value to mark commands up to this fence point.  This lets us
         // check if these frame resources are still in use by the GPU.

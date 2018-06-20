@@ -45,7 +45,7 @@ namespace DX12GameProgramming
             GpuDescriptorHandle gpuSrv,
             CpuDescriptorHandle cpuDsv)
         {
-            // Save references to the descriptors. 
+            // Save references to the descriptors.
             _cpuSrv = cpuSrv;
             _gpuSrv = gpuSrv;
             _cpuDsv = cpuDsv;

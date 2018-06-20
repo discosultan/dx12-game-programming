@@ -16,7 +16,7 @@ namespace DX12GameProgramming
         public int StartIndexLocation { get; set; }
         public int BaseVertexLocation { get; set; }
 
-        // Bounding box of the geometry defined by this submesh. 
+        // Bounding box of the geometry defined by this submesh.
         // This is used in later chapters of the book.
         public BoundingBox Bounds { get; set; }
     }

@@ -35,8 +35,8 @@ struct MaterialData
 // in this array can be different sizes and formats, making it more flexible than texture arrays.
 Texture2D gDiffuseMap[4] : register(t0);
 
-// Put in space1, so the texture array does not overlap with these resources.  
-// The texture array will occupy registers t0, t1, ..., t3 in space0. 
+// Put in space1, so the texture array does not overlap with these resources.
+// The texture array will occupy registers t0, t1, ..., t3 in space0.
 StructuredBuffer<MaterialData> gMaterialData : register(t0, space1);
 
 
@@ -105,7 +105,7 @@ VertexOut VS(VertexIn vin)
 
 	// Fetch the material data.
 	MaterialData matData = gMaterialData[gMaterialIndex];
-	
+
     // Transform to world space.
     float4 posW = mul(float4(vin.PosL, 1.0f), gWorld);
     vout.PosW = posW.xyz;
@@ -115,11 +115,11 @@ VertexOut VS(VertexIn vin)
 
     // Transform to homogeneous clip space.
     vout.PosH = mul(posW, gViewProj);
-	
+
 	// Output vertex attributes for interpolation across triangle.
 	float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gTexTransform);
 	vout.TexC = mul(texC, matData.MatTransform).xy;
-	
+
     return vout;
 }
 
@@ -134,11 +134,11 @@ float4 PS(VertexOut pin) : SV_Target
 
 	// Dynamically look up the texture in the array.
 	diffuseAlbedo *= gDiffuseMap[diffuseTexIndex].Sample(gsamLinearWrap, pin.TexC);
-	
+
     // Interpolating normal can unnormalize it, so renormalize it.
     pin.NormalW = normalize(pin.NormalW);
 
-    // Vector from point being lit to eye. 
+    // Vector from point being lit to eye.
     float3 toEyeW = normalize(gEyePosW - pin.PosW);
 
     // Light terms.

@@ -12,7 +12,7 @@ namespace DX12GameProgramming
     {
         private const int MaxBlurRadius = 5;
 
-        private readonly Device _device;        
+        private readonly Device _device;
         private readonly Format _format;
         private int _width;
         private int _height;
@@ -77,8 +77,8 @@ namespace DX12GameProgramming
         }
 
         public void Execute(
-            GraphicsCommandList cmdList, 
-            RootSignature rootSig, 
+            GraphicsCommandList cmdList,
+            RootSignature rootSig,
             PipelineState horzBlurPso,
             PipelineState vertBlurPso,
             Resource input,
@@ -88,7 +88,7 @@ namespace DX12GameProgramming
             int blurRadius = weights.Length / 2;
 
             cmdList.SetComputeRootSignature(rootSig);
-            
+
             Utilities.Pin(ref blurRadius, ptr => cmdList.SetComputeRoot32BitConstants(0, 1, ptr, 0));
             Utilities.Pin(weights, ptr => cmdList.SetComputeRoot32BitConstants(0, weights.Length, ptr, 1));
 
@@ -210,9 +210,9 @@ namespace DX12GameProgramming
         private void BuildResources()
         {
             // Note, compressed formats cannot be used for UAV.  We get error like:
-            // ERROR: ID3D11Device::CreateTexture2D: The format (0x4d, BC3_UNORM) 
+            // ERROR: ID3D11Device::CreateTexture2D: The format (0x4d, BC3_UNORM)
             // cannot be bound as an UnorderedAccessView, or cast to a format that
-            // could be bound as an UnorderedAccessView.  Therefore this format 
+            // could be bound as an UnorderedAccessView.  Therefore this format
             // does not support D3D11_BIND_UNORDERED_ACCESS.
 
             var texDesc = new ResourceDescription

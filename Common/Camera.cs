@@ -22,8 +22,8 @@ namespace DX12GameProgramming
         public float FovY { get; private set; }
         public float FovX
         {
-            get 
-            { 
+            get
+            {
                 float halfWidth = 0.5f * NearWindowWidth;
                 return 2.0f * MathHelper.Atanf(halfWidth / NearZ);
             }

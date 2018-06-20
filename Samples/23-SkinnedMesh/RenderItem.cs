@@ -19,8 +19,8 @@ namespace DX12GameProgramming
         public string ClipName { get; set; }
         public float TimePos { get; set; }
 
-        // Called every frame and increments the time position, interpolates the 
-        // animations for each bone based on the current animation clip, and 
+        // Called every frame and increments the time position, interpolates the
+        // animations for each bone based on the current animation clip, and
         // generates the final transforms which are ultimately set to the effect
         // for processing in the vertex shader.
         public void UpdateSkinnedAnimation(float dt)
@@ -49,7 +49,7 @@ namespace DX12GameProgramming
 
         // Dirty flag indicating the object data has changed and we need to update the constant buffer.
         // Because we have an object cbuffer for each FrameResource, we have to apply the
-        // update to each FrameResource. Thus, when we modify obect data we should set 
+        // update to each FrameResource. Thus, when we modify obect data we should set
         // NumFramesDirty = gNumFrameResources so that each frame resource gets the update.
         public int NumFramesDirty { get; set; } = D3DApp.NumFrameResources;
 

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using SharpDX;
 using SharpDX.Direct3D;
 using SharpDX.Direct3D12;
@@ -117,13 +116,13 @@ namespace DX12GameProgramming
             CommandList.SetScissorRectangles(ScissorRectangle);
 
             // Indicate a state transition on the resource usage.
-            CommandList.ResourceBarrierTransition(CurrentBackBuffer, ResourceStates.Present, ResourceStates.RenderTarget);                       
+            CommandList.ResourceBarrierTransition(CurrentBackBuffer, ResourceStates.Present, ResourceStates.RenderTarget);
 
             // Clear the back buffer and depth buffer.
             CommandList.ClearRenderTargetView(CurrentBackBufferView, Color.LightSteelBlue);
             CommandList.ClearDepthStencilView(DepthStencilView, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
 
-            // Specify the buffers we are going to render to.            
+            // Specify the buffers we are going to render to.
             CommandList.SetRenderTargets(CurrentBackBufferView, DepthStencilView);
 
             // TODO: API suggestion: rename descriptorHeapsOut to descriptorHeaps;
@@ -169,7 +168,7 @@ namespace DX12GameProgramming
         {
             if ((button & MouseButtons.Left) != 0)
             {
-                // Make each pixel correspond to a quarter of a degree.                
+                // Make each pixel correspond to a quarter of a degree.
                 float dx = MathUtil.DegreesToRadians(0.25f * (location.X - _lastMousePos.X));
                 float dy = MathUtil.DegreesToRadians(0.25f * (location.Y - _lastMousePos.Y));
 
@@ -182,7 +181,7 @@ namespace DX12GameProgramming
             }
             else if ((button & MouseButtons.Right) != 0)
             {
-                // Make each pixel correspond to a quarter of a degree.                
+                // Make each pixel correspond to a quarter of a degree.
                 float dx = 0.005f * (location.X - _lastMousePos.X);
                 float dy = 0.005f * (location.Y - _lastMousePos.Y);
 
@@ -202,7 +201,7 @@ namespace DX12GameProgramming
             {
                 _rootSignature?.Dispose();
                 _cbvHeap?.Dispose();
-                _objectCB?.Dispose();             
+                _objectCB?.Dispose();
                 _boxGeo?.Dispose();
                 _pso?.Dispose();
             }
@@ -289,29 +288,29 @@ namespace DX12GameProgramming
             short[] indices =
             {
                 // front face
-		        0, 1, 2,
+                0, 1, 2,
                 0, 2, 3,
 
-		        // back face
-		        4, 6, 5,
+                // back face
+                4, 6, 5,
                 4, 7, 6,
 
-		        // left face
-		        4, 5, 1,
+                // left face
+                4, 5, 1,
                 4, 1, 0,
 
-		        // right face
-		        3, 2, 6,
+                // right face
+                3, 2, 6,
                 3, 6, 7,
 
-		        // top face
-		        1, 5, 6,
+                // top face
+                1, 5, 6,
                 1, 6, 2,
 
-		        // bottom face
-		        4, 0, 3,
+                // bottom face
+                4, 0, 3,
                 4, 3, 7
-            };            
+            };
 
             _boxGeo = MeshGeometry.New(Device, CommandList, vertices, indices);
         }
@@ -336,6 +335,6 @@ namespace DX12GameProgramming
             psoDesc.RenderTargetFormats[0] = BackBufferFormat;
 
             _pso = Device.CreateGraphicsPipelineState(psoDesc);
-        }        
+        }
     }
 }

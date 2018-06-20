@@ -80,7 +80,7 @@ namespace DX12GameProgramming
 
             BuildCubeFaceCameras(0.0f, 2.0f, 0.0f);
 
-            _dynamicCubeMap = new CubeRenderTarget(Device, CubeMapSize, CubeMapSize, Format.R8G8B8A8_UNorm);            
+            _dynamicCubeMap = new CubeRenderTarget(Device, CubeMapSize, CubeMapSize, Format.R8G8B8A8_UNorm);
 
             LoadTextures();
             BuildRootSignature();
@@ -159,15 +159,15 @@ namespace DX12GameProgramming
 
             CommandList.SetDescriptorHeaps(_descriptorHeaps.Length, _descriptorHeaps);
 
-            CommandList.SetGraphicsRootSignature(_rootSignature);            
+            CommandList.SetGraphicsRootSignature(_rootSignature);
 
-            // Bind all the materials used in this scene. For structured buffers, we can bypass the heap and 
+            // Bind all the materials used in this scene. For structured buffers, we can bypass the heap and
             // set as a root descriptor.
             Resource matBuffer = CurrFrameResource.MaterialBuffer.Resource;
             CommandList.SetGraphicsRootShaderResourceView(2, matBuffer.GPUVirtualAddress);
 
             // Bind the sky cube map. For our demos, we just use one "world" cube map representing the environment
-            // from far away, so all objects will use the same cube map and we only need to set it once per-frame.  
+            // from far away, so all objects will use the same cube map and we only need to set it once per-frame.
             // If we wanted to use "local" cube maps, we would have to change them per-object, or dynamically
             // index into an array of cube maps.
             GpuDescriptorHandle skyTexDescriptor = _srvDescriptorHeap.GPUDescriptorHandleForHeapStart;
@@ -175,7 +175,7 @@ namespace DX12GameProgramming
             CommandList.SetGraphicsRootDescriptorTable(3, skyTexDescriptor);
 
             // Bind all the textures used in this scene. Observe
-            // that we only have to specify the first descriptor in the table. 
+            // that we only have to specify the first descriptor in the table.
             // The root signature knows how many descriptors are expected in the table.
             CommandList.SetGraphicsRootDescriptorTable(4, _srvDescriptorHeap.GPUDescriptorHandleForHeapStart);
 
@@ -191,7 +191,7 @@ namespace DX12GameProgramming
             CommandList.ClearRenderTargetView(CurrentBackBufferView, Color.LightSteelBlue);
             CommandList.ClearDepthStencilView(DepthStencilView, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
 
-            // Specify the buffers we are going to render to.            
+            // Specify the buffers we are going to render to.
             CommandList.SetRenderTargets(CurrentBackBufferView, DepthStencilView);
 
             Resource passCB = CurrFrameResource.PassCB.Resource;
@@ -228,8 +228,8 @@ namespace DX12GameProgramming
             // Advance the fence value to mark commands up to this fence point.
             CurrFrameResource.Fence = ++CurrentFence;
 
-            // Add an instruction to the command queue to set a new fence point. 
-            // Because we are on the GPU timeline, the new fence point won't be 
+            // Add an instruction to the command queue to set a new fence point.
+            // Because we are on the GPU timeline, the new fence point won't be
             // set until the GPU finishes processing all the commands prior to this Signal().
             CommandQueue.Signal(Fence, CurrentFence);
         }
@@ -237,14 +237,14 @@ namespace DX12GameProgramming
         protected override void OnMouseDown(MouseButtons button, Point location)
         {
             base.OnMouseDown(button, location);
-            _lastMousePos = location;            
+            _lastMousePos = location;
         }
 
         protected override void OnMouseMove(MouseButtons button, Point location)
         {
             if ((button & MouseButtons.Left) != 0)
             {
-                // Make each pixel correspond to a quarter of a degree.                
+                // Make each pixel correspond to a quarter of a degree.
                 float dx = MathUtil.DegreesToRadians(0.25f * (location.X - _lastMousePos.X));
                 float dy = MathUtil.DegreesToRadians(0.25f * (location.Y - _lastMousePos.Y));
 
@@ -264,7 +264,7 @@ namespace DX12GameProgramming
                 _rootSignature?.Dispose();
                 _srvDescriptorHeap?.Dispose();
                 foreach (Texture texture in _textures.Values) texture.Dispose();
-                foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();                
+                foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();
                 foreach (MeshGeometry geometry in _geometries.Values) geometry.Dispose();
                 foreach (PipelineState pso in _psos.Values) pso.Dispose();
             }
@@ -291,8 +291,8 @@ namespace DX12GameProgramming
         {
             foreach (RenderItem e in _allRitems)
             {
-                // Only update the cbuffer data if the constants have changed.  
-                // This needs to be tracked per frame resource. 
+                // Only update the cbuffer data if the constants have changed.
+                // This needs to be tracked per frame resource.
                 if (e.NumFramesDirty > 0)
                 {
                     var objConstants = new ObjectConstants
@@ -467,7 +467,7 @@ namespace DX12GameProgramming
                 _textures["bricksDiffuseMap"].Resource,
                 _textures["tileDiffuseMap"].Resource,
                 _textures["defaultDiffuseMap"].Resource
-            };            
+            };
             Resource skyTex = _textures["skyCubeMap"].Resource;
 
             var srvDesc = new ShaderResourceViewDescription
@@ -489,7 +489,7 @@ namespace DX12GameProgramming
 
                 // Next descriptor.
                 hDescriptor += CbvSrvUavDescriptorSize;
-            }            
+            }
 
             srvDesc.Dimension = ShaderResourceViewDimension.TextureCube;
             srvDesc.TextureCube = new ShaderResourceViewDescription.TextureCubeResource
@@ -519,7 +519,7 @@ namespace DX12GameProgramming
             _dynamicCubeMap.BuildDescriptors(
                 srvCpuStart + _dynamicTexHeapIndex * CbvSrvUavDescriptorSize,
                 srvGpuStart + _dynamicTexHeapIndex * CbvSrvUavDescriptorSize,
-                cubeRtvHandles);            
+                cubeRtvHandles);
         }
 
         private void BuildCubeDepthStencil()
@@ -608,7 +608,7 @@ namespace DX12GameProgramming
         private SubmeshGeometry AppendMeshData(GeometryGenerator.MeshData meshData, List<Vertex> vertices, List<short> indices)
         {
             //
-            // Define the SubmeshGeometry that cover different 
+            // Define the SubmeshGeometry that cover different
             // regions of the vertex/index buffers.
             //
 
@@ -738,8 +738,8 @@ namespace DX12GameProgramming
             GraphicsPipelineStateDescription skyPsoDesc = opaquePsoDesc.Copy();
             // The camera is inside the sky sphere, so just turn off culling.
             skyPsoDesc.RasterizerState.CullMode = CullMode.None;
-            // Make sure the depth function is LESS_EQUAL and not just LESS.  
-            // Otherwise, the normalized depth values at z = 1 (NDC) will 
+            // Make sure the depth function is LESS_EQUAL and not just LESS.
+            // Otherwise, the normalized depth values at z = 1 (NDC) will
             // fail the depth test if the depth buffer was cleared to 1.
             skyPsoDesc.DepthStencilState.DepthComparison = Comparison.LessEqual;
             skyPsoDesc.RootSignature = _rootSignature;
@@ -900,7 +900,7 @@ namespace DX12GameProgramming
                 // Specify the buffers we are going to render to.
                 CommandList.SetRenderTargets(_dynamicCubeMap.Rtvs[i], _cubeDSV);
 
-                // Bind the pass constant buffer for this cube map face so we use 
+                // Bind the pass constant buffer for this cube map face so we use
                 // the right view/proj matrix for this cube face.
                 Resource passCB = CurrFrameResource.PassCB.Resource;
                 long passCBAddress = passCB.GPUVirtualAddress + (1 + i) * passCBByteSize;
@@ -910,7 +910,7 @@ namespace DX12GameProgramming
                 DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Opaque]);
 
                 CommandList.PipelineState = _psos["sky"];
-                DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Sky]);                
+                DrawRenderItems(CommandList, _ritemLayers[RenderLayer.Sky]);
             }
 
             // Change back to GENERIC_READ so we can read the texture in a shader.

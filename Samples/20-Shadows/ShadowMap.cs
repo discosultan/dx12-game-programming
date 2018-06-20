@@ -41,11 +41,11 @@ namespace DX12GameProgramming
         public RectangleF ScissorRectangle { get; private set; }
 
         public void BuildDescriptors(
-            CpuDescriptorHandle cpuSrv, 
+            CpuDescriptorHandle cpuSrv,
             GpuDescriptorHandle gpuSrv,
             CpuDescriptorHandle cpuDsv)
         {
-            // Save references to the descriptors. 
+            // Save references to the descriptors.
             _cpuSrv = cpuSrv;
             _gpuSrv = gpuSrv;
             _cpuDsv = cpuDsv;
@@ -87,7 +87,7 @@ namespace DX12GameProgramming
 
             // Create DSV to resource so we can render to the shadow map.
             var dsvDesc = new DepthStencilViewDescription
-            {                                
+            {
                 Flags = DepthStencilViewFlags.None,
                 Dimension = DepthStencilViewDimension.Texture2D,
                 Format = Format.D24_UNorm_S8_UInt,

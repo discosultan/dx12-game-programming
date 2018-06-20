@@ -1,5 +1,4 @@
-﻿using System;
-using SharpDX;
+﻿using SharpDX;
 using SharpDX.Direct3D12;
 using SharpDX.DXGI;
 
@@ -32,7 +31,7 @@ namespace DX12GameProgramming
             // Clear the back buffer and depth buffer.
             CommandList.ClearRenderTargetView(CurrentBackBufferView, Color.LightSteelBlue);
             // TODO: API suggestion: simplify flags naming to ClearFlags.Depth|Stencil
-            CommandList.ClearDepthStencilView(DepthStencilView, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);            
+            CommandList.ClearDepthStencilView(DepthStencilView, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
 
             // Specify the buffers we are going to render to.
             CommandList.SetRenderTargets(CurrentBackBufferView, DepthStencilView);
@@ -46,9 +45,9 @@ namespace DX12GameProgramming
             // Add the command list to the queue for execution.
             CommandQueue.ExecuteCommandList(CommandList);
 
-            // Present the buffer to the screen. Presenting will automatically swap the back and front buffers.    
-            // Ref: https://msdn.microsoft.com/en-us/library/windows/desktop/bb174576(v=vs.85).aspx            
-            SwapChain.Present(0, PresentFlags.None);            
+            // Present the buffer to the screen. Presenting will automatically swap the back and front buffers.
+            // Ref: https://msdn.microsoft.com/en-us/library/windows/desktop/bb174576(v=vs.85).aspx
+            SwapChain.Present(0, PresentFlags.None);
 
             // Wait until frame commands are complete. This waiting is inefficient and is
             // done for simplicity. Later we will show how to organize our rendering code

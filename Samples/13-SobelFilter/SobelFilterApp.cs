@@ -228,8 +228,8 @@ namespace DX12GameProgramming
             // Advance the fence value to mark commands up to this fence point.
             CurrFrameResource.Fence = ++CurrentFence;
 
-            // Add an instruction to the command queue to set a new fence point. 
-            // Because we are on the GPU timeline, the new fence point won't be 
+            // Add an instruction to the command queue to set a new fence point.
+            // Because we are on the GPU timeline, the new fence point won't be
             // set until the GPU finishes processing all the commands prior to this Signal().
             CommandQueue.Signal(Fence, CurrentFence);
         }
@@ -244,7 +244,7 @@ namespace DX12GameProgramming
         {
             if ((button & MouseButtons.Left) != 0)
             {
-                // Make each pixel correspond to a quarter of a degree.                
+                // Make each pixel correspond to a quarter of a degree.
                 float dx = MathUtil.DegreesToRadians(0.25f * (location.X - _lastMousePos.X));
                 float dy = MathUtil.DegreesToRadians(0.25f * (location.Y - _lastMousePos.Y));
 
@@ -330,8 +330,8 @@ namespace DX12GameProgramming
         {
             foreach (RenderItem e in _allRitems)
             {
-                // Only update the cbuffer data if the constants have changed.  
-                // This needs to be tracked per frame resource. 
+                // Only update the cbuffer data if the constants have changed.
+                // This needs to be tracked per frame resource.
                 if (e.NumFramesDirty > 0)
                 {
                     var objConstants = new ObjectConstants
@@ -404,7 +404,7 @@ namespace DX12GameProgramming
 
             CurrFrameResource.PassCB.CopyData(0, ref _mainPassCB);
         }
-        
+
         private void UpdateWavesGPU(GameTimer gt)
         {
             // Every quarter second, generate a random wave.
@@ -904,7 +904,7 @@ namespace DX12GameProgramming
                 world: Matrix.Translation(3.0f, 2.0f, -9.0f));
         }
 
-        private void AddRenderItem(RenderLayer layer, int objCBIndex, string matName, string geoName, string submeshName, 
+        private void AddRenderItem(RenderLayer layer, int objCBIndex, string matName, string geoName, string submeshName,
             Matrix? world = null, Matrix? texTransform = null, Vector2? dmTexelSize = null, float? gridSpatialStep = null)
         {
             MeshGeometry geo = _geometries[geoName];

@@ -153,7 +153,7 @@ namespace DX12GameProgramming
             CommandList.ClearRenderTargetView(CurrentBackBufferView, new Color(_mainPassCB.FogColor));
             CommandList.ClearDepthStencilView(DepthStencilView, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
 
-            // Specify the buffers we are going to render to.            
+            // Specify the buffers we are going to render to.
             CommandList.SetRenderTargets(CurrentBackBufferView, DepthStencilView);
 
             CommandList.SetDescriptorHeaps(_descriptorHeaps.Length, _descriptorHeaps);
@@ -188,8 +188,8 @@ namespace DX12GameProgramming
             // Advance the fence value to mark commands up to this fence point.
             CurrFrameResource.Fence = ++CurrentFence;
 
-            // Add an instruction to the command queue to set a new fence point. 
-            // Because we are on the GPU timeline, the new fence point won't be 
+            // Add an instruction to the command queue to set a new fence point.
+            // Because we are on the GPU timeline, the new fence point won't be
             // set until the GPU finishes processing all the commands prior to this Signal().
             CommandQueue.Signal(Fence, CurrentFence);
         }
@@ -197,14 +197,14 @@ namespace DX12GameProgramming
         protected override void OnMouseDown(MouseButtons button, Point location)
         {
             base.OnMouseDown(button, location);
-            _lastMousePos = location;            
+            _lastMousePos = location;
         }
 
         protected override void OnMouseMove(MouseButtons button, Point location)
         {
             if ((button & MouseButtons.Left) != 0)
             {
-                // Make each pixel correspond to a quarter of a degree.                
+                // Make each pixel correspond to a quarter of a degree.
                 float dx = MathUtil.DegreesToRadians(0.25f * (location.X - _lastMousePos.X));
                 float dy = MathUtil.DegreesToRadians(0.25f * (location.Y - _lastMousePos.Y));
 
@@ -217,7 +217,7 @@ namespace DX12GameProgramming
             }
             else if ((button & MouseButtons.Right) != 0)
             {
-                // Make each pixel correspond to a quarter of a degree.                
+                // Make each pixel correspond to a quarter of a degree.
                 float dx = 0.2f * (location.X - _lastMousePos.X);
                 float dy = 0.2f * (location.Y - _lastMousePos.Y);
 
@@ -238,7 +238,7 @@ namespace DX12GameProgramming
                 _srvDescriptorHeap?.Dispose();
                 _rootSignature?.Dispose();
                 foreach (Texture texture in _textures.Values) texture.Dispose();
-                foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();                
+                foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();
                 foreach (MeshGeometry geometry in _geometries.Values) geometry.Dispose();
                 foreach (PipelineState pso in _psos.Values) pso.Dispose();
             }
@@ -288,8 +288,8 @@ namespace DX12GameProgramming
         {
             foreach (RenderItem e in _allRitems)
             {
-                // Only update the cbuffer data if the constants have changed.  
-                // This needs to be tracked per frame resource. 
+                // Only update the cbuffer data if the constants have changed.
+                // This needs to be tracked per frame resource.
                 if (e.NumFramesDirty > 0)
                 {
                     var objConstants = new ObjectConstants
@@ -356,7 +356,7 @@ namespace DX12GameProgramming
             _mainPassCB.Lights[1].Direction = new Vector3(-0.57735f, -0.57735f, 0.57735f);
             _mainPassCB.Lights[1].Strength = new Vector3(0.3f);
             _mainPassCB.Lights[2].Direction = new Vector3(0.0f, -0.707f, -0.707f);
-            _mainPassCB.Lights[2].Strength = new Vector3(0.15f);            
+            _mainPassCB.Lights[2].Strength = new Vector3(0.15f);
 
             // Main pass stored in index 0.
             CurrFrameResource.PassCB.CopyData(0, ref _mainPassCB);
@@ -389,7 +389,7 @@ namespace DX12GameProgramming
                     Pos = _waves.Position(i),
                     Normal = _waves.Normal(i),
                 };
-                // Derive tex-coords from position by 
+                // Derive tex-coords from position by
                 // mapping [-w/2,w/2] -. [0,1]
                 v.TexC = new Vector2(
                     0.5f + v.Pos.X / _waves.Width,

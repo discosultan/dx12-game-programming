@@ -23,9 +23,9 @@ VertexOut VS(VertexIn vin)
 
     // Already in homogeneous clip space.
     vout.PosH = float4(vin.PosL, 1.0f);
-	
+
 	vout.TexC = vin.TexC;
-	
+
     return vout;
 }
 

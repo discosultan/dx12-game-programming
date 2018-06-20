@@ -17,7 +17,7 @@ namespace DX12GameProgramming
 
     public class VecAddApp : D3DApp
     {
-        private const int NumDataElements = 32;        
+        private const int NumDataElements = 32;
 
         private RootSignature _rootSignature;
 
@@ -56,7 +56,7 @@ namespace DX12GameProgramming
             FlushCommandQueue();
 
             DoComputeWork();
-        }    
+        }
 
         protected override void Dispose(bool disposing)
         {
@@ -134,7 +134,7 @@ namespace DX12GameProgramming
             {
                 dataA[i].V1 = new Vector3(i, i, i);
                 dataA[i].V2 = new Vector2(i, 0);
-                              
+
                 dataB[i].V1 = new Vector3(-i, i, 0.0f);
                 dataB[i].V2 = new Vector2(0, -i);
             }

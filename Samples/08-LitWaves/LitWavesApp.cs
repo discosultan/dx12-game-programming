@@ -138,7 +138,7 @@ namespace DX12GameProgramming
             CommandList.ClearRenderTargetView(CurrentBackBufferView, Color.LightSteelBlue);
             CommandList.ClearDepthStencilView(DepthStencilView, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
 
-            // Specify the buffers we are going to render to.            
+            // Specify the buffers we are going to render to.
             CommandList.SetRenderTargets(CurrentBackBufferView, DepthStencilView);
 
             CommandList.SetGraphicsRootSignature(_rootSignature);
@@ -164,8 +164,8 @@ namespace DX12GameProgramming
             // Advance the fence value to mark commands up to this fence point.
             CurrFrameResource.Fence = ++CurrentFence;
 
-            // Add an instruction to the command queue to set a new fence point. 
-            // Because we are on the GPU timeline, the new fence point won't be 
+            // Add an instruction to the command queue to set a new fence point.
+            // Because we are on the GPU timeline, the new fence point won't be
             // set until the GPU finishes processing all the commands prior to this Signal().
             CommandQueue.Signal(Fence, CurrentFence);
         }
@@ -180,7 +180,7 @@ namespace DX12GameProgramming
         {
             if ((button & MouseButtons.Left) != 0)
             {
-                // Make each pixel correspond to a quarter of a degree.                
+                // Make each pixel correspond to a quarter of a degree.
                 float dx = MathUtil.DegreesToRadians(0.25f * (location.X - _lastMousePos.X));
                 float dy = MathUtil.DegreesToRadians(0.25f * (location.Y - _lastMousePos.Y));
 
@@ -193,7 +193,7 @@ namespace DX12GameProgramming
             }
             else if ((button & MouseButtons.Right) != 0)
             {
-                // Make each pixel correspond to a quarter of a degree.                
+                // Make each pixel correspond to a quarter of a degree.
                 float dx = 0.2f * (location.X - _lastMousePos.X);
                 float dy = 0.2f * (location.Y - _lastMousePos.Y);
 
@@ -234,8 +234,8 @@ namespace DX12GameProgramming
         {
             foreach (RenderItem e in _allRitems)
             {
-                // Only update the cbuffer data if the constants have changed.  
-                // This needs to be tracked per frame resource. 
+                // Only update the cbuffer data if the constants have changed.
+                // This needs to be tracked per frame resource.
                 if (e.NumFramesDirty > 0)
                 {
                     var objConstants = new ObjectConstants { World = Matrix.Transpose(e.World) };
@@ -261,7 +261,7 @@ namespace DX12GameProgramming
                         DiffuseAlbedo = mat.DiffuseAlbedo,
                         FresnelR0 = mat.FresnelR0,
                         Roughness = mat.Roughness
-                    };                    
+                    };
 
                     currMaterialCB.CopyData(mat.MatCBIndex, ref matConstants);
 
@@ -300,7 +300,7 @@ namespace DX12GameProgramming
 
             CurrFrameResource.PassCB.CopyData(0, ref _mainPassCB);
         }
-        
+
         private void UpdateWaves(GameTimer gt)
         {
             // Every quarter second, generate a random wave.
@@ -518,7 +518,7 @@ namespace DX12GameProgramming
         private void BuildRenderItems()
         {
             _wavesRitem = AddRenderItem(RenderLayer.Opaque, 0, "water", "waterGeo", "grid");
-            AddRenderItem(RenderLayer.Opaque, 1, "grass", "landGeo", "grid");      
+            AddRenderItem(RenderLayer.Opaque, 1, "grass", "landGeo", "grid");
         }
 
         private RenderItem AddRenderItem(RenderLayer layer, int objCBIndex, string matName, string geoName, string submeshName)
@@ -569,6 +569,6 @@ namespace DX12GameProgramming
             // n = (-df/dx, 1, -df/dz)
             -0.03f * z * MathHelper.Cosf(0.1f * x) - 0.3f * MathHelper.Cosf(0.1f * z),
             1.0f,
-            -0.3f * MathHelper.Sinf(0.1f * x) + 0.03f * x * MathHelper.Sinf(0.1f * z)));            
+            -0.3f * MathHelper.Sinf(0.1f * x) + 0.03f * x * MathHelper.Sinf(0.1f * z)));
     }
 }

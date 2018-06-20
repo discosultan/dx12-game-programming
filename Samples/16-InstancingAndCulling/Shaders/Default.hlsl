@@ -44,8 +44,8 @@ struct MaterialData
 // in this array can be different sizes and formats, making it more flexible than texture arrays.
 Texture2D gDiffuseMap[7] : register(t0);
 
-// Put in space1, so the texture array does not overlap with these resources.  
-// The texture array will occupy registers t0, t1, ..., t6 in space0. 
+// Put in space1, so the texture array does not overlap with these resources.
+// The texture array will occupy registers t0, t1, ..., t6 in space0.
 StructuredBuffer<InstanceData> gInstanceData : register(t0, space1);
 StructuredBuffer<MaterialData> gMaterialData : register(t1, space1);
 
@@ -95,8 +95,8 @@ struct VertexOut
     float3 PosW    : POSITION;
     float3 NormalW : NORMAL;
 	float2 TexC    : TEXCOORD;
-	
-	// nointerpolation is used so the index is not interpolated 
+
+	// nointerpolation is used so the index is not interpolated
 	// across the triangle.
 	nointerpolation uint MatIndex  : MATINDEX;
 };
@@ -104,7 +104,7 @@ struct VertexOut
 VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
 {
 	VertexOut vout = (VertexOut)0.0f;
-	
+
 	// Fetch the instance data.
 	InstanceData instData = gInstanceData[instanceID];
 	float4x4 world = instData.World;
@@ -112,10 +112,10 @@ VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
 	uint matIndex = instData.MaterialIndex;
 
 	vout.MatIndex = matIndex;
-	
+
 	// Fetch the material data.
 	MaterialData matData = gMaterialData[matIndex];
-	
+
     // Transform to world space.
     float4 posW = mul(float4(vin.PosL, 1.0f), world);
     vout.PosW = posW.xyz;
@@ -125,11 +125,11 @@ VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
 
     // Transform to homogeneous clip space.
     vout.PosH = mul(posW, gViewProj);
-	
+
 	// Output vertex attributes for interpolation across triangle.
 	float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), texTransform);
 	vout.TexC = mul(texC, matData.MatTransform).xy;
-	
+
     return vout;
 }
 
@@ -141,14 +141,14 @@ float4 PS(VertexOut pin) : SV_Target
     float3 fresnelR0 = matData.FresnelR0;
     float  roughness = matData.Roughness;
 	uint diffuseTexIndex = matData.DiffuseMapIndex;
-	
+
 	// Dynamically look up the texture in the array.
     diffuseAlbedo *= gDiffuseMap[diffuseTexIndex].Sample(gsamLinearWrap, pin.TexC);
-	
+
     // Interpolating normal can unnormalize it, so renormalize it.
     pin.NormalW = normalize(pin.NormalW);
 
-    // Vector from point being lit to eye. 
+    // Vector from point being lit to eye.
     float3 toEyeW = normalize(gEyePosW - pin.PosW);
 
     // Light terms.

@@ -23,7 +23,7 @@ void SobelCS(int3 dispatchThreadID : SV_DispatchThreadID)
         for(int j = 0; j < 3; ++j)
         {
             int2 xy = dispatchThreadID.xy + int2(-1 + j, -1 + i);
-            c[i][j] = gInput[xy]; 
+            c[i][j] = gInput[xy];
         }
     }
 

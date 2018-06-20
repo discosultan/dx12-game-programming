@@ -51,7 +51,7 @@ float3 BlinnPhong(float3 lightStrength, float3 lightVec, float3 normal, float3 t
 
     float3 specAlbedo = fresnelFactor*roughnessFactor;
 
-    // Our spec formula goes outside [0,1] range, but we are 
+    // Our spec formula goes outside [0,1] range, but we are
     // doing LDR rendering.  So scale it down a bit.
     specAlbedo = specAlbedo / (specAlbedo + 1.0f);
 
@@ -162,7 +162,7 @@ float4 ComputeLighting(Light gLights[MaxLights], Material mat,
     {
         result += ComputeSpotLight(gLights[i], mat, pos, normal, toEye);
     }
-#endif 
+#endif
 
     return float4(result, 0.0f);
 }

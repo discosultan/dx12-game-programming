@@ -5,8 +5,8 @@
 cbuffer cbSettings : register(b0)
 {
     // We cannot have an array entry in a constant buffer that gets mapped onto
-    // root constants, so list each element.  
-    
+    // root constants, so list each element.
+
     int gBlurRadius;
 
     // Support up to 11 blur weights.
@@ -41,12 +41,12 @@ void HorzBlurCS(int3 groupThreadID : SV_GroupThreadID,
     float weights[11] = { w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10 };
 
     //
-    // Fill local thread storage to reduce bandwidth.  To blur 
+    // Fill local thread storage to reduce bandwidth.  To blur
     // N pixels, we will need to load N + 2*BlurRadius pixels
     // due to the blur radius.
     //
-    
-    // This thread group runs N threads.  To get the extra 2*BlurRadius pixels, 
+
+    // This thread group runs N threads.  To get the extra 2*BlurRadius pixels,
     // have 2*BlurRadius threads sample an extra pixel.
     if(groupThreadID.x < gBlurRadius)
     {
@@ -76,10 +76,10 @@ void HorzBlurCS(int3 groupThreadID : SV_GroupThreadID,
     for(int i = -gBlurRadius; i <= gBlurRadius; ++i)
     {
         int k = groupThreadID.x + gBlurRadius + i;
-        
+
         blurColor += weights[i+gBlurRadius]*gCache[k];
     }
-    
+
     gOutput[dispatchThreadID.xy] = blurColor;
 }
 
@@ -91,12 +91,12 @@ void VertBlurCS(int3 groupThreadID : SV_GroupThreadID,
     float weights[11] = { w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10 };
 
     //
-    // Fill local thread storage to reduce bandwidth.  To blur 
+    // Fill local thread storage to reduce bandwidth.  To blur
     // N pixels, we will need to load N + 2*BlurRadius pixels
     // due to the blur radius.
     //
 
-    // This thread group runs N threads.  To get the extra 2*BlurRadius pixels, 
+    // This thread group runs N threads.  To get the extra 2*BlurRadius pixels,
     // have 2*BlurRadius threads sample an extra pixel.
     if(groupThreadID.y < gBlurRadius)
     {
@@ -127,7 +127,7 @@ void VertBlurCS(int3 groupThreadID : SV_GroupThreadID,
     for(int i = -gBlurRadius; i <= gBlurRadius; ++i)
     {
         int k = groupThreadID.y + gBlurRadius + i;
-        
+
         blurColor += weights[i+gBlurRadius]*gCache[k];
     }
 

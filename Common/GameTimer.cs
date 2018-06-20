@@ -17,7 +17,7 @@ namespace DX12GameProgramming
 
         public GameTimer()
         {
-            Debug.Assert(Stopwatch.IsHighResolution, 
+            Debug.Assert(Stopwatch.IsHighResolution,
                 "System does not support high-resolution performance counter");
 
             _secondsPerCount = 0.0;
@@ -36,10 +36,10 @@ namespace DX12GameProgramming
         {
             get
             {
-                if (_stopped)                
-                    return (float)(((_stopTime - _pausedTime) - _baseTime) * _secondsPerCount);                
+                if (_stopped)
+                    return (float)(((_stopTime - _pausedTime) - _baseTime) * _secondsPerCount);
 
-                return (float)(((_currTime - _pausedTime) - _baseTime) * _secondsPerCount);                
+                return (float)(((_currTime - _pausedTime) - _baseTime) * _secondsPerCount);
             }
         }
 
@@ -89,8 +89,8 @@ namespace DX12GameProgramming
             _deltaTime = (_currTime - _prevTime) * _secondsPerCount;
 
             _prevTime = _currTime;
-            if (_deltaTime < 0.0)            
-                _deltaTime = 0.0;            
+            if (_deltaTime < 0.0)
+                _deltaTime = 0.0;
         }
     }
 }

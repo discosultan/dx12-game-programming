@@ -105,7 +105,7 @@ namespace DX12GameProgramming
         public float SurfaceEpsilon;
 
         public static SsaoConstants Default => new SsaoConstants
-        {            
+        {
             OcclusionRadius = 0.5f,
             OcclusionFadeStart = 0.2f,
             OcclusionFadeEnd = 2.0f,

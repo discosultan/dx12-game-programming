@@ -38,8 +38,8 @@ Texture2D gSsaoMap   : register(t2);
 // in this array can be different sizes and formats, making it more flexible than texture arrays.
 Texture2D gTextureMaps[10] : register(t3);
 
-// Put in space1, so the texture array does not overlap with these resources.  
-// The texture array will occupy registers t0, t1, ..., t3 in space0. 
+// Put in space1, so the texture array does not overlap with these resources.
+// The texture array will occupy registers t0, t1, ..., t3 in space0.
 StructuredBuffer<MaterialData> gMaterialData : register(t0, space1);
 
 
@@ -144,7 +144,7 @@ float CalcShadowFactor(float4 shadowPosH)
         percentLit += gShadowMap.SampleCmpLevelZero(gsamShadow,
             shadowPosH.xy + offsets[i], depth).r;
     }
-    
+
     return percentLit / 9.0f;
 }
 

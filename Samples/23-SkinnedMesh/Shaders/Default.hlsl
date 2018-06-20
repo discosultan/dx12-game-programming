@@ -47,7 +47,7 @@ VertexOut VS(VertexIn vin)
 
 	// Fetch the material data.
 	MaterialData matData = gMaterialData[gMaterialIndex];
-	
+
 #ifdef SKINNED
     float weights[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
     weights[0] = vin.BoneWeights.x;
@@ -60,7 +60,7 @@ VertexOut VS(VertexIn vin)
     float3 tangentL = float3(0.0f, 0.0f, 0.0f);
     for(int i = 0; i < 4; ++i)
     {
-        // Assume no nonuniform scaling when transforming normals, so 
+        // Assume no nonuniform scaling when transforming normals, so
         // that we do not have to use the inverse-transpose.
 
         posL += weights[i] * mul(float4(vin.PosL, 1.0f), gBoneTransforms[vin.BoneIndices[i]]).xyz;
@@ -79,7 +79,7 @@ VertexOut VS(VertexIn vin)
 
     // Assumes nonuniform scaling; otherwise, need to use inverse-transpose of world matrix.
     vout.NormalW = mul(vin.NormalL, (float3x3)gWorld);
-	
+
 	vout.TangentW = mul(vin.TangentL, (float3x3)gWorld);
 
     // Transform to homogeneous clip space.
@@ -87,14 +87,14 @@ VertexOut VS(VertexIn vin)
 
     // Generate projective tex-coords to project SSAO map onto scene.
     vout.SsaoPosH = mul(posW, gViewProjTex);
-	
+
 	// Output vertex attributes for interpolation across triangle.
 	float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gTexTransform);
 	vout.TexC = mul(texC, matData.MatTransform).xy;
 
     // Generate projective tex-coords to project shadow map onto scene.
     vout.ShadowPosH = mul(posW, gShadowTransform);
-	
+
     return vout;
 }
 
@@ -107,12 +107,12 @@ float4 PS(VertexOut pin) : SV_Target
 	float  roughness = matData.Roughness;
 	uint diffuseMapIndex = matData.DiffuseMapIndex;
 	uint normalMapIndex = matData.NormalMapIndex;
-	
+
     // Dynamically look up the texture in the array.
     diffuseAlbedo *= gTextureMaps[diffuseMapIndex].Sample(gsamAnisotropicWrap, pin.TexC);
 
 #ifdef ALPHA_TEST
-    // Discard pixel if texture alpha < 0.1.  We do this test as soon 
+    // Discard pixel if texture alpha < 0.1.  We do this test as soon
     // as possible in the shader so that we can potentially exit the
     // shader early, thereby skipping the rest of the shader code.
     clip(diffuseAlbedo.a - 0.1f);
@@ -120,14 +120,14 @@ float4 PS(VertexOut pin) : SV_Target
 
 	// Interpolating normal can unnormalize it, so renormalize it.
     pin.NormalW = normalize(pin.NormalW);
-	
+
     float4 normalMapSample = gTextureMaps[normalMapIndex].Sample(gsamAnisotropicWrap, pin.TexC);
 	float3 bumpedNormalW = NormalSampleToWorldSpace(normalMapSample.rgb, pin.NormalW, pin.TangentW);
 
 	// Uncomment to turn off normal mapping.
     //bumpedNormalW = pin.NormalW;
 
-    // Vector from point being lit to eye. 
+    // Vector from point being lit to eye.
     float3 toEyeW = normalize(gEyePosW - pin.PosW);
 
     // Finish texture projection and sample SSAO map.
@@ -153,7 +153,7 @@ float4 PS(VertexOut pin) : SV_Target
     float4 reflectionColor = gCubeMap.Sample(gsamLinearWrap, r);
     float3 fresnelFactor = SchlickFresnel(fresnelR0, bumpedNormalW, r);
     litColor.rgb += shininess * fresnelFactor * reflectionColor.rgb;
-	
+
     // Common convention to take alpha from diffuse albedo.
     litColor.a = diffuseAlbedo.a;
 

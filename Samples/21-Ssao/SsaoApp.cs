@@ -204,7 +204,7 @@ namespace DX12GameProgramming
             // Shadow map pass.
             //
 
-            // Bind all the materials used in this scene. For structured buffers, we can bypass the heap and 
+            // Bind all the materials used in this scene. For structured buffers, we can bypass the heap and
             // set as a root descriptor.
             Resource matBuffer = CurrFrameResource.MaterialBuffer.Resource;
             CommandList.SetGraphicsRootShaderResourceView(2, matBuffer.GPUVirtualAddress);
@@ -213,7 +213,7 @@ namespace DX12GameProgramming
             CommandList.SetGraphicsRootDescriptorTable(3, _nullSrv);
 
             // Bind all the textures used in this scene. Observe
-            // that we only have to specify the first descriptor in the table. 
+            // that we only have to specify the first descriptor in the table.
             // The root signature knows how many descriptors are expected in the table.
             CommandList.SetGraphicsRootDescriptorTable(4, _srvDescriptorHeap.GPUDescriptorHandleForHeapStart);
 
@@ -227,7 +227,7 @@ namespace DX12GameProgramming
 
             //
             // Compute SSAO.
-            // 
+            //
 
             CommandList.SetGraphicsRootSignature(_ssaoRootSignature);
             _ssao.ComputeSsao(CommandList, CurrFrameResource, 3);
@@ -236,11 +236,11 @@ namespace DX12GameProgramming
             // Main rendering pass.
             //
 
-            CommandList.SetGraphicsRootSignature(_rootSignature);            
+            CommandList.SetGraphicsRootSignature(_rootSignature);
 
             // Rebind state whenever graphics root signature changes.
 
-            // Bind all the materials used in this scene. For structured buffers, we can bypass the heap and 
+            // Bind all the materials used in this scene. For structured buffers, we can bypass the heap and
             // set as a root descriptor.
             matBuffer = CurrFrameResource.MaterialBuffer.Resource;
             CommandList.SetGraphicsRootShaderResourceView(2, matBuffer.GPUVirtualAddress);
@@ -257,19 +257,19 @@ namespace DX12GameProgramming
             // WE ALREADY WROTE THE DEPTH INFO TO THE DEPTH BUFFER IN DrawNormalsAndDepth,
             // SO DO NOT CLEAR DEPTH.
 
-            // Specify the buffers we are going to render to.            
+            // Specify the buffers we are going to render to.
             CommandList.SetRenderTargets(1, CurrentBackBufferView, DepthStencilView);
 
             // Bind all the textures used in this scene. Observe
-            // that we only have to specify the first descriptor in the table.  
+            // that we only have to specify the first descriptor in the table.
             // The root signature knows how many descriptors are expected in the table.
-            CommandList.SetGraphicsRootDescriptorTable(4, _srvDescriptorHeap.GPUDescriptorHandleForHeapStart);            
+            CommandList.SetGraphicsRootDescriptorTable(4, _srvDescriptorHeap.GPUDescriptorHandleForHeapStart);
 
             Resource passCB = CurrFrameResource.PassCB.Resource;
             CommandList.SetGraphicsRootConstantBufferView(1, passCB.GPUVirtualAddress);
 
             // Bind the sky cube map. For our demos, we just use one "world" cube map representing the environment
-            // from far away, so all objects will use the same cube map and we only need to set it once per-frame.  
+            // from far away, so all objects will use the same cube map and we only need to set it once per-frame.
             // If we wanted to use "local" cube maps, we would have to change them per-object, or dynamically
             // index into an array of cube maps.
 
@@ -301,8 +301,8 @@ namespace DX12GameProgramming
             // Advance the fence value to mark commands up to this fence point.
             CurrFrameResource.Fence = ++CurrentFence;
 
-            // Add an instruction to the command queue to set a new fence point. 
-            // Because we are on the GPU timeline, the new fence point won't be 
+            // Add an instruction to the command queue to set a new fence point.
+            // Because we are on the GPU timeline, the new fence point won't be
             // set until the GPU finishes processing all the commands prior to this Signal().
             CommandQueue.Signal(Fence, CurrentFence);
         }
@@ -310,14 +310,14 @@ namespace DX12GameProgramming
         protected override void OnMouseDown(MouseButtons button, Point location)
         {
             base.OnMouseDown(button, location);
-            _lastMousePos = location;            
+            _lastMousePos = location;
         }
 
         protected override void OnMouseMove(MouseButtons button, Point location)
         {
             if ((button & MouseButtons.Left) != 0)
             {
-                // Make each pixel correspond to a quarter of a degree.                
+                // Make each pixel correspond to a quarter of a degree.
                 float dx = MathUtil.DegreesToRadians(0.25f * (location.X - _lastMousePos.X));
                 float dy = MathUtil.DegreesToRadians(0.25f * (location.Y - _lastMousePos.Y));
 
@@ -338,7 +338,7 @@ namespace DX12GameProgramming
                 _rootSignature?.Dispose();
                 _ssaoRootSignature?.Dispose();
                 foreach (Texture texture in _textures.Values) texture.Dispose();
-                foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();                
+                foreach (FrameResource frameResource in _frameResources) frameResource.Dispose();
                 foreach (MeshGeometry geometry in _geometries.Values) geometry.Dispose();
                 foreach (PipelineState pso in _psos.Values) pso.Dispose();
             }
@@ -365,8 +365,8 @@ namespace DX12GameProgramming
         {
             foreach (RenderItem e in _allRitems)
             {
-                // Only update the cbuffer data if the constants have changed.  
-                // This needs to be tracked per frame resource. 
+                // Only update the cbuffer data if the constants have changed.
+                // This needs to be tracked per frame resource.
                 if (e.NumFramesDirty > 0)
                 {
                     var objConstants = new ObjectConstants
@@ -530,12 +530,12 @@ namespace DX12GameProgramming
             _ssaoCB.ProjTex = Matrix.Transpose(_camera.Proj * ndcToTexture);
 
             _ssao.GetOffsetVectors(_ssaoCB.OffsetVectors);
-            
+
             _ssao.CalcGaussWeights(2.5f, _blurWeights);
             _ssaoCB.BlurWeights[0] = new Vector4(_blurWeights[0], _blurWeights[1], _blurWeights[2], _blurWeights[3]);
             _ssaoCB.BlurWeights[1] = new Vector4(_blurWeights[4], _blurWeights[5], _blurWeights[6], _blurWeights[7]);
             _ssaoCB.BlurWeights[2] = new Vector4(_blurWeights[8], _blurWeights[9], _blurWeights[10], _blurWeights[11]);
-            
+
             _ssaoCB.InvRenderTargetSize = 1.0f / new Vector2(_ssao.SsaoMapWidth, _ssao.SsaoMapHeight);
 
             // Coordinates given in view space.
@@ -601,7 +601,7 @@ namespace DX12GameProgramming
                 new RootParameter(ShaderVisibility.All, new RootConstants(1, 0, 1)),
                 new RootParameter(ShaderVisibility.Pixel, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 2, 0, 0, -1)),
                 new RootParameter(ShaderVisibility.Pixel, new DescriptorRange(DescriptorRangeType.ShaderResourceView, 1, 2, 0, -1))
-            };            
+            };
 
             StaticSamplerDescription[] staticSamplers =
             {
@@ -622,7 +622,7 @@ namespace DX12GameProgramming
                 {
                     Filter = Filter.MinMagMipLinear,
                     AddressUVW = TextureAddressMode.Border,
-                    MipLODBias = 0.0f,                    
+                    MipLODBias = 0.0f,
                     MaxAnisotropy = 0,
                     ComparisonFunc = Comparison.LessEqual,
                     BorderColor = StaticBorderColor.OpaqueWhite,
@@ -744,7 +744,7 @@ namespace DX12GameProgramming
                 GetRtv(SwapChainBufferCount),
                 CbvSrvUavDescriptorSize,
                 RtvDescriptorSize);
-        }    
+        }
 
         private void BuildShadersAndInputLayout()
         {
@@ -814,7 +814,7 @@ namespace DX12GameProgramming
         private SubmeshGeometry AppendMeshData(GeometryGenerator.MeshData meshData, List<Vertex> vertices, List<short> indices)
         {
             //
-            // Define the SubmeshGeometry that cover different 
+            // Define the SubmeshGeometry that cover different
             // regions of the vertex/index buffers.
             //
 
@@ -988,7 +988,7 @@ namespace DX12GameProgramming
             //
             // PSO for drawing normals.
             //
-            
+
             GraphicsPipelineStateDescription drawNormalsPsoDesc = basePsoDesc.Copy();
             drawNormalsPsoDesc.VertexShader = _shaders["drawNormalsVS"];
             drawNormalsPsoDesc.PixelShader = _shaders["drawNormalsPS"];
@@ -1007,7 +1007,7 @@ namespace DX12GameProgramming
             ssaoPsoDesc.PixelShader = _shaders["ssaoPS"];
             // SSAO effect does not need the depth buffer.
             ssaoPsoDesc.DepthStencilState.IsDepthEnabled = false;
-            ssaoPsoDesc.DepthStencilState.DepthWriteMask = DepthWriteMask.Zero;            
+            ssaoPsoDesc.DepthStencilState.DepthWriteMask = DepthWriteMask.Zero;
             ssaoPsoDesc.RenderTargetFormats[0] = Ssao.AmbientMapFormat;
             ssaoPsoDesc.SampleDescription = new SampleDescription(1, 0);
             ssaoPsoDesc.DepthStencilFormat = Format.Unknown;
@@ -1029,8 +1029,8 @@ namespace DX12GameProgramming
             GraphicsPipelineStateDescription skyPsoDesc = basePsoDesc.Copy();
             // The camera is inside the sky sphere, so just turn off culling.
             skyPsoDesc.RasterizerState.CullMode = CullMode.None;
-            // Make sure the depth function is LESS_EQUAL and not just LESS.  
-            // Otherwise, the normalized depth values at z = 1 (NDC) will 
+            // Make sure the depth function is LESS_EQUAL and not just LESS.
+            // Otherwise, the normalized depth values at z = 1 (NDC) will
             // fail the depth test if the depth buffer was cleared to 1.
             skyPsoDesc.DepthStencilState.DepthComparison = Comparison.LessEqual;
             skyPsoDesc.VertexShader = _shaders["skyVS"];
@@ -1098,7 +1098,7 @@ namespace DX12GameProgramming
                 DiffuseAlbedo = Vector4.One,
                 FresnelR0 = new Vector3(0.1f),
                 Roughness = 1.0f
-            });            
+            });
         }
 
         private void AddMaterial(Material mat) => _materials[mat.Name] = mat;
@@ -1156,7 +1156,7 @@ namespace DX12GameProgramming
 
         private void DrawRenderItems(GraphicsCommandList cmdList, List<RenderItem> ritems)
         {
-            int objCBByteSize = D3DUtil.CalcConstantBufferByteSize<ObjectConstants>();            
+            int objCBByteSize = D3DUtil.CalcConstantBufferByteSize<ObjectConstants>();
 
             Resource objectCB = CurrFrameResource.ObjectCB.Resource;
 
@@ -1180,7 +1180,7 @@ namespace DX12GameProgramming
             CommandList.SetScissorRectangles(_shadowMap.ScissorRectangle);
 
             // Change to DEPTH_WRITE.
-            CommandList.ResourceBarrierTransition(_shadowMap.Resource, ResourceStates.GenericRead, ResourceStates.DepthWrite);            
+            CommandList.ResourceBarrierTransition(_shadowMap.Resource, ResourceStates.GenericRead, ResourceStates.DepthWrite);
 
             // Clear the depth buffer.
             CommandList.ClearDepthStencilView(_shadowMap.Dsv, ClearFlags.FlagsDepth | ClearFlags.FlagsStencil, 1.0f, 0);
@@ -1287,7 +1287,7 @@ namespace DX12GameProgramming
                 AddressUVW = TextureAddressMode.Clamp,
                 MaxAnisotropy = 8
             },
-            // Shadow            
+            // Shadow
             new StaticSamplerDescription(ShaderVisibility.All, 6, 0)
             {
                 Filter = Filter.ComparisonMinMagLinearMipPoint,

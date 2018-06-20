@@ -129,7 +129,7 @@ namespace DX12GameProgramming
 
             //
             // Schedule to copy the data to the default resource, and change states.
-            // Note that mCurrSol is put in the GENERIC_READ state so it can be 
+            // Note that mCurrSol is put in the GENERIC_READ state so it can be
             // read by a shader.
             //
 

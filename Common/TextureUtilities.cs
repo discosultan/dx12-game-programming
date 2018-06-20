@@ -9,7 +9,7 @@ using Device = SharpDX.Direct3D12.Device;
 namespace DX12GameProgramming
 {
     /// <summary>
-    /// Custom Loader for DDS files. 
+    /// Custom Loader for DDS files.
     /// </summary>
     /// <remarks>
     /// Originally taken from https://github.com/RobyDX/SharpDX_D3D12HelloWorld/blob/master/D3D12HelloMesh/TextureUtilities.cs.
