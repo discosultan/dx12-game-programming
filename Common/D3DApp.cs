@@ -336,13 +336,13 @@ namespace DX12GameProgramming
                         }
                         else if (_resizing)
                         {
-                            // If user is dragging the resize bars, we do not resize 
-                            // the buffers here because as the user continuously 
+                            // If user is dragging the resize bars, we do not resize
+                            // the buffers here because as the user continuously
                             // drags the resize bars, a stream of WM_SIZE messages are
                             // sent to the window, and it would be pointless (and slow)
                             // to resize for each WM_SIZE message received from dragging
-                            // the resize bars.  So instead, we reset after the user is 
-                            // done resizing the window and releases the resize bars, which 
+                            // the resize bars.  So instead, we reset after the user is
+                            // done resizing the window and releases the resize bars, which
                             // sends a WM_EXITSIZEMOVE message.
                         }
                         else // API call such as SetWindowPos or mSwapChain->SetFullscreenState.
@@ -462,7 +462,7 @@ namespace DX12GameProgramming
             // Advance the fence value to mark commands up to this fence point.
             CurrentFence++;
 
-            // Add an instruction to the command queue to set a new fence point.  Because we 
+            // Add an instruction to the command queue to set a new fence point.  Because we
             // are on the GPU timeline, the new fence point won't be set until the GPU finishes
             // processing all the commands prior to this Signal().
             CommandQueue.Signal(Fence, CurrentFence);
@@ -470,7 +470,7 @@ namespace DX12GameProgramming
             // Wait until the GPU has completed commands up to this fence point.
             if (Fence.CompletedValue < CurrentFence)
             {
-                // Fire event when GPU hits current fence.  
+                // Fire event when GPU hits current fence.
                 Fence.SetEventOnCompletion(CurrentFence, _fenceEvent.SafeWaitHandle.DangerousGetHandle());
 
                 // Wait until the GPU hits current fence event is fired.
@@ -494,7 +494,7 @@ namespace DX12GameProgramming
                 DirectCmdListAlloc, // Associated command allocator.
                 null);              // Initial PipelineStateObject.
 
-            // Start off in a closed state.  This is because the first time we refer 
+            // Start off in a closed state.  This is because the first time we refer
             // to the command list we will Reset it, and it needs to be closed before
             // calling Reset.
             CommandList.Close();

@@ -1,7 +1,6 @@
-﻿using System;
-using SharpDX;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
+using SharpDX;
 using SharpDX.Direct3D;
 using SharpDX.Direct3D12;
 using SharpDX.DXGI;

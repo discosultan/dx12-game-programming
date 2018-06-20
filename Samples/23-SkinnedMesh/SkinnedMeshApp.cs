@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using SharpDX;
@@ -903,9 +902,13 @@ namespace DX12GameProgramming
 
         private void LoadSkinnedModel()
         {
-            List<M3DLoader.SkinnedVertex> vertices;
-            List<short> indices;
-            M3DLoader.LoadM3D("Models\\Soldier.m3d", out vertices, out indices, out _skinnedSubsets, out _skinnedMats, out _skinnedInfo);
+            M3DLoader.LoadM3D(
+                "Models\\Soldier.m3d",
+                out List<M3DLoader.SkinnedVertex> vertices,
+                out List<short> indices,
+                out _skinnedSubsets,
+                out _skinnedMats,
+                out _skinnedInfo);
 
             _skinnedModelInst = new SkinnedModelInstance
             {

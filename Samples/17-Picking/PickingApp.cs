@@ -707,9 +707,8 @@ namespace DX12GameProgramming
                 //
                 // If we did not hit the bounding box, then it is impossible that we hit
                 // the Mesh, so do not waste effort doing ray/triangle tests.
-                float tmin;
                 BoundingBox bounds = ri.Bounds;
-                if (ray.Intersects(ref bounds, out tmin))
+                if (ray.Intersects(ref bounds, out float tmin))
                 {
                     // NOTE: For the demo, we know what to cast the vertex/index data to. If we were mixing
                     // formats, some metadata would be needed to figure out what to cast it to.
@@ -732,8 +731,7 @@ namespace DX12GameProgramming
                         Vector3 v2 = vertices[i2].Pos;
 
                         // We have to iterate over all the triangles in order to find the nearest intersection.
-                        float t;
-                        if (ray.Intersects(ref v0, ref v1, ref v2, out t))
+                        if (ray.Intersects(ref v0, ref v1, ref v2, out float t))
                         {
                             if (t < tmin)
                             {
