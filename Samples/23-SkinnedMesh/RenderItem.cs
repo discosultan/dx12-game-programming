@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using SharpDX;
 using SharpDX.Direct3D;
 
@@ -7,7 +7,8 @@ namespace DX12GameProgramming
     internal class SkinnedModelInstance
     {
         private SkinnedData _skinnedInfo;
-        public SkinnedData SkinnedInfo {
+        public SkinnedData SkinnedInfo
+        {
             get { return _skinnedInfo; }
             set
             {

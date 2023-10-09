@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using SharpDX;
@@ -586,7 +586,8 @@ namespace DX12GameProgramming
             AddTexture("skyCubeMap", "desertcube1024.dds");
 
             // Add skinned model textures to list so we can reference by name later.
-            foreach (M3DLoader.M3dMaterial skinnedMat in _skinnedMats) {
+            foreach (M3DLoader.M3dMaterial skinnedMat in _skinnedMats)
+            {
                 string diffuseName = skinnedMat.DiffuseMapName.Substring(0, skinnedMat.DiffuseMapName.LastIndexOf('.'));
                 string normalName = skinnedMat.NormalMapName.Substring(0, skinnedMat.NormalMapName.LastIndexOf('.'));
                 AddTexture(diffuseName, skinnedMat.DiffuseMapName);

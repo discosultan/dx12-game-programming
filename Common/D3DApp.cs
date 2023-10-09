@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Threading;
@@ -11,8 +11,8 @@ using SharpDX.DXGI;
 using Device = SharpDX.Direct3D12.Device;
 using Feature = SharpDX.Direct3D12.Feature;
 using Point = SharpDX.Point;
-using Resource = SharpDX.Direct3D12.Resource;
 using RectangleF = SharpDX.RectangleF;
+using Resource = SharpDX.Direct3D12.Resource;
 
 namespace DX12GameProgramming
 {
@@ -94,7 +94,7 @@ namespace DX12GameProgramming
         protected string MainWindowCaption { get; set; } = "D3D12 Application";
         protected int ClientWidth { get; set; } = 1280;
         protected int ClientHeight { get; set; } = 720;
-        
+
         protected float AspectRatio => (float)ClientWidth / ClientHeight;
 
         protected Format BackBufferFormat { get; } = Format.R8G8B8A8_UNorm;
@@ -232,7 +232,7 @@ namespace DX12GameProgramming
 
             var depthStencilViewDesc = new DepthStencilViewDescription
             {
-                Dimension = M4xMsaaState 
+                Dimension = M4xMsaaState
                     ? DepthStencilViewDimension.Texture2DMultisampled
                     : DepthStencilViewDimension.Texture2D,
                 Format = DepthStencilFormat

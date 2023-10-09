@@ -1,4 +1,4 @@
-﻿namespace DX12GameProgramming
+namespace DX12GameProgramming
 {
     internal class Program
     {

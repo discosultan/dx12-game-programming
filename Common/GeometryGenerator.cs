@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -93,7 +93,7 @@ namespace DX12GameProgramming
             // Create the indices.
             //
 
-            meshData.Indices32.AddRange(new []
+            meshData.Indices32.AddRange(new[]
             {
                 // Fill in the front face index data.
                 0, 1, 2, 0, 2, 3,

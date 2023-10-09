@@ -1,5 +1,5 @@
-﻿using SharpDX;
 using System;
+using SharpDX;
 
 namespace DX12GameProgramming
 {
