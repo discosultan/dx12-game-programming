@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.34031.279
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{76EB2D81-F8A4-4263-8D7B-BD72FB965926}"
 EndProject
@@ -21,7 +21,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "09-Crate", "Samples\09-Crat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "09-TexWaves", "Samples\09-TexWaves\09-TexWaves.csproj", "{2136E616-F0D8-4F55-BF31-D26F4100A072}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "09-TexColumns", "Samples\09-TexColumns\09-TexColumns.csproj", "{B7E332DD-A269-48C8-9A2D-DC431B71049E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "09-TexColumns", "Samples\09-TexColumns\09-TexColumns.csproj", "{B7E332DD-A269-48C8-9A2D-DC431B71049E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "10-Blend", "Samples\10-Blend\10-Blend.csproj", "{29819A80-A0A5-47EC-8937-593947065CCA}"
 EndProject
@@ -62,6 +62,14 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "16-InstancingAndCulling", "Samples\16-InstancingAndCulling\16-InstancingAndCulling.csproj", "{9881AAB1-0FE1-4718-AF10-51DB4D8CA289}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "17-Picking", "Samples\17-Picking\17-Picking.csproj", "{88D2163E-8C9B-4EB5-B33F-B8B573220D30}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".build", ".build", "{3DD579B0-E62F-4398-9297-B4FD3906E1D5}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		.gitignore = .gitignore
+		Directory.Build.props = Directory.Build.props
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

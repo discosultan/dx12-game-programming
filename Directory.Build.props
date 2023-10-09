@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <Version Condition="'$(Version)'==''">1.0</Version>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Deterministic>true</Deterministic>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+</Project>
