@@ -4,7 +4,7 @@ A collection of *DirectX 12 C# samples* from Frank D. Luna's book [Introduction 
 
 # Building
 
-The samples will compile with Visual Studio 2015+ and run on Windows 10 with DirectX 12 capable graphics hardware.
+The samples will compile with Visual Studio 2022+ and run on Windows 10+ with DirectX 12 capable graphics hardware.
 
 # Samples
 
