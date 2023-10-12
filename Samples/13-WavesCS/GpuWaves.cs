@@ -1,5 +1,5 @@
-﻿using SharpDX;
 using System.Diagnostics;
+using SharpDX;
 using SharpDX.Direct3D12;
 using SharpDX.DXGI;
 using Device = SharpDX.Direct3D12.Device;

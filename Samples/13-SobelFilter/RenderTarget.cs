@@ -1,4 +1,4 @@
-﻿using SharpDX.Direct3D12;
+using SharpDX.Direct3D12;
 using SharpDX.DXGI;
 using Device = SharpDX.Direct3D12.Device;
 using Resource = SharpDX.Direct3D12.Resource;

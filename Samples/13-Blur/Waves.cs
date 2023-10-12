@@ -1,6 +1,6 @@
-﻿using SharpDX;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using SharpDX;
 
 namespace DX12GameProgramming
 {

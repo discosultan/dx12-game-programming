@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Runtime.InteropServices;
 using SharpDX.Direct3D12;
 using SharpDX.DXGI;
-using Resource = SharpDX.Direct3D12.Resource;
 using Device = SharpDX.Direct3D12.Device;
+using Resource = SharpDX.Direct3D12.Resource;
 
 namespace DX12GameProgramming
 {

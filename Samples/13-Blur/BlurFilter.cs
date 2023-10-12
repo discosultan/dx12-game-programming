@@ -1,10 +1,10 @@
-﻿using System;
+using System;
+using System.Diagnostics;
 using SharpDX;
 using SharpDX.Direct3D12;
 using SharpDX.DXGI;
 using Device = SharpDX.Direct3D12.Device;
 using Resource = SharpDX.Direct3D12.Resource;
-using System.Diagnostics;
 
 namespace DX12GameProgramming
 {
@@ -162,7 +162,7 @@ namespace DX12GameProgramming
             {
                 float x = i;
 
-                weights[i + blurRadius] =  MathHelper.Expf(-x * x / twoSigma2);
+                weights[i + blurRadius] = MathHelper.Expf(-x * x / twoSigma2);
 
                 weightSum += weights[i + blurRadius];
             }

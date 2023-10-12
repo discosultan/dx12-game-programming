@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -178,7 +178,7 @@ namespace DX12GameProgramming
             CommandQueue.ExecuteCommandList(CommandList);
 
             // Present the buffer to the screen. Presenting will automatically swap the back and front buffers.
-            SwapChain.Present(0, PresentFlags.None);
+            SwapChain.Present(1, PresentFlags.None);
 
             // Advance the fence value to mark commands up to this fence point.
             CurrFrameResource.Fence = ++CurrentFence;
